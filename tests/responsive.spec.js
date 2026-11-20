@@ -41,14 +41,16 @@ function audit(touch) {
   const controls = [...document.querySelectorAll('button, [role="button"], a[href], input, select')].filter(shown);
   for (const el of controls) {
     const r = el.getBoundingClientRect();
+    // Target size uses layout size: a tile mid flip/pop animation (transform: scale) is not a small target.
+    const lw = el.offsetWidth || r.width, lh = el.offsetHeight || r.height;
     const inScroller = el.closest('.overlay');            // overlays scroll vertically by design
     if (r.right > vw + 1 || r.left < -1) out.push(`off-screen horizontally: ${name(el)} [${Math.round(r.left)}..${Math.round(r.right)}] vw=${vw}`);
     if (!inScroller && (r.bottom > vh + 1 || r.top < -1)) out.push(`off-screen vertically: ${name(el)} [${Math.round(r.top)}..${Math.round(r.bottom)}] vh=${vh}`);
     // Letter and number pads: a 9-key row cannot be 44 px wide on a 320 px phone (system keyboards are
     // ~32 px too), so keys need full 44 px height and >= 28 px width (above WCAG 2.5.8's 24 px).
     const keyGrid = el.closest('#wKeys, .rpad');
-    if (keyGrid && touch) { if (r.height < 43.5 || r.width < 27.5) out.push(`small key ${Math.round(r.width)}x${Math.round(r.height)} (need 28x44): ${name(el)}`); }
-    else if (Math.min(r.width, r.height) < min - 0.5) out.push(`small target ${Math.round(r.width)}x${Math.round(r.height)} < ${min}: ${name(el)}`);
+    if (keyGrid && touch) { if (lh < 43.5 || lw < 27.5) out.push(`small key ${Math.round(lw)}x${Math.round(lh)} (need 28x44): ${name(el)}`); }
+    else if (Math.min(lw, lh) < min - 0.5) out.push(`small target ${Math.round(lw)}x${Math.round(lh)} < ${min}: ${name(el)}`);
     if (el.scrollWidth > el.clientWidth + 2 && getComputedStyle(el).overflow !== 'visible') out.push(`clipped text: ${name(el)} (${el.scrollWidth} > ${el.clientWidth})`);
   }
   for (const el of [...document.querySelectorAll('.pill, .lv, h1, h2, .gamecard b, .gamecard small')].filter(shown)) {
