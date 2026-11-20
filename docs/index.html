@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>brainy-bits — Đề xuất nâng cấp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;650;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+<div id="bar"></div>
+<nav><div class="in">
+  <span class="slug">brainy<i>-bits</i></span>
+  <a href="index.html">Đề xuất</a>
+  <a href="findings.html">76 phát hiện</a>
+  <a href="research.html">Repo nguồn mở</a>
+  <button id="t" type="button">sáng</button>
+</div></nav>
+
+<main>
+<section>
+  <div class="meta r"><span class="words">—</span><span>S3 → S2 · 2026-11-20</span></div>
+  <h1 class="r">Bản gốc đã chạy y hệt.<br>Có 3 gói nâng cấp, anh duyệt gói nào?</h1>
+  <div class="tldr r"><p><strong>Bản port 1:1 xong:</strong> khớp từng dòng với artifact, chỉ bỏ chữ "(Copy)" ở tiêu đề. Smoke test pass 6/6.
+  Đợt soát tìm ra 65 lỗi xác nhận. Khuyến nghị: <strong>làm ngay gói A và B</strong>, vì đó là lỗi và nền móng, không đổi gu.
+  <strong>Gói C</strong> (motion, reward) đổi cảm giác chơi, nên đi qua S2 kèm mockup.</p></div>
+</section>
+
+<section>
+  <div class="g three r">
+    <div class="k"><div class="n" data-to="65">65</div><div class="cap">lỗi xác nhận</div></div>
+    <div class="k"><div class="n" data-to="17">17</div><div class="cap">lỗi reviewer tìm thêm</div></div>
+    <div class="k"><div class="n" data-to="10">10</div><div class="cap">repo giữ lại sau phản biện</div></div>
+  </div>
+</section>
+
+<section>
+  <h2 class="r">Ba gói</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>Gói</th><th>Gồm gì</th><th>Đổi gu?</th></tr></thead>
+    <tbody>
+      <tr><td><strong>A · Sửa lỗi</strong></td><td>Đoán Cụm Từ: gõ được trong 0,7 s sau khi trả lời (W2); gợi ý lộ đáp án (W3); dấu thanh gắn sai nguyên âm (W1). Cá Koi: chạm cá xám không tốn hạt, không hẹn giờ; kỷ lục không bao giờ được lưu. Level vượt trần ở 3 game; Ô Sáng có thể treo tab khi level quá cao. Không pause được lúc đếm ngược. Xoay máy làm map tàu và giọt mưa co méo. 4 vòng lặp vẽ vẫn chạy ngầm khi đang ở game khác, tốn pin.</td><td>Không</td></tr>
+      <tr><td><strong>B · Nền app</strong></td><td>Chơi offline và cài lên màn hình chính (PWA). Một AudioContext dùng chung, gọi <code>resume()</code> cho iOS. Cho phép phóng to (WCAG 1.4.4). Nút Pause ≥ 44 px (đang bị bóp còn 30 px). Ô vàng của Đoán Cụm Từ đạt tương phản (đang 2,24:1). Thêm hình dạng cho ga tàu để người mù màu chơi được. Preview khi gửi link Zalo. Nút xoá tiến độ.</td><td>Ít</td></tr>
+      <tr><td><strong>C · Motion &amp; reward</strong></td><td>ZzFX thay tiếng beep, cao độ tăng theo chuỗi đúng. Confetti khi qua level, có tôn trọng reduced-motion. Số điểm đếm lên, hit-stop, rung nhẹ khi sai. Hub có sao, chuỗi ngày, thử thách ngày, thẻ chia sẻ bằng emoji. Gõ VNI trong Đoán Cụm Từ.</td><td><strong>Có</strong></td></tr>
+    </tbody></table></div>
+  <div class="k b r"><p>Thư viện sẽ vendor (chép một file vào repo, không dùng CDN): <code>ZzFXMicro</code> (MIT, 1,2 KB) và <code>canvas-confetti</code> (ISC, khoảng 7 KB gzip). Phần còn lại chỉ lấy pattern, không chép code.</p></div>
+</section>
+
+<section>
+  <h2 class="r">Chưa xác minh được</h2>
+  <div class="k c r"><p>8 phát hiện về âm thanh iOS chỉ đọc từ code, chưa thử trên iPhone thật.
+  SHELL-01 được "xác nhận" là nút Pause bị đẩy ra ngoài màn hình. Đo thật thì nút vẫn trong màn, chỉ bị bóp còn 30 px.
+  Hai phiên cùng model có thể cùng sai. Mỗi licence ở trang repo đều kiểm qua <code>gh api</code>, chưa có luật sư nào đọc.</p></div>
+</section>
+</main>
+
+<footer>
+  <p>brainy-bits · con trỏ ở <code>00-discovery</code> — chưa duyệt.</p>
+  <div class="v"><strong>Same vendor, same priors — no external verifier ran.</strong></div>
+</footer>
+<script src="assets/doc.js"></script>
+</body>
+</html>
