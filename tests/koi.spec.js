@@ -1,0 +1,207 @@
+// Cá Koi: lỗi đã sửa theo audit 2026-11-20 (KOI-01..07, OPS-4, OPS-6) và phần thưởng (sao, kỷ lục).
+// window.__koi chỉ tồn tại khi init script đặt window.__BB_TEST__.
+import { test, expect } from '@playwright/test';
+
+async function openKoi(page, storage = {}) {
+  const errors = [];
+  page.on('pageerror', e => errors.push(String(e)));
+  await page.addInitScript(s => {
+    window.__BB_TEST__ = true;
+    if (!sessionStorage.getItem('seeded')) {
+      localStorage.clear();
+      for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+      sessionStorage.setItem('seeded', '1');
+    }
+  }, storage);
+  await page.goto('/');
+  await page.click('#openKoi');
+  await expect(page.locator('#kmenu')).toBeVisible();
+  return errors;
+}
+
+async function start(page, lv) {
+  await page.locator('#klvgrid .lv').nth(lv - 1).click();
+  await page.click('#kStartBtn');
+  await expect(page.locator('#kmenu')).toBeHidden();
+}
+
+// Chạm vào một con cá thoả `kind` (decoy | fresh | fed) nằm xa các con khác, trong cùng một frame.
+async function tapFish(page, kind, opts = {}) {
+  return page.evaluate(([kind, o]) => {
+    const K = window.__koi, fs = K.fish;
+    const ok = f => kind === 'decoy' ? f.decoy : !f.decoy && (kind === 'fed' ? f.fed : !f.fed);
+    const iso = f => Math.min(...fs.filter(g => g !== f).map(g => Math.hypot(g.x - f.x, g.y - f.y)));
+    const c = fs.filter(ok).sort((a, b) => iso(b) - iso(a))[0];
+    if (!c) return false;
+    const cv = document.getElementById('kcv'), r = cv.getBoundingClientRect();
+    cv.dispatchEvent(new PointerEvent('pointerdown', Object.assign({ bubbles: true, cancelable: true,
+      isPrimary: true, button: 0, pointerType: 'touch', clientX: r.left + c.x, clientY: r.top + c.y }, o)));
+    return true;
+  }, [kind, opts]);
+}
+const skipCooldown = page => page.evaluate(() => { window.__koi.cooldown = 0; });
+
+test('KOI-02: double-tap on a grey fish counts one mistake, then the dial locks', async ({ page }) => {
+  const errors = await openKoi(page);
+  await start(page, 3);
+  expect(await tapFish(page, 'decoy')).toBe(true);
+  expect(await tapFish(page, 'decoy')).toBe(true);
+  await expect(page.locator('#kLevel')).toHaveText('Nhầm 1/1');
+  expect(await page.evaluate(() => window.__koi.cooldown)).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
+test('missed: second finger and right click are ignored', async ({ page }) => {
+  await openKoi(page);
+  await start(page, 3);
+  await tapFish(page, 'decoy', { isPrimary: false });
+  await tapFish(page, 'decoy', { button: 2, pointerType: 'mouse' });
+  await expect(page.locator('#kLevel')).toHaveText('Nhầm 0/1');
+});
+
+test('KOI-03: a second mistake ends the pond early with pellets left', async ({ page }) => {
+  await openKoi(page);
+  await start(page, 3);
+  await tapFish(page, 'decoy');
+  await skipCooldown(page);
+  await tapFish(page, 'decoy');
+  await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
+  expect(await page.evaluate(() => window.__koi.pellets)).toBeGreaterThan(0);
+  await expect(page.locator('#krTitle')).toContainText('Chưa qua Level 3');
+  await expect(page.locator('#krDetail')).toContainText('dừng sớm');
+  await expect(page.locator('#krStars')).toBeHidden();
+});
+
+test('KOI-06: pause works during the end-of-pond delay', async ({ page }) => {
+  await openKoi(page);
+  await start(page, 3);
+  await tapFish(page, 'decoy');
+  await skipCooldown(page);
+  await tapFish(page, 'decoy');
+  expect(await page.evaluate(() => window.__koi.state)).toBe('pondEnd');
+  await page.click('#kPauseBtn');
+  await expect(page.locator('#kpaused')).toBeVisible();
+  await page.waitForTimeout(1300);
+  await expect(page.locator('#kresult')).toBeHidden();
+  await page.click('#kResumeBtn');
+  await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
+});
+
+test('KOI-06: leaving mid-pond keeps the pond paused instead of wiping it', async ({ page }) => {
+  await openKoi(page);
+  await start(page, 1);
+  await tapFish(page, 'fresh');
+  await page.evaluate(() => { BB.leave('koi'); location.hash = ''; });
+  await expect(page.locator('#hub')).toBeVisible();
+  await page.click('#openKoi');
+  await expect(page.locator('#kpaused')).toBeVisible();
+  await expect(page.locator('#kScore')).toHaveText('✓ 1/6');
+});
+
+test('perfect level 1: 3 stars shown, recorded, koi_best written (OPS-4)', async ({ page }) => {
+  await openKoi(page);
+  await start(page, 1);
+  for (let i = 0; i < 6; i++) { await skipCooldown(page); expect(await tapFish(page, 'fresh')).toBe(true); }
+  await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
+  await expect(page.locator('#krTitle')).toContainText('Qua Level 1');
+  await expect(page.locator('#krStars .s.on')).toHaveCount(3, { timeout: 3000 });
+  await expect(page.locator('#krStars')).toHaveAttribute('aria-label', '3 trên 3 sao');
+  const r = await page.evaluate(() => ({ st: BB.gameStats('koi'), kb: localStorage.getItem('koi_best'), lv: localStorage.getItem('koi_lv2') }));
+  expect(r.st.best).toBe(1); expect(r.st.stars['1']).toBe(3);
+  expect(r.kb).toBe('1'); expect(r.lv).toBe('2');
+  await expect(page.locator('#krNext')).toHaveText('Level 2 · 7 cá →');
+});
+
+test('tapping during cooldown costs the third star, not a mistake', async ({ page }) => {
+  await openKoi(page);
+  await start(page, 1);
+  await tapFish(page, 'fresh');
+  await page.waitForTimeout(350);                      // quá ngưỡng chạm đúp 300ms
+  await tapFish(page, 'fresh');                        // vòng chưa đầy
+  await expect(page.locator('#kLevel')).toHaveText('Nhầm 0/1');
+  for (let i = 0; i < 5; i++) { await skipCooldown(page); await tapFish(page, 'fresh'); }
+  await expect(page.locator('#krStars .s.on')).toHaveCount(2, { timeout: 3000 });
+  await expect(page.locator('#krRule')).toHaveText('Chờ vòng đầy rồi mới chạm là được 3 sao.');
+});
+
+test('OPS-6/KOI-04: passing level 10 shows the finished screen, never Level 11', async ({ page }) => {
+  const errors = await openKoi(page, { koi_lv2: '10' });
+  await start(page, 10);
+  for (let i = 0; i < 15; i++) { await skipCooldown(page); expect(await tapFish(page, 'fresh')).toBe(true); }
+  await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
+  await expect(page.locator('#krNext')).toHaveText('Xem tổng kết →');
+  await page.click('#krNext');
+  await expect(page.locator('#kdone')).toBeVisible();
+  await expect(page.locator('#kdone h2')).toHaveText('Xong cả 10 level! 🎉');
+  // tổng sao của cả game, không phải sao riêng level 10; nhãn ô thống kê được gán theo id
+  await expect(page.locator('#kdStars')).toHaveAttribute('aria-label', /^\d+ trên 30 sao$/);
+  await expect(page.locator('#kdAcc')).toHaveText(/^\d+$/);
+  expect(await page.locator('#kdAcc').evaluate(b => b.parentNode.textContent.slice(b.textContent.length))).toBe('level đủ 3 sao');
+  expect(await page.locator('#kdLevel').evaluate(b => b.parentNode.textContent)).toBe('10level đã qua');
+  expect(await page.evaluate(() => localStorage.getItem('koi_lv2'))).toBe('11');
+  await page.click('#kdAgain');
+  await expect(page.locator('#kmenu')).toBeVisible();
+  await expect(page.locator('#kBestTxt')).toHaveText('Đã qua cả 10 level');
+  expect(errors).toEqual([]);
+});
+
+test('legacy progress: over-cap key is clamped, BB stats seeded, daily hand-off capped', async ({ page }) => {
+  await openKoi(page, { koi_lv2: '14' });
+  const r = await page.evaluate(() => ({ lv: localStorage.getItem('koi_lv2'), best: BB.gameStats('koi').best, kb: koiBest() }));
+  expect(r).toEqual({ lv: '11', best: 10, kb: { best: 10, lv: 11 } });
+  await expect(page.locator('#klvgrid .lv')).toHaveCount(10);
+  await page.evaluate(() => { BB.request('koi', 99); window.koiEnter(); });
+  await expect(page.locator('#kmenu')).toBeHidden();
+  await expect(page.locator('#kPond')).toHaveText(/^Level 10 · 15 cá$/);
+});
+
+test('HUD and pause button meet size and copy rules', async ({ page }) => {
+  await openKoi(page);
+  await start(page, 1);
+  const box = await page.locator('#kPauseBtn').boundingBox();
+  expect(box.width).toBeGreaterThanOrEqual(44); expect(box.height).toBeGreaterThanOrEqual(44);
+  await expect(page.locator('#kPond')).toHaveText('Level 1 · 6 cá');
+});
+
+test('review: accidental double-tap on a koi does not cost the third star, a later early tap does', async ({ page }) => {
+  await openKoi(page);
+  await start(page, 1);
+  await skipCooldown(page);
+  await tapFish(page, 'fresh');
+  await tapFish(page, 'fed');                          // cùng con, ~ngay lập tức
+  expect(await page.evaluate(() => window.__koi.earlyTaps)).toBe(0);
+  await page.waitForTimeout(350);
+  expect(await page.evaluate(() => window.__koi.cooldown)).toBeGreaterThan(0);
+  await tapFish(page, 'fed');
+  expect(await page.evaluate(() => window.__koi.earlyTaps)).toBe(1);
+  await expect(page.locator('#kLevel')).toHaveText('Nhầm 0/1');
+});
+
+test('review: tap ellipse leans toward the head, not the tail', async ({ page }) => {
+  await openKoi(page);
+  await start(page, 1);
+  await skipCooldown(page);
+  const r = await page.evaluate(() => {
+    const K = window.__koi, fs = K.fish, cv = document.getElementById('kcv'), rc = cv.getBoundingClientRect();
+    const iso = f => Math.min(...fs.filter(g => g !== f).map(g => Math.hypot(g.x - f.x, g.y - f.y)));
+    const f = fs.filter(g => !g.decoy).sort((a, b) => iso(b) - iso(a))[0];
+    const tap = k => cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, isPrimary: true,
+      button: 0, pointerType: 'touch', clientX: rc.left + f.x + Math.cos(f.ang) * k * f.L, clientY: rc.top + f.y + Math.sin(f.ang) * k * f.L }));
+    const big = f.L * 0.52 > 20;                       // trần 20px chỉ áp khi cá nhỏ
+    tap(-0.53); const tail = f.fed;
+    K.cooldown = 0; tap(0.53); const head = f.fed;
+    return { big, tail, head };
+  });
+  if (r.big) expect(r).toEqual({ big: true, tail: false, head: true });
+});
+
+test('review: HUD behind the menu shows the chosen level, not the last pond', async ({ page }) => {
+  await openKoi(page, { koi_lv2: '11' });
+  await start(page, 10);
+  await page.click('#kPauseBtn');
+  await page.click('#kQuitBtn');
+  await expect(page.locator('#kmenu')).toBeVisible();
+  await page.locator('#klvgrid .lv').nth(2).click();
+  await expect(page.locator('#kPond')).toHaveText('Level 3 · 8 cá');
+  await expect(page.locator('#kScore')).toHaveText('✓ 0/8');
+});

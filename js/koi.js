@@ -4,31 +4,40 @@ const $ = id => document.getElementById(id);
 const cv = $('kcv'), ctx = cv.getContext('2d');
 const bg = document.createElement('canvas');
 let W = 0, H = 0, dpr = 1;
-const PONDS = 5;
+const BB = window.BB;
+const LV_MAX = BB.LV_MAX.koi;  // 10 level; qua level 10 là xong game, không có level 11
 let state = 'menu';            // menu | play | pondEnd | result | done | paused
-let diff = 1, startDiff = 1, maxDiff = 1, pondIdx = 0;
-let score = 0, sessCorrect = 0, sessTaps = 0, streak = 0;
+let resumeTo = 'play';         // state trước khi tạm dừng (play hoặc pondEnd)
+let diff = 1, streak = 0;
 let fish = [], pellets = 0, pelletsMax = 0, cooldown = 0, cdMax = 1;
 let pondCorrect = 0, pondMistakes = 0, pondKoi = 0, endTimer = 0;
-let fx = [], ripples = [], dialShake = 0, lastT = 0;
-let seed = 1;
+let lastFeedAt = 0;   // lúc khoá vòng gần nhất: chạm đúp vô tình trong 300ms không tính là chạm sớm
+let earlyTaps = 0, playMs = 0; // chạm cá khi vòng chưa đầy (mất sao thứ 3) · thời gian chơi thật
+let fx = [], ripples = [], drops = [], dialShake = 0, dialPulse = 0, lastT = 0;
+let seed = 1, running = false, timers = [];
+const shakeCam = BB.trauma(7);
 
-function getLv(){ try { return Math.max(1, +localStorage.getItem('koi_lv2') || 1); } catch(e){ return 1; } }
-function setLv(v){ try { localStorage.setItem('koi_lv2', v); } catch(e){} }
-function getBest(){ try { return +localStorage.getItem('koi_best') || 0; } catch(e){ return 0; } }
-function setBest(v){ try { if (v > getBest()) localStorage.setItem('koi_best', v); } catch(e){} }
+// koi_lv2 = level kế tiếp chưa qua (giữ key cũ để không ai mất tiến độ), kẹp 1..LV_MAX+1.
+function getLv(){ return BB.store.num('koi_lv2', 1, 1, LV_MAX + 1); }
+function setLv(v){ BB.store.set('koi_lv2', Math.min(LV_MAX + 1, Math.max(1, v))); }
+// koi_best = level cao nhất đã qua (OPS-4: trước đây key này không bao giờ được ghi).
+function getBest(){ return Math.max(BB.store.num('koi_best', 0, 0, LV_MAX), getLv() - 1); }
+function setBest(v){ if (v > BB.store.num('koi_best', 0, 0, LV_MAX)) BB.store.set('koi_best', Math.min(LV_MAX, v)); }
 
-let actx = null;
-function beep(freq, dur, type='sine', vol=0.06, delay=0){
-  try{
-    if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
-    const t0 = actx.currentTime + delay;
-    const o = actx.createOscillator(), g = actx.createGain();
-    o.type = type; o.frequency.setValueAtTime(freq, t0);
-    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0 + dur + 0.02);
-  }catch(e){}
-}
+// Một lần lúc tải: kẹp key cũ đã vượt trần (11, 12...) và đồng bộ hai chiều với bb_stats.
+(function migrate(){
+  if (BB.store.num('koi_lv2', 1) > LV_MAX + 1) BB.store.set('koi_lv2', LV_MAX + 1);
+  const legacy = getLv() - 1, s = BB.gameStats('koi');
+  if (legacy > s.best) {
+    const all = BB.stats(); all.koi = all.koi || { best: 0, stars: {} };
+    all.koi.best = legacy; BB.store.setJson('bb_stats', all);
+  } else if (s.best > legacy) setLv(s.best + 1);
+  setBest(Math.max(legacy, s.best));
+})();
+
+const beep = BB.tone;          // cùng chữ ký beep() cũ, dùng chung một AudioContext (KOI-05)
+const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 const wrapAng = a => { while (a > Math.PI) a -= Math.PI*2; while (a < -Math.PI) a += Math.PI*2; return a; };
 
@@ -49,7 +58,7 @@ const fishLen = () => Math.max(34, Math.min(60, Math.min(W, H) * 0.13)) * (fish.
 function setupPond(){
   const p = params(diff);
   seed = (Math.random()*1e9)|0;
-  fish = []; fx = []; ripples = [];
+  fish = []; fx = []; ripples = []; drops = [];
   const L = fishLen(), A = area();
   const mk = (decoy) => ({
     x: A.x0 + L + Math.random()*(A.x1 - A.x0 - 2*L),
@@ -63,6 +72,7 @@ function setupPond(){
   pondKoi = p.koi; pellets = pelletsMax = p.koi;
   cdMax = p.cd; cooldown = 0;
   pondCorrect = 0; pondMistakes = 0; endTimer = 0;
+  earlyTaps = 0; playMs = 0; streak = 0; dialPulse = 0; shakeCam.reset();
   buildStatic();
   updateHud();
 }
@@ -179,8 +189,10 @@ function drawFish(f){
 
 // ---------- vòng hẹn giờ + hạt thức ăn ----------
 function drawDial(){
-  const sx = dialShake > 0 ? Math.sin(dialShake*60) * 6 * dialShake/0.3 : 0;
-  const cx = W/2 + sx, cy = H - 56, R = 24;
+  const sx = dialShake > 0 && !BB.motion.reduced ? Math.sin(dialShake*60) * 6 * dialShake/0.3 : 0;
+  // vòng vừa đầy: nảy nhẹ (giảm chuyển động thì chỉ sáng viền, không đổi kích thước)
+  const pk = dialPulse > 0 ? dialPulse/0.3 : 0;
+  const cx = W/2 + sx, cy = H - 56, R = 24 * (BB.motion.reduced ? 1 : 1 + 0.12*Math.sin(pk*Math.PI));
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.arc(cx, cy+2, R+6, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = '#e9f5f0'; ctx.beginPath(); ctx.arc(cx, cy, R+4, 0, Math.PI*2); ctx.fill();
   if (cooldown > 0) {
@@ -193,6 +205,10 @@ function drawDial(){
     g.addColorStop(0, '#ffc46b'); g.addColorStop(1, '#ff7a2e');
     ctx.fillStyle = pellets > 0 ? g : '#9fb5ad';
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.fill();
+    if (pk > 0) {
+      ctx.strokeStyle = `rgba(255,255,255,${0.8*pk})`; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, R + 4, 0, Math.PI*2); ctx.stroke();
+    }
   }
   // hàng chấm = số hạt còn lại
   const n = pelletsMax, gap = Math.min(16, (W-40)/Math.max(1,n));
@@ -225,55 +241,87 @@ function updateFish(dt){
 }
 
 function update(dt){
+  if (BB.frozen()) return;
   updateFish(dt);
-  if (cooldown > 0) cooldown = Math.max(0, cooldown - dt);
+  if (state === 'play') playMs += dt*1000;
+  if (cooldown > 0) {
+    cooldown = Math.max(0, cooldown - dt);
+    // vòng vừa đầy lại: tiếng tích nhỏ báo "cho ăn được rồi"
+    if (cooldown === 0 && state === 'play' && pellets > 0) { BB.sfx('tick'); dialPulse = 0.3; }
+  }
   if (dialShake > 0) dialShake = Math.max(0, dialShake - dt);
+  if (dialPulse > 0) dialPulse = Math.max(0, dialPulse - dt);
   fx.forEach(e => e.t += dt); fx = fx.filter(e => e.t < 0.8);
-  ripples.forEach(r => r.t += dt); ripples = ripples.filter(r => r.t < 0.7);
+  ripples.forEach(r => r.t += dt); ripples = ripples.filter(r => r.t < (r.soft ? 0.45 : 0.7));
+  drops.forEach(p => { p.t += dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= 1 - dt*3; p.vy *= 1 - dt*3; });
+  drops = drops.filter(p => p.t < p.life);
   if (state === 'pondEnd') { endTimer -= dt; if (endTimer <= 0) pondResult(); }
 }
 
 // ---------- chạm ----------
-cv.addEventListener('pointerdown', ev => {
-  if (state !== 'play') return;
-  ev.preventDefault();
-  const rect = cv.getBoundingClientRect();
-  const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
-  // tìm cá bị chạm (con vẽ sau = nằm trên)
+// Vùng chạm bám theo thân cá (KOI-07): ellipse lệch về phía đầu, nhỏ hơn bản cũ (0.62L × 0.4L)
+// nhưng không dưới ~32px bề ngang cho ngón tay. Nhiều con chồng nhau thì con có tâm gần nhất thắng.
+function fishAt(x, y){
   let hit = null, best = Infinity;
   for (let i = fish.length-1; i >= 0; i--){
     const f = fish[i];
     const dx = x - f.x, dy = y - f.y;
     const lx = dx*Math.cos(-f.ang) - dy*Math.sin(-f.ang), ly = dx*Math.sin(-f.ang) + dy*Math.cos(-f.ang);
-    const d = (lx/(f.L*0.62))**2 + (ly/(f.L*0.4))**2;
-    if (d <= 1 && d < best - 0.25) { best = d; hit = f; }
+    const a = Math.max(f.L*0.52, 20), b = Math.max(f.L*0.32, 16);
+    const d = ((lx - f.L*0.04)/a)**2 + (ly/b)**2;
+    if (d <= 1 && d < best) { best = d; hit = f; }
   }
-  if (!hit) return;
-  if (cooldown > 0) { dialShake = 0.3; beep(200, 0.08, 'square', 0.03); return; }
+  return hit;
+}
+
+function splash(f){
+  ripples.push({ x: f.x, y: f.y, t: 0 });
+  if (BB.motion.reduced) return;
+  ripples.push({ x: f.x, y: f.y, t: -0.12 });
+  for (let i = 0; i < 10; i++){
+    const a = Math.random()*Math.PI*2, s = 50 + Math.random()*70;
+    drops.push({ x: f.x, y: f.y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, t: 0, life: 0.35 + Math.random()*0.25, r: 1.5 + Math.random()*2 });
+  }
+}
+
+function mistake(f){
+  pondMistakes++; streak = 0;
+  fx.push({ f, ok: false, t: 0 });
+  BB.sfx('wrong'); BB.haptic('error');
+  shakeCam.add(0.55); BB.shake($('kLevel'));
+  if (pondMistakes > 1 && state === 'play') { state = 'pondEnd'; endTimer = 0.9; } // đã chắc trượt (KOI-03)
+}
+
+cv.addEventListener('pointerdown', ev => {
+  if (state !== 'play') return;
+  if (!ev.isPrimary || ev.button > 0) return;      // bỏ ngón thứ hai và chuột phải
+  ev.preventDefault();
+  const rect = cv.getBoundingClientRect();
+  const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
+  const hit = fishAt(x, y);
+  if (!hit) { ripples.push({ x, y, t: 0, soft: true }); return; }  // chạm trượt: gợn nước mờ
+  if (cooldown > 0) { if (performance.now() - lastFeedAt > 300) earlyTaps++; dialShake = 0.3; beep(200, 0.08, 'square', 0.03); return; }
+  cooldown = cdMax; lastFeedAt = performance.now(); // cá xám cũng khoá vòng như một lần cho ăn (KOI-02)
   if (hit.decoy) {
-    pondMistakes++; streak = 0; sessTaps++;
-    fx.push({ f: hit, ok: false, t: 0 });
     hit.boost = 50;
-    beep(160, 0.22, 'sawtooth', 0.05);
+    mistake(hit);
     updateHud();
     return;
   }
-  pellets--; sessTaps++;
-  cooldown = cdMax;
-  ripples.push({ x: hit.x, y: hit.y, t: 0 });
+  pellets--;
   if (!hit.fed) {
-    hit.fed = true; pondCorrect++; sessCorrect++; streak++;
-    score += 100 + Math.min(streak, 10)*10 + diff*10;
+    splash(hit);
+    hit.fed = true; pondCorrect++; streak++;
     fx.push({ f: hit, ok: true, t: 0 });
     hit.boost = 45;
-    beep(760, 0.08, 'sine', 0.06); beep(1140, 0.1, 'sine', 0.05, 0.06);
+    BB.sfx('pop', { combo: streak - 1 });            // cho ăn đúng liên tiếp: cao dần một nửa cung
+    BB.haptic('tap'); BB.pop($('kScore'));
   } else {
-    pondMistakes++; streak = 0;
-    fx.push({ f: hit, ok: false, t: 0 });
-    beep(160, 0.22, 'sawtooth', 0.05);
+    ripples.push({ x: hit.x, y: hit.y, t: 0 });     // nhầm: chỉ một gợn, không bắn nước như lúc cho ăn
+    mistake(hit);
   }
   updateHud();
-  if (pellets <= 0) { state = 'pondEnd'; endTimer = 0.9; }
+  if (pellets <= 0 && state === 'play') { state = 'pondEnd'; endTimer = 0.9; }
 });
 
 // ---------- vẽ ----------
@@ -281,11 +329,24 @@ function draw(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   if (!W) return;
   ctx.drawImage(bg, 0, 0, W, H);
+  // rung khi nhầm: chỉ lớp nước + cá, nền và khay giữ yên (camX/camY = 0 khi giảm chuyển động)
+  ctx.setTransform(dpr,0,0,dpr,camX*dpr,camY*dpr);
   ripples.forEach(r => {
+    if (r.t < 0) return;
+    if (r.soft) {                                    // chạm trượt: gợn mờ, nhỏ
+      const k = r.t/0.45;
+      ctx.strokeStyle = `rgba(255,255,255,${0.28*(1-k)})`; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(r.x, r.y, BB.motion.reduced ? 14 : 5 + k*16, 0, Math.PI*2); ctx.stroke();
+      return;
+    }
     const k = r.t/0.7;
     ctx.strokeStyle = `rgba(255,255,255,${0.5*(1-k)})`; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(r.x, r.y, 6 + k*34, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(r.x, r.y, BB.motion.reduced ? 22 : 6 + k*34, 0, Math.PI*2); ctx.stroke();
     if (k < 0.4) { ctx.fillStyle = `rgba(255,190,110,${1-k/0.4})`; ctx.beginPath(); ctx.arc(r.x, r.y, 4, 0, Math.PI*2); ctx.fill(); }
+  });
+  drops.forEach(p => {
+    ctx.fillStyle = `rgba(220,250,245,${0.85*(1 - p.t/p.life)})`;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
   });
   fish.filter(f => f.decoy).forEach(drawFish);
   fish.filter(f => !f.decoy).forEach(drawFish);
@@ -304,19 +365,24 @@ function draw(){
     ctx.stroke();
     ctx.globalAlpha = 1;
   });
+  ctx.setTransform(dpr,0,0,dpr,0,0);
   drawDial();
 }
 
 function loop(ts){
   const dt = Math.min(0.05, (ts - lastT)/1000 || 0);
   lastT = ts;
-  if (window.APP && window.APP.active === 'koi') {
-    if (state === 'play' || state === 'pondEnd') update(dt);
-    else if (state !== 'paused') updateFish(dt);
-    draw();
-  }
+  // Chỉ chạy khi đang ở game Koi; koiEnter() khởi động lại vòng lặp.
+  if (!(window.APP && window.APP.active === 'koi')) { running = false; return; }
+  if (state === 'play' || state === 'pondEnd') update(dt);
+  else if (state !== 'paused') updateFish(dt);
+  const o = state === 'paused' ? { x: 0, y: 0 } : shakeCam.offset(dt);
+  camX = o.x; camY = o.y;
+  draw();
   requestAnimationFrame(loop);
 }
+let camX = 0, camY = 0;
+function startLoop(){ if (running) return; running = true; lastT = performance.now(); requestAnimationFrame(loop); }
 
 // ---------- kích thước ----------
 function resize(){
@@ -329,26 +395,65 @@ function resize(){
   const A = area();
   fish.forEach(f => { f.x = Math.max(A.x0, Math.min(A.x1, f.x)); f.y = Math.max(A.y0, Math.min(A.y1, f.y)); });
 }
-window.addEventListener('resize', resize);
+window.addEventListener('resize', () => { if (window.APP && window.APP.active === 'koi') resize(); });
 
 // ---------- luồng chơi ----------
 function show(id, on){ $(id).classList.toggle('hidden', !on); }
 function updateHud(){
   $('kPond').textContent = `Level ${diff} · ${pondKoi || params(diff).koi} cá`;
   $('kScore').textContent = `✓ ${pondCorrect}/${pondKoi || params(diff).koi}`;
-  $('kLevel').textContent = `Nhầm ${pondMistakes}`;
+  $('kLevel').textContent = `Nhầm ${pondMistakes}/1`;
 }
 
-const KLV_COUNT = 10;          // level 1..10 = 6..15 cá
+// Sao 0..3, một luật cho mọi level:
+//   0 = chưa qua (nhầm từ 2 lần) · 1 = qua, nhầm 1 lần · 2 = không nhầm
+//   3 = không nhầm và không chạm cá lúc vòng hẹn giờ chưa đầy
+function starsFor(passed){ return !passed ? 0 : pondMistakes ? 1 : earlyTaps ? 2 : 3; }
+const STAR_HINT = [
+  '',
+  'Không nhầm lần nào sẽ được 2 sao.',
+  'Chờ vòng đầy rồi mới chạm là được 3 sao.',
+  'Đủ 3 sao: không nhầm, không chạm vội.',
+];
+const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+
+// Thêm hàng sao và dòng luật sao vào thẻ kết quả (markup thuộc index.html, tạo bằng JS).
+const krStars = document.createElement('div');
+krStars.className = 'stars'; krStars.id = 'krStars';
+krStars.innerHTML = '<span class="s">★</span><span class="s">★</span><span class="s">★</span>';
+$('krTitle').after(krStars);
+const krRule = document.createElement('p');
+krRule.className = 'muted'; krRule.id = 'krRule';
+$('krDetail').after(krRule);
+cv.setAttribute('role', 'img');
+cv.setAttribute('aria-label', 'Hồ cá koi. Chạm vào cá koi chưa ăn để cho ăn.');
+
+function paintStars(box, n, animate){
+  const ss = box.querySelectorAll('.s');
+  box.setAttribute('role', 'img');
+  box.setAttribute('aria-label', `${n} trên 3 sao`);
+  ss.forEach(s => s.classList.remove('on'));
+  ss.forEach((s, i) => {
+    if (i >= n) return;
+    if (!animate || BB.motion.reduced) { s.classList.add('on'); return; }
+    later(() => { s.classList.add('on'); BB.pop(s, 1.35); BB.sfx('star', { combo: i * 2 }); }, 260 + i * 220);
+  });
+}
+
+const KLV_COUNT = LV_MAX;      // level 1..10 = 6..15 cá
 let chosenK = 1, kPassed = false;
 function renderKLevels(){
-  const b = getLv() - 1, grid = $('klvgrid');   // koi_level lưu level kế tiếp chưa qua
+  const b = getLv() - 1, grid = $('klvgrid');   // koi_lv2 lưu level kế tiếp chưa qua
+  const st = BB.gameStats('koi').stars;
   grid.innerHTML = '';
   for (let lv = 1; lv <= KLV_COUNT; lv++){
     const el = document.createElement('button');
-    el.className = 'lv' + (lv <= b ? ' done' : '') + (lv === chosenK ? ' on' : '');
-    el.innerHTML = `${lv}<small>${params(lv).koi} cá</small>`;
-    el.onclick = () => { chosenK = lv; renderKLevels(); beep(700, 0.04, 'square', 0.03); };
+    const n = st[lv] || 0, done = lv <= b;
+    el.className = 'lv' + (done ? ' done' : '') + (lv === chosenK ? ' on' : '');
+    el.setAttribute('aria-pressed', lv === chosenK ? 'true' : 'false');
+    el.setAttribute('aria-label', `Level ${lv}, ${params(lv).koi} cá${done ? `, đã qua, ${n} sao` : ''}`);
+    el.innerHTML = `${lv}<small>${params(lv).koi} cá</small>` + (n ? `<span class="kst" aria-hidden="true">${starStr(n)}</span>` : '');
+    el.onclick = () => { chosenK = lv; if (state === 'menu') { diff = lv; updateHud(); } renderKLevels(); BB.sfx('key'); };
     grid.appendChild(el);
   }
   const p = params(chosenK);
@@ -357,7 +462,8 @@ function renderKLevels(){
 }
 
 function startKoiLevel(lv){
-  diff = lv;
+  clearTimers();
+  diff = Math.min(LV_MAX, Math.max(1, lv | 0));
   ['kmenu','kresult','kdone','kpaused'].forEach(id => show(id, false));
   setupPond();
   state = 'play';
@@ -367,46 +473,116 @@ function startKoiLevel(lv){
 function pondResult(){
   state = 'result';
   kPassed = pondMistakes <= 1;
+  const stars = starsFor(kPassed);
+  const last = diff >= LV_MAX;
   if (kPassed && diff + 1 > getLv()) setLv(diff + 1);
-  const p1 = params(diff + 1);
+  if (kPassed) setBest(diff);
+  const rec = BB.record({ game: 'koi', level: diff, won: kPassed, stars, score: pondCorrect, ms: playMs });
+
   $('krTitle').textContent = kPassed ? `Qua Level ${diff}! 🎉` : `Chưa qua Level ${diff} 😅`;
-  $('krBig').textContent = `${pondCorrect}/${pondKoi}`;
+  BB.countUp($('krBig'), 0, pondCorrect, { dur: 600, fmt: v => `${v}/${pondKoi}` });
   const parts = [`Cho ăn đúng ${pondCorrect}/${pondKoi} con cá koi.`];
   parts.push(pondMistakes ? `Nhầm ${pondMistakes} lần.` : 'Không nhầm lần nào!');
-  if (!kPassed) parts.push('Cần nhầm tối đa 1 lần để qua level.');
+  if (!kPassed) parts.push(pellets > 0 ? 'Nhầm 2 lần nên hồ dừng sớm. Chỉ được nhầm 1 lần.' : 'Cần nhầm tối đa 1 lần để qua level.');
   $('krDetail').textContent = parts.join(' ');
-  $('krNext').textContent = kPassed ? `Level ${diff+1} · ${p1.koi} cá →` : `Chơi lại Level ${diff}`;
+  krStars.classList.toggle('hidden', !kPassed);
+  paintStars(krStars, stars, true);
+  krRule.textContent = kPassed ? STAR_HINT[stars] : '';
+  krRule.classList.toggle('hidden', !kPassed);
+  if (kPassed && last) $('krNext').textContent = 'Xem tổng kết →';
+  else $('krNext').textContent = kPassed ? `Level ${diff+1} · ${params(diff+1).koi} cá →` : `Chơi lại Level ${diff}`;
   show('kresult', true);
   updateHud();
-  kPassed ? (beep(660,0.12,'triangle',0.06), beep(990,0.18,'triangle',0.06,0.1)) : beep(440,0.2,'triangle',0.05);
+
+  if (kPassed) {
+    BB.sfx('levelUp'); BB.haptic('success');
+    if (stars === 3 || rec.newBest || rec.dailyDone) later(() => BB.celebrate(), 300);
+  } else { BB.sfx('fail'); BB.haptic('error'); }
+  if (rec.newBest) BB.toast(`Kỷ lục mới: qua Level ${diff}`);
+  else if (rec.newStars && stars > 1) BB.toast(`Level ${diff} giờ có ${stars} sao`);
+  if (rec.dailyDone) BB.toast('Xong thử thách hôm nay');
+  if (rec.streakUp && rec.streak > 1) BB.toast(`Chuỗi ${rec.streak} ngày liền`);
+}
+
+// Ghi số + nhãn cho một ô thống kê, không dựa vào nextSibling (markup có thể có khoảng trắng hoặc <span>).
+function statCell(id, val, label){
+  const b = $(id), cell = b.parentNode;
+  b.textContent = val;
+  cell.replaceChildren(b, document.createTextNode(label));
+}
+
+// Màn xong game: dùng lại #kdone (trước là "Hoàn thành 5 hồ", không bao giờ hiện).
+function showDone(){
+  state = 'done';
+  clearTimers();
+  const st = BB.gameStats('koi').stars;
+  let total = 0; for (let lv = 1; lv <= LV_MAX; lv++) total += st[lv] || 0;
+  $('kdone').querySelector('h2').textContent = `Xong cả ${LV_MAX} level! 🎉`;
+  const full = Object.keys(st).filter(k => k >= 1 && k <= LV_MAX && st[k] === 3).length;
+  paintStars($('kdStars'), Math.round(total / LV_MAX), false);
+  $('kdStars').setAttribute('aria-label', `${total} trên ${LV_MAX * 3} sao`);
+  $('kdScore').textContent = `${total}/${LV_MAX * 3}`;
+  statCell('kdAcc', full, 'level đủ 3 sao');
+  statCell('kdLevel', LV_MAX, 'level đã qua');
+  $('kdNote').textContent = total < LV_MAX * 3
+    ? 'Level nào chưa đủ 3 sao thì chơi lại để gom tiếp.'
+    : `Đủ ${LV_MAX * 3} sao, level nào cũng 3 sao.`;
+  $('kdAgain').textContent = 'Chọn level';
+  show('kresult', false);
+  show('kdone', true);
+  BB.sfx('levelUp'); BB.haptic('levelUp');
+  later(() => BB.celebrate({ particleCount: 140, spread: 100 }), 200);
 }
 
 function toMenu(){
+  clearTimers();
   state = 'menu';
   chosenK = Math.min(getLv(), KLV_COUNT);
   diff = chosenK;
   renderKLevels();
   const b = getLv() - 1;
-  $('kBestTxt').textContent = b ? `Đã qua tới Level ${b}` : '';
+  $('kBestTxt').textContent = b >= LV_MAX ? `Đã qua cả ${LV_MAX} level` : b ? `Đã qua tới Level ${b}` : '';
   ['kresult','kdone','kpaused'].forEach(id => show(id, false));
   show('kmenu', true);
   if (!fish.length) setupPond();
-  pondCorrect = 0; pondMistakes = 0;
+  pondCorrect = 0; pondMistakes = 0; pondKoi = 0;   // HUD sau lớp menu không giữ số cá của hồ trước
   updateHud();
 }
 
+function pause(){
+  if (state !== 'play' && state !== 'pondEnd') return;
+  resumeTo = state; state = 'paused'; show('kpaused', true);
+}
+
 $('kStartBtn').onclick = () => startKoiLevel(chosenK);
-$('krNext').onclick = () => startKoiLevel(kPassed ? diff + 1 : diff);
+$('krNext').onclick = () => {
+  if (kPassed && diff >= LV_MAX) showDone();
+  else startKoiLevel(kPassed ? diff + 1 : diff);
+};
 $('krMenu').onclick = toMenu;
-$('kPauseBtn').onclick = () => { if (state === 'play') { state = 'paused'; show('kpaused', true); } };
-$('kResumeBtn').onclick = () => { show('kpaused', false); state = 'play'; };
+$('kdAgain').onclick = toMenu;
+$('kPauseBtn').onclick = pause;
+$('kResumeBtn').onclick = () => { if (state !== 'paused') return; show('kpaused', false); state = resumeTo; lastT = performance.now(); };
 $('kQuitBtn').onclick = toMenu;
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && state === 'play' && window.APP && window.APP.active === 'koi') { state = 'paused'; show('kpaused', true); }
+  if (document.hidden && window.APP && window.APP.active === 'koi') pause();
 });
+// Rời game (Back, nút home): tạm dừng hồ đang chơi thay vì để nó bị xoá lúc vào lại.
+BB.onLeave('koi', () => { pause(); clearTimers(); });
 
-window.koiEnter = () => { resize(); toMenu(); };
+window.koiEnter = () => {
+  resize();
+  startLoop();
+  const req = BB.takeRequest('koi');                 // thử thách hôm nay: vào thẳng level đó
+  if (req != null) { chosenK = Math.min(LV_MAX, Math.max(1, req)); startKoiLevel(chosenK); return; }
+  if (state === 'paused') { show('kpaused', true); updateHud(); return; }  // còn hồ đang dở
+  toMenu();
+};
 window.koiBest = () => ({ best: getBest(), lv: getLv() });
-requestAnimationFrame(loop);
+// Cửa sổ chỉ cho Playwright: có khi trang đặt window.__BB_TEST__ trước lúc tải, bản thật không có.
+if (window.__BB_TEST__) window.__koi = {
+  get state(){ return state; }, get fish(){ return fish; }, get pellets(){ return pellets; },
+  get earlyTaps(){ return earlyTaps; }, set cooldown(v){ cooldown = v; }, get cooldown(){ return cooldown; },
+};
+updateHud();
 })();
-
