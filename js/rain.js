@@ -5,7 +5,7 @@ const BB = window.BB;
 const cv = $('rcv'), ctx = cv.getContext('2d');
 const LV_MAX = BB.LV_MAX.rain, LIVES = 3;
 const AUTO_WAIT = 0.6;         // giây chờ khi đáp án đã gõ còn là đầu của một đáp án dài hơn
-let W = 0, H = 0, dpr = 1, landscape = null;
+let W = 0, H = 0, dpr = 1, landscape = null, cvLand = null;
 let state = 'menu';            // menu | play | paused | result
 let level = 1, chosen = 1, passed = false;
 let drops = [], fx = [], parts = [], solved = 0, target = 10, misses = 0, spawnT = 0, input = '', pendT = 0;
@@ -282,10 +282,11 @@ function resize(){
     d.x = W > 2*half ? Math.max(half, Math.min(W - half, d.x)) : W/2;
   });
   parts = [];
-  // Xoay máy giữa ván: tạm dừng để người chơi định thần lại
-  const land = W > H;
-  if (landscape !== null && land !== landscape && state === 'play') pause();
-  landscape = land;
+  // Xoay máy hoặc khung chơi đổi dáng giữa ván: tạm dừng để người chơi định thần lại.
+  // Xét cả viewport lẫn canvas: ở 320px dọc canvas đã W > H, nên xoay máy không làm canvas đổi dáng.
+  const land = innerWidth > innerHeight, cl = W > H;
+  if (landscape !== null && (land !== landscape || cl !== cvLand) && state === 'play') pause();
+  landscape = land; cvLand = cl;
 }
 window.addEventListener('resize', resize);
 

@@ -276,3 +276,56 @@ test('long equations widen the drop instead of overflowing it', async ({ page })
   expect(r.w).toBeGreaterThanOrEqual(78);
   expect(r.w).toBeGreaterThanOrEqual(r.text + 20);
 });
+
+// RESP: điện thoại xoay ngang — canvas bên trái, bàn phím bên phải, giọt dùng đúng khung canvas mới.
+for (const vp of [{ width: 667, height: 375 }, { width: 844, height: 390 }]) {
+  test(`RESP: phone landscape ${vp.width}x${vp.height} puts canvas left, pad right, drops inside`, async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: vp, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    await openRain(page);
+    await startAt(page, 1);
+    const box = await page.evaluate(() => {
+      const r = s => document.querySelector(s).getBoundingClientRect();
+      const keys = [...document.querySelectorAll('#rPad button')].map(b => b.getBoundingClientRect().height);
+      return { cv: r('#rcv'), pad: r('#rPad'), minKey: Math.min(...keys) };
+    });
+    expect(box.cv.height).toBeGreaterThanOrEqual(240);
+    expect(box.pad.left).toBeGreaterThanOrEqual(box.cv.right - 1);
+    expect(box.pad.bottom).toBeLessThanOrEqual(vp.height + 1);
+    expect(box.minKey).toBeGreaterThanOrEqual(44);
+    await page.waitForTimeout(1200);            // để spawn() thật đặt giọt theo bề ngang canvas mới
+    const s = await dbg(page);
+    expect(s.drops.length).toBeGreaterThan(0);
+    expect(Math.abs(s.W - box.cv.width)).toBeLessThan(1);
+    expect(Math.abs(s.H - box.cv.height)).toBeLessThan(1);
+    for (const d of s.drops) { expect(d.x).toBeGreaterThanOrEqual(d.w / 2); expect(d.x).toBeLessThanOrEqual(s.W - d.w / 2); }
+    await ctx.close();
+  });
+}
+
+test('RESP: laptop 1920 caps the play column at 600 px', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  const page = await ctx.newPage();
+  await openRain(page);
+  await startAt(page, 1);
+  const w = await page.evaluate(() => ['#rcv', '#rPad'].map(s => document.querySelector(s).getBoundingClientRect()));
+  for (const r of w) { expect(r.width).toBeLessThanOrEqual(600.5); expect(Math.abs(r.left + r.width / 2 - 960)).toBeLessThan(2); }
+  expect((await dbg(page)).H).toBeGreaterThanOrEqual(400);
+  // HUD: pill đầu và nút pause thẳng mép cột chơi, không dạt ra góc màn hình
+  const hud = await page.evaluate(() => ({ lv: document.querySelector('#rLevel').getBoundingClientRect().left,
+    pause: document.querySelector('#rPause').getBoundingClientRect().right }));
+  expect(hud.lv).toBeGreaterThanOrEqual(660 - 1);
+  expect(hud.pause).toBeLessThanOrEqual(1260 + 1);
+  await ctx.close();
+});
+
+test('RAIN-1: rotating a 320 phone to landscape pauses even though the canvas was already wider than tall', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true });
+  const page = await ctx.newPage();
+  await openRain(page);
+  await startAt(page, 1);
+  await page.setViewportSize({ width: 667, height: 375 });
+  await expect(page.locator('#rpaused')).toBeVisible();
+  expect((await dbg(page)).state).toBe('paused');
+  await ctx.close();
+});
