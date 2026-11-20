@@ -213,3 +213,35 @@ test('service worker caches the shell and the hub loads offline (OPS-2)', async 
   await expect(page.locator('#kmenu')).toBeVisible();
   await context.setOffline(false);
 });
+
+test.describe('hub layout uses the screen width', () => {
+  const layout = () => {
+    const r = id => document.getElementById(id).getBoundingClientRect();
+    const cards = ['openTrain', 'openKoi', 'openMem', 'openRain', 'openWord'].map(r);
+    return {
+      cols: cards.filter(c => Math.round(c.top) === Math.round(cards[0].top)).length,
+      wrap: document.querySelector('.hubwrap').getBoundingClientRect().width,
+      headerRow: Math.abs(r('hubStreak').top - r('hubSettings').top) < 40,
+      stripGap: r('hubSettings').left - document.querySelector('.hubstrip').getBoundingClientRect().right,
+    };
+  };
+  for (const [w, h, cols, header] of [[390, 844, 1, false], [768, 1024, 2, false], [1280, 800, 3, true], [1920, 1080, 3, true]]) {
+    test(`${w}x${h}: ${cols} column(s)${header ? ', header row' : ''}`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto('/');
+      await expect(page.locator('#hub')).toBeVisible();
+      const l = await page.evaluate(layout);
+      expect(l.cols).toBe(cols);
+      expect(l.headerRow).toBe(header);
+      expect(l.wrap).toBeLessThanOrEqual(1100);
+      if (header) expect(l.stripGap).toBeLessThanOrEqual(24);   // stats sit next to settings, no empty column
+      if (cols === 3) {                                   // two cards on the second row, centred as a pair
+        const mid = await page.evaluate(() => {
+          const a = document.getElementById('openRain').getBoundingClientRect(), b = document.getElementById('openWord').getBoundingClientRect();
+          return (a.left + b.right) / 2 - innerWidth / 2;
+        });
+        expect(Math.abs(mid)).toBeLessThan(2);
+      }
+    });
+  }
+});
