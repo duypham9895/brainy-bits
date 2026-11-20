@@ -1,1 +1,18 @@
 /* train: game-specific styles. Loaded after app.css, so rules here may override it. */
+/* Pause is a touch control: 44px minimum, not the shared 38px. */
+#trainApp #pauseBtn{width:44px;height:44px;flex:none;font-size:15px}
+#trainApp #pauseBtn:focus-visible,#trainApp .lv:focus-visible{outline:2px solid #ffd54a;outline-offset:2px}
+/* HUD pills may shrink on 320px phones instead of pushing Pause off-screen. */
+#trainApp #hud .pill{min-width:0}
+#trainApp .lv{min-height:44px}
+#trainApp .lv .lvst{display:block;font-size:10px;line-height:1;letter-spacing:1px;color:#ffd54a;margin-top:2px}
+#trainApp .lv.done::after{content:none}
+#trainApp .rtd-rule{font-size:13px;text-wrap:balance;color:#9fb8a8;margin:6px 0 0}
+#rtdRotate{margin:4px 0 6px}
+@media (max-width:359px){
+  #trainApp #hud{gap:6px;padding-left:10px;padding-right:10px}
+  #trainApp #hud .pill{padding:4px 9px;font-size:14px}
+}
+@media (prefers-reduced-motion: reduce){
+  #trainApp #hStreak{transition:none}
+}
