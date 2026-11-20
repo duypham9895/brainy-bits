@@ -1,0 +1,25 @@
+{
+  "updated": "2026-11-20",
+  "assets": [
+    {
+      "name": "Game code, layout and Vietnamese text (index.html)",
+      "licence": "Owned by Duy Pham; exported from his claude.ai artifact 2GpBGbRjPnqCCy3nvreoa3 on 2026-11-20",
+      "source": "reference/original.html"
+    },
+    {
+      "name": "Baloo 2 font",
+      "licence": "SIL Open Font License 1.1",
+      "source": "https://fonts.google.com/specimen/Baloo+2 (loaded at runtime from fonts.googleapis.com, not bundled)"
+    },
+    {
+      "name": "Sound effects",
+      "licence": "None needed: generated in code with the Web Audio API (oscillator beeps), no audio files",
+      "source": "index.html"
+    },
+    {
+      "name": "Icons",
+      "licence": "None bundled: emoji characters rendered by the player's system font",
+      "source": "index.html"
+    }
+  ]
+}
