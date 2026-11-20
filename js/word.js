@@ -1,27 +1,31 @@
 // ======================= GAME ĐOÁN CỤM TỪ =======================
 (() => {
 const $ = id => document.getElementById(id);
+const BB = window.BB;
 const MAX_TRIES = 6;
-// cụm 2 từ thông dụng + gợi ý chủ đề; được xếp theo tổng số chữ cái (ngắn → dài)
+// cụm 2 từ thông dụng + gợi ý chủ đề; được xếp theo tổng số chữ cái (ngắn → dài).
+// Gợi ý không được chứa từ nào của đáp án, cũng không được trùng một đáp án khác (kiểm trong tests/word.spec.js).
 const PHRASES = [
-  ['bà nội','Gia đình'], ['cà phê','Đồ uống'], ['áo dài','Trang phục'], ['phở bò','Món ăn'], ['ước mơ','Cảm xúc, khái niệm'],
-  ['xe đạp','Phương tiện'], ['bánh mì','Món ăn'], ['trà sữa','Đồ uống'], ['mùa thu','Thời tiết, mùa'], ['con mèo','Động vật'],
+  ['bà nội','Người thân'], ['cà phê','Đồ uống'], ['áo dài','Trang phục'], ['phở bò','Món ăn'], ['ước mơ','Cảm xúc, khái niệm'],
+  ['xe đạp','Phương tiện'], ['bánh mì','Món ăn'], ['trà sữa','Đồ uống'], ['mùa thu','Thời tiết'], ['con mèo','Động vật'],
   ['bún chả','Món ăn'], ['sân bay','Địa điểm'], ['núi lửa','Thiên nhiên'], ['nụ cười','Cảm xúc, khái niệm'], ['bóng đá','Thể thao'],
-  ['đồng hồ','Đồ vật'], ['du lịch','Hoạt động'], ['âm nhạc','Nghệ thuật'], ['khiêu vũ','Hoạt động'], ['hoa hồng','Thiên nhiên'],
-  ['bãi biển','Địa điểm'], ['gia đình','Gia đình'], ['học sinh','Con người'], ['bầu trời','Thiên nhiên'], ['mặt trời','Thiên nhiên'],
+  ['đồng hồ','Đồ vật'], ['du lịch','Hoạt động'], ['âm nhạc','Giải trí'], ['khiêu vũ','Hoạt động'], ['hoa hồng','Thiên nhiên'],
+  ['bãi biển','Địa điểm'], ['gia đình','Con người'], ['học sinh','Con người'], ['bầu trời','Thiên nhiên'], ['mặt trời','Thiên nhiên'],
   ['máy tính','Đồ vật'], ['thư viện','Địa điểm'], ['bạn thân','Con người'], ['đại dương','Thiên nhiên'], ['cầu vồng','Thiên nhiên'],
-  ['mưa phùn','Thời tiết, mùa'], ['nhà hàng','Địa điểm'], ['trái tim','Cảm xúc, khái niệm'], ['tình yêu','Cảm xúc, khái niệm'], ['kính râm','Đồ vật'],
+  ['mưa phùn','Thời tiết'], ['nhà hàng','Địa điểm'], ['trái tim','Cảm xúc, khái niệm'], ['tình yêu','Cảm xúc, khái niệm'], ['kính râm','Đồ vật'],
   ['thành phố','Địa điểm'], ['pháo hoa','Sự kiện'], ['bệnh viện','Địa điểm'], ['hạnh phúc','Cảm xúc, khái niệm'], ['nông thôn','Địa điểm'],
   ['sinh nhật','Sự kiện'], ['trường học','Địa điểm'], ['ánh trăng','Thiên nhiên'], ['điện thoại','Đồ vật'], ['bánh chưng','Món ăn'],
-  ['giáng sinh','Sự kiện'], ['thanh xuân','Cảm xúc, khái niệm'], ['nghệ thuật','Nghệ thuật'], ['chiêm nghiệm','Cảm xúc, khái niệm'],
+  ['giáng sinh','Sự kiện'], ['thanh xuân','Cảm xúc, khái niệm'], ['nghệ thuật','Văn hoá'], ['truyền thống','Văn hoá'],
 ].map(([p, cat]) => ({ words: p.normalize('NFC').split(' ').map(w => [...w]), cat }))
  .map((x, i) => ({ ...x, i, n: x.words[0].length + x.words[1].length }))
  .sort((a, b) => a.n - b.n || a.i - b.i);
 const LV_MAX = PHRASES.length;
 
-// ---------- xử lý dấu tiếng Việt ----------
+// ---------- chữ tiếng Việt ----------
 const TONES = ['́', '̀', '̉', '̃', '̣'];   // sắc, huyền, hỏi, ngã, nặng
+const TONE_NAME = ['Dấu sắc', 'Dấu huyền', 'Dấu hỏi', 'Dấu ngã', 'Dấu nặng'];
 const VOWELS = new Set([...'aăâeêioôơuưy']);
+const LETTERS = new Set([...'abcdđeghiklmnopqrstuvxy', ...'ăâêôơư']);
 function split(ch){
   const d = ch.normalize('NFD');
   let tone = '', rest = '';
@@ -29,69 +33,132 @@ function split(ch){
   return { base: rest.normalize('NFC'), tone };
 }
 const compose = (base, tone) => (base.normalize('NFD') + tone).normalize('NFC');
-const isVowel = ch => VOWELS.has(split(ch).base);
 const noTone = ch => split(ch).base;
+const isVowel = ch => VOWELS.has(noTone(ch));
+// Họ nguyên âm: bỏ cả dấu thanh lẫn mũ/trăng/móc (ô, ơ → o). đ giữ nguyên.
+const fam = ch => ch === 'đ' ? 'đ' : ch.normalize('NFD')[0];
+
+// Vị trí nhận dấu thanh trong một âm tiết (mảng chữ đã bỏ thanh), theo quy tắc chính tả kiểu cũ
+// (hòa, thủy, mùa, thoại, nội, cười, khiêu, truyền). Trả -1 khi chưa có nguyên âm.
+function tonePos(w){
+  let v0 = w.findIndex(c => VOWELS.has(c));
+  if (v0 < 0) return -1;
+  if ((w[0] === 'q' && w[1] === 'u' || w[0] === 'g' && w[1] === 'i') && VOWELS.has(w[2])) v0 = 2;
+  let v1 = v0; while (v1 + 1 < w.length && VOWELS.has(w[v1 + 1])) v1++;
+  const cl = []; for (let i = v0; i <= v1; i++) cl.push(i);
+  const horn = cl.find(i => w[i] === 'ơ');
+  if (horn !== undefined) return horn;
+  const hat = cl.find(i => 'ăâêôư'.includes(w[i]));
+  if (hat !== undefined) return hat;
+  if (v1 + 1 < w.length) return v1;            // có phụ âm cuối: dấu vào nguyên âm cuối (hoàn, thuật)
+  if (cl.length === 3) return cl[1];            // oai, uya, oeo
+  return v0;                                    // 1–2 nguyên âm mở: nguyên âm đầu (mùa, tài, núi)
+}
+
+// Âm tiết hợp lệ = phụ âm đầu + vần có trong bảng; vần tắc (c, ch, p, t) chỉ đi với sắc hoặc nặng.
+// Chặn kiểu đoán dò "aaaaa"; không phải từ điển nên vài âm tiết hiếm nhưng đúng luật vẫn qua.
+const INITIALS = ['ngh','ch','gh','gi','kh','ng','nh','ph','qu','th','tr','b','c','d','đ','g','h','k','l','m','n','p','r','s','t','v','x',''];
+const OPEN = 'a ai ao au ay âu ây e eo ê êu i ia iu iêu o oa oai oay oe oeo oi ô ôi ơ ơi u ua uây ui uê uơ uôi uy uya uyu ư ưa ưi ưu ươi ươu y yêu';
+const NUC = 'a ă â e ê i o ô ơ u ư y oa oă oe oo ôô uâ uê uy iê yê uô ươ uyê';
+const RHYMES = new Set(OPEN.split(' '));
+NUC.split(' ').forEach(n => ['c','ch','m','n','ng','nh','p','t'].forEach(f => RHYMES.add(n + f)));
+function validSyllable(letters){
+  let tone = '';
+  const w = letters.map(ch => { const s = split(ch); if (s.tone) tone = s.tone; return s.base; }).join('');
+  for (const ini of INITIALS) {
+    if (!w.startsWith(ini)) continue;
+    const r = w.slice(ini.length);
+    if (!RHYMES.has(r)) continue;
+    if (/(c|ch|p|t)$/.test(r) && tone && tone !== TONES[0] && tone !== TONES[4]) continue;
+    if (/(c|ch|p|t)$/.test(r) && !tone) continue;
+    return true;
+  }
+  return false;
+}
 
 // ---------- trạng thái ----------
+// state: menu | play | reveal (đang lật ô, khoá nhập) | result
 let level = 1, chosen = 1, puzzle = null, rows = [], cur = [], state = 'menu', passed = false, hintShown = false;
+let inGame = false, flipRow = -1, popAt = -1, revealT = 0, startedAt = 0, starT = [];
 const keyState = {};
-let actx = null;
-function beep(f, d, type='sine', v=0.05, delay=0){
-  try{ if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
-    const t0 = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
-    o.type = type; o.frequency.setValueAtTime(f, t0); g.gain.setValueAtTime(v, t0);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + d); o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0 + d + 0.02);
-  }catch(e){}
-}
-const getLv = () => { try { return Math.max(1, +localStorage.getItem('word_lv') || 1); } catch(e){ return 1; } };
-const setLv = v => { try { localStorage.setItem('word_lv', v); } catch(e){} };
+
+// Tiến độ cũ: word_lv = "level cao nhất + 1". Chỉ đọc, không ghi nữa; ✓ mới lấy từ sao trong BB.
+// Không seed vào bb_stats ở đây: hub.js seed một lần (cờ bb_seeded_v1), còn game đọc thẳng word_lv.
+const legacyDone = () => BB.store.num('word_lv', 1, 1, LV_MAX + 1) - 1;
+const starsOf = L => BB.gameStats('word').stars[L] || 0;
+const isDone = L => starsOf(L) > 0 || L <= legacyDone();
+const bestLv = () => Math.min(LV_MAX, Math.max(BB.gameStats('word').best, legacyDone()));
+const starsFor = tries => tries <= 3 ? 3 : tries <= 5 ? 2 : 1;
+const STAR_RULE = '3 sao: tối đa 3 lượt · 2 sao: 4–5 lượt · 1 sao: 6 lượt';
 
 const L1 = () => puzzle.words[0].length, L2 = () => puzzle.words[1].length, N = () => L1() + L2();
 const target = () => puzzle.words[0].concat(puzzle.words[1]);
+const answer = p => p.words.map(w => w.join('')).join(' ');
 
 // ---------- chấm điểm một lượt đoán ----------
+// green: đúng chữ đúng chỗ · yellow: có đúng chữ đó ở chỗ khác · blue: có nguyên âm cùng họ (o/ô/ơ...) nhưng
+// khác dấu, ưu tiên đúng chỗ trước · gray: không còn. Mỗi chữ của đáp án chỉ được dùng cho một ô.
 function evaluate(guess){
-  const T = target(), res = new Array(T.length).fill('gray');
-  const left = {}, leftBase = {};
-  T.forEach((t, i) => { if (guess[i] === t) res[i] = 'green'; else left[t] = (left[t] || 0) + 1; });
-  guess.forEach((g, i) => { if (res[i] === 'green') return; if (left[g] > 0) { res[i] = 'yellow'; left[g]--; } });
-  Object.entries(left).forEach(([t, c]) => { if (c > 0 && isVowel(t)) leftBase[noTone(t)] = (leftBase[noTone(t)] || 0) + c; });
+  const T = target(), res = new Array(T.length).fill('gray'), free = new Array(T.length).fill(true);
+  T.forEach((t, i) => { if (guess[i] === t) { res[i] = 'green'; free[i] = false; } });
+  guess.forEach((g, i) => {
+    if (res[i] !== 'gray') return;
+    const j = T.findIndex((t, k) => free[k] && t === g);
+    if (j >= 0) { res[i] = 'yellow'; free[j] = false; }
+  });
+  const blueAt = (i, j) => { res[i] = 'blue'; free[j] = false; };
+  guess.forEach((g, i) => { if (res[i] === 'gray' && isVowel(g) && free[i] && fam(T[i]) === fam(g)) blueAt(i, i); });
   guess.forEach((g, i) => {
     if (res[i] !== 'gray' || !isVowel(g)) return;
-    const b = noTone(g);
-    if (leftBase[b] > 0) { res[i] = 'blue'; leftBase[b]--; }
+    const j = T.findIndex((t, k) => free[k] && isVowel(t) && fam(t) === fam(g));
+    if (j >= 0) blueAt(i, j);
   });
   return res;
 }
 
 // ---------- vẽ bảng ----------
 function cellSize(){
-  const slots = N() + 1;
-  const w = Math.min(window.innerWidth, 520) - 24;
-  return Math.max(24, Math.min(50, Math.floor((w - (slots-1)*5) / slots)));
+  const n = N(), stage = document.querySelector('#wordApp .wstage');
+  const avail = Math.min(window.innerWidth, 520) - 24;
+  const gap = avail < 330 && n >= 10 ? 3 : 5;
+  const byW = Math.floor((avail - n * gap) / (n + 0.55));
+  let byH = 50;
+  if (stage && stage.clientHeight) {
+    const used = ($('wHint').offsetHeight || 0) + (document.querySelector('#wordApp .wlegend')?.offsetHeight || 0) + 36;
+    byH = Math.floor((stage.clientHeight - used - (MAX_TRIES - 1) * gap) / MAX_TRIES);
+  }
+  return { sz: Math.max(18, Math.min(50, byW, byH)), gap };
 }
+const RES_TXT = { green: 'đúng chỗ', yellow: 'sai chỗ', blue: 'khác dấu', gray: 'không có' };
 function renderBoard(){
   const b = $('wBoard'); b.innerHTML = '';
-  const sz = cellSize();
-  b.style.setProperty('--cs', sz + 'px');
+  const { sz, gap } = cellSize();
+  b.style.setProperty('--cs', sz + 'px'); b.style.setProperty('--wg', gap + 'px');
   for (let r = 0; r < MAX_TRIES; r++){
     const row = document.createElement('div'); row.className = 'wrow';
+    row.setAttribute('role', 'group'); row.setAttribute('aria-label', `Lượt ${r + 1}`);
     const data = rows[r] || (r === rows.length ? { letters: cur, res: null } : { letters: [], res: null });
     for (let i = 0; i < N(); i++){
-      if (i === L1()) { const gap = document.createElement('div'); gap.className = 'wgap'; row.appendChild(gap); }
+      if (i === L1()) { const g = document.createElement('div'); g.className = 'wgap'; row.appendChild(g); }
       const c = document.createElement('div');
-      c.className = 'wcell' + (data.res ? ' ' + data.res[i] : (data.letters[i] ? ' filled' : ''));
+      const ch = data.letters[i] || '';
+      c.className = 'wcell' + (data.res ? ' ' + data.res[i] : (ch ? ' filled' : ''));
+      if (data.res && r === flipRow && !BB.motion.reduced) { c.classList.add('flip'); c.style.setProperty('--i', i); }
       if (r === rows.length && i === data.letters.length && state === 'play') c.classList.add('caret');
-      c.textContent = (data.letters[i] || '').toUpperCase();
+      c.textContent = ch.toUpperCase();
+      if (data.res) { c.setAttribute('role', 'img'); c.setAttribute('aria-label', `${ch.toUpperCase()}, ${RES_TXT[data.res[i]]}`); }
       row.appendChild(c);
     }
     b.appendChild(row);
   }
+  flipRow = -1;
+  if (popAt >= 0) { BB.pop(b.children[rows.length]?.querySelectorAll('.wcell')[popAt], 1.1); popAt = -1; }
 }
+const RANK = { green: 4, yellow: 3, blue: 2, gray: 1 };
 function renderKeys(){
   document.querySelectorAll('#wKeys button[data-k]').forEach(k => {
     const s = keyState[k.dataset.k];
-    k.classList.remove('green','yellow','gray');
+    k.classList.remove('green', 'yellow', 'blue', 'gray');
     if (s) k.classList.add(s);
   });
 }
@@ -103,121 +170,326 @@ function hud(){
 }
 function toast(msg){
   const t = $('wToast'); t.textContent = msg; t.classList.add('on');
-  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 1400);
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 1600);
+}
+function nope(msg){
+  toast(msg); BB.sfx('wrong'); BB.haptic('error');
+  BB.shake($('wBoard').children[rows.length], 7);
 }
 
 // ---------- nhập liệu ----------
-function lastVowelIndex(){
-  // dấu thanh gắn vào nguyên âm gõ gần nhất trong từ đang gõ
-  const start = cur.length > L1() ? L1() : 0;
-  for (let i = cur.length - 1; i >= start; i--) if (isVowel(cur[i])) return i;
-  return -1;
+// Từ đang gõ: từ 1 cho tới khi gõ sang chữ đầu của từ 2.
+const wordRange = (n = cur.length) => n > L1() ? [L1(), cur.length] : [0, Math.min(cur.length, L1())];
+const wordOf = idx => idx >= L1() ? [L1(), cur.length] : [0, Math.min(cur.length, L1())];
+function wordTone(a, b){ for (let i = a; i < b; i++) { const t = split(cur[i]).tone; if (t) return t; } return ''; }
+// Gỡ dấu thanh khỏi cả từ rồi đặt lại vào đúng nguyên âm. Trả vị trí nhận dấu (-1 nếu chưa có nguyên âm).
+function placeTone(a, b, tone = wordTone(a, b)){
+  for (let i = a; i < b; i++) cur[i] = noTone(cur[i]);
+  const p = tonePos(cur.slice(a, b));
+  if (p >= 0 && tone) cur[a + p] = compose(cur[a + p], tone);
+  return p < 0 ? -1 : a + p;
 }
+const MOD = {
+  mu:    { a: 'â', ă: 'â', â: 'a', e: 'ê', ê: 'e', o: 'ô', ơ: 'ô', ô: 'o' },
+  trang: { a: 'ă', â: 'ă', ă: 'a' },
+  moc:   { o: 'ơ', ô: 'ơ', ơ: 'o', u: 'ư', ư: 'u' },
+};
+const MOD_HELP = { mu: 'Dấu mũ dùng cho a, e, o', trang: 'Dấu trăng dùng cho a', moc: 'Dấu móc dùng cho o, u' };
+// Mũ/trăng/móc đổi nguyên âm gần nhất trong từ đang gõ, đi được giữa các nhóm (ô → ơ, â → ă).
+// Cặp u+o bấm móc: uo → ươ → uơ (thuở) → uo, như bộ gõ.
+function modify(k){
+  const [a, b] = wordRange(), base = cur.map(noTone);
+  if (k === 'moc') {
+    for (let j = b - 2; j >= a; j--) {
+      if (fam(base[j]) !== 'u' || fam(base[j + 1]) !== 'o' || (j > a && base[j - 1] === 'q')) continue;
+      const pair = base[j] + base[j + 1];
+      const next = pair === 'ươ' ? ['u', 'ơ'] : pair === 'uơ' ? ['u', 'o'] : ['ư', 'ơ'];
+      const tone = wordTone(a, b);
+      cur[j] = next[0]; cur[j + 1] = next[1];
+      return placeTone(a, b, tone);
+    }
+  }
+  for (let i = b - 1; i >= a; i--) {
+    const to = MOD[k][base[i]];
+    if (!to) continue;
+    const tone = wordTone(a, b);
+    cur[i] = to;
+    return placeTone(a, b, tone);
+  }
+  toast(MOD_HELP[k]); return -2;
+}
+function setTone(k, toggle = true){
+  const [a, b] = wordRange();
+  const t0 = wordTone(a, b);
+  const p = placeTone(a, b, toggle && t0 === k ? '' : k);
+  if (p < 0) { placeTone(a, b, t0); toast('Gõ nguyên âm trước rồi mới thêm dấu'); return -2; }
+  return p;
+}
+function typeLetter(ch){
+  const { base, tone } = split(ch.normalize('NFC').toLowerCase());
+  if (!LETTERS.has(base)) return -2;
+  if (cur.length >= N()) return -2;
+  cur.push(base);
+  const [a, b] = wordOf(cur.length - 1);
+  placeTone(a, b, tone || wordTone(a, b));
+  return cur.length - 1;
+}
+function toggleD(){
+  const [a, b] = wordRange();
+  for (let i = b - 1; i >= a; i--) if (cur[i] === 'd' || cur[i] === 'đ') { cur[i] = cur[i] === 'd' ? 'đ' : 'd'; return i; }
+  toast('Gõ d trước rồi bấm 9'); return -2;
+}
+
 function key(k){
   if (state !== 'play') return;
-  if (k === 'del') { cur.pop(); }
+  let changed = -1;
+  if (k === 'del') { if (!cur.length) return; cur.pop(); const [a, b] = wordRange(); placeTone(a, b); }
   else if (k === 'enter') { submit(); return; }
-  else if (k === 'mu' || k === 'trang' || k === 'moc') {
-    if (!cur.length) return;
-    const i = cur.length - 1, { base, tone } = split(cur[i]);
-    const map = {
-      mu:    { a:'â', â:'a', e:'ê', ê:'e', o:'ô', ô:'o' },
-      trang: { a:'ă', ă:'a' },
-      moc:   { o:'ơ', ơ:'o', u:'ư', ư:'u' },
-    }[k];
-    if (!map[base]) { toast(k === 'mu' ? 'Dấu mũ dùng cho a, e, o' : k === 'trang' ? 'Dấu trăng dùng cho a' : 'Dấu móc dùng cho o, u'); return; }
-    cur[i] = compose(map[base], tone);
-  }
-  else if (TONES.includes(k)) {
-    const i = lastVowelIndex();
-    if (i < 0) { toast('Gõ nguyên âm trước rồi mới thêm dấu'); return; }
-    const { base, tone } = split(cur[i]);
-    cur[i] = compose(base, tone === k ? '' : k);
-  }
-  else if (cur.length < N()) cur.push(k);
+  else if (MOD[k]) { if (!cur.length) { toast(MOD_HELP[k]); return; } changed = modify(k); }
+  else if (TONES.includes(k)) changed = setTone(k);
+  else if (k === 'notone') { const [a, b] = wordRange(); placeTone(a, b, ''); }
+  else if (k === 'dd') changed = toggleD();
+  else { changed = typeLetter(k); if (changed === -2 && cur.length >= N()) { toast('Đủ chữ rồi, bấm ĐOÁN'); return; } }
+  if (changed === -2) return;
+  BB.sfx('key');
+  if (changed >= 0) popAt = changed;
   renderBoard();
 }
+
 function submit(){
-  if (cur.length < N()) { toast(`Cần đủ ${N()} chữ cái`); beep(200, 0.1, 'square', 0.03); return; }
+  if (cur.length < N()) { nope(`Cần đủ ${N()} chữ cái`); return; }
+  const w1 = cur.slice(0, L1()), w2 = cur.slice(L1());
+  const bad = [w1, w2].find(w => !validSyllable(w));
+  if (bad) { nope(`“${bad.join('')}” chưa phải tiếng Việt`); return; }
   const res = evaluate(cur);
   rows.push({ letters: cur.slice(), res });
   cur.forEach((ch, i) => {
-    const b = noTone(ch), plain = b === 'đ' ? 'đ' : b.normalize('NFD')[0];
-    if (isVowel(ch)) return;      // chỉ tô màu phím phụ âm cho rõ ràng
-    const rank = { green: 3, yellow: 2, blue: 1, gray: 0 };
-    const s = res[i] === 'blue' ? 'gray' : res[i];
-    if (!keyState[plain] || rank[s] > rank[keyState[plain]]) keyState[plain] = s;
+    const k = fam(ch), s = res[i];
+    if (!keyState[k] || RANK[s] > RANK[keyState[k]]) keyState[k] = s;
   });
   cur = [];
   const win = res.every(r => r === 'green');
-  renderBoard(); renderKeys(); hud();
-  if (win) { beep(880,0.1,'sine',0.06); beep(1320,0.14,'sine',0.05,0.08); setTimeout(() => finish(true), 700); }
-  else if (rows.length >= MAX_TRIES) { beep(200,0.25,'triangle',0.05); setTimeout(() => finish(false), 700); }
-  else beep(520, 0.06, 'triangle', 0.04);
+  const lose = !win && rows.length >= MAX_TRIES;
+  const snap = { level, puzzle, tries: rows.length, ms: performance.now() - startedAt };
+  state = 'reveal'; lockMenu(true);
+  flipRow = rows.length - 1;
+  renderBoard(); hud();
+  const reduced = BB.motion.reduced;
+  const step = 90, flipMs = 480, total = reduced ? 250 : (N() - 1) * step + flipMs;
+  if (!reduced) res.forEach((r, i) => BB.sfx('tick', { combo: r === 'green' ? i : 0, delay: (i * step + flipMs / 2) / 1000 }));
+  revealT = setTimeout(() => afterReveal(win, lose, snap), total);
 }
+// Tóm tắt lượt vừa chấm cho trình đọc màn hình (vùng ẩn, không đổi giao diện).
+function announce(r){
+  const el = $('wLive'); if (!el || !r) return;
+  const word = r.letters.join('').toUpperCase(), c = k => r.res.filter(x => x === k).length;
+  el.textContent = `${word}: ${c('green')} đúng chỗ, ${c('yellow')} sai chỗ, ${c('blue')} khác dấu, ${c('gray')} không có.`;
+}
+function afterReveal(win, lose, snap){
+  revealT = 0;
+  renderKeys(); announce(rows[snap.tries - 1]);
+  if (win) {
+    BB.sfx('correct'); BB.haptic('success');
+    const cells = $('wBoard').children[snap.tries - 1]?.querySelectorAll('.wcell') || [];
+    if (!BB.motion.reduced) cells.forEach((c, i) => c.animate && c.animate(
+      [{ transform: 'translateY(0)' }, { transform: 'translateY(-30%)' }, { transform: 'translateY(0)' }],
+      { duration: 380, delay: i * 70, easing: BB.EASE }));
+    revealT = setTimeout(() => finish(true, snap), BB.motion.reduced ? 200 : 380 + cells.length * 70);
+  } else if (lose) {
+    BB.sfx('fail'); BB.haptic('error');
+    revealT = setTimeout(() => finish(false, snap), 450);
+  } else {
+    if (state === 'reveal') state = 'play';
+    lockMenu(false); renderBoard();
+  }
+}
+function lockMenu(on){ const m = $('wMenuBtn'); m.disabled = on; m.setAttribute('aria-disabled', on ? 'true' : 'false'); }
 
 // ---------- luồng chơi ----------
+function clearTimers(){ clearTimeout(revealT); revealT = 0; starT.forEach(clearTimeout); starT = []; }
 function startLevel(L){
-  level = L; puzzle = PHRASES[L-1]; rows = []; cur = []; hintShown = false;
+  clearTimers();
+  level = Math.min(LV_MAX, Math.max(1, Math.floor(L) || 1)); puzzle = PHRASES[level - 1];
+  rows = []; cur = []; hintShown = false; inGame = true; startedAt = performance.now();
   Object.keys(keyState).forEach(k => delete keyState[k]);
-  ['wmenu','wresult'].forEach(id => $(id).classList.add('hidden'));
-  state = 'play';
+  ['wmenu', 'wresult'].forEach(id => $(id).classList.add('hidden'));
+  state = 'play'; lockMenu(false);
+  // The start button keeps focus after its overlay hides; on a laptop that swallowed the first Enter.
+  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
   renderBoard(); renderKeys(); hud();
 }
-function finish(win){
-  state = 'result'; passed = win;
-  if (win && level + 1 > getLv()) setLv(level + 1);
-  const ans = puzzle.words.map(w => w.join('')).join(' ').toUpperCase();
-  $('wrTitle').textContent = win ? `Chính xác! 🎉` : `Hết lượt rồi 😅`;
+// quiet: người chơi đã rời game (onLeave) → chỉ ghi kết quả, không mở màn kết quả, không pháo giấy, không tiếng.
+function finish(win, snap, quiet = false){
+  clearTimers();
+  lockMenu(false);
+  state = 'result'; passed = win; inGame = false;
+  level = snap.level; puzzle = snap.puzzle;               // luôn chấm đúng cụm đã chơi
+  const stars = win ? starsFor(snap.tries) : 0;
+  const rec = BB.record({ game: 'word', level, won: win, stars, score: win ? MAX_TRIES + 1 - snap.tries : 0, ms: snap.ms });
+  if (quiet) return;
+  const last = level >= LV_MAX;
+  const ans = answer(puzzle).toUpperCase();
+  $('wrTitle').textContent = win ? (last ? 'Phá đảo! 🏆' : 'Chính xác! 🎉') : 'Hết lượt rồi 😅';
   $('wrBig').textContent = win ? ans : '? ? ?';
-  $('wrDetail').textContent = win ? `Bạn đoán ra sau ${rows.length}/${MAX_TRIES} lượt.` : 'Bạn có thể chơi lại cụm từ này, hoặc xem đáp án.';
-  $('wrNext').textContent = win ? (level < LV_MAX ? `Level ${level+1} →` : 'Chơi lại từ Level 1') : `Chơi lại Level ${level}`;
+  $('wrDetail').textContent = win
+    ? (last ? `Đoán ra sau ${snap.tries}/${MAX_TRIES} lượt. Bạn đã qua hết ${LV_MAX} cụm từ.` : `Đoán ra sau ${snap.tries}/${MAX_TRIES} lượt.`)
+    : 'Chơi lại cụm từ này, hoặc xem đáp án.';
+  $('wrNext').textContent = win ? (last ? 'Chơi lại từ Level 1' : `Level ${level + 1} →`) : `Chơi lại Level ${level}`;
   $('wrReveal').classList.toggle('hidden', win);
+  showStars(win ? stars : -1);
   $('wresult').classList.remove('hidden');
+  if (win) {
+    BB.sfx('levelUp'); BB.celebrate({ particleCount: 60 + stars * 20 });
+    if (rec.dailyDone) BB.toast('Xong thử thách hôm nay');
+    else if (rec.newBest && level > 1) BB.toast(`Kỷ lục mới: Level ${level}`);
+  }
+}
+function showStars(n){
+  const el = starsEl(), rule = $('wrRule');
+  el.classList.toggle('hidden', n < 0); rule.classList.toggle('hidden', n < 0);
+  if (n < 0) return;
+  el.setAttribute('aria-label', `${n}/3 sao`);
+  el.innerHTML = [0, 1, 2].map(i => `<span class="${i < n ? 'on' : ''}" aria-hidden="true">★</span>`).join('');
+  rule.textContent = STAR_RULE;
+  [...el.children].forEach((s, i) => {
+    if (i >= n) return;
+    starT.push(setTimeout(() => { if (state === 'result' && window.APP && window.APP.active === 'word') BB.sfx('star', { combo: i * 2 }); }, 350 + i * 180));
+    if (!BB.motion.reduced && s.animate) s.animate([{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1.25)', opacity: 1 }, { transform: 'scale(1)', opacity: 1 }],
+      { duration: 420, delay: 350 + i * 180, easing: BB.EASE, fill: 'backwards' });
+  });
+}
+function starsEl(){
+  let el = $('wrStars');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'wrStars'; el.className = 'wstars'; el.setAttribute('role', 'img');
+    $('wrBig').after(el);
+    const r = document.createElement('p'); r.id = 'wrRule'; r.className = 'wrule';
+    $('wrDetail').after(r);
+  }
+  return el;
 }
 function renderLevels(){
-  const done = getLv() - 1, grid = $('wlvgrid'); grid.innerHTML = '';
+  const grid = $('wlvgrid'); grid.innerHTML = '';
   for (let L = 1; L <= LV_MAX; L++){
-    const el = document.createElement('button');
-    el.className = 'lv' + (L <= done ? ' done' : '') + (L === chosen ? ' on' : '');
-    el.innerHTML = `${L}<small>${PHRASES[L-1].n} chữ</small>`;
-    el.onclick = () => { chosen = L; renderLevels(); beep(700, 0.04, 'square', 0.03); };
+    const el = document.createElement('button'), st = starsOf(L);
+    el.className = 'lv' + (isDone(L) ? ' done' : '') + (L === chosen ? ' on' : '');
+    el.innerHTML = `${L}<small>${PHRASES[L-1].n} chữ</small>` + (st ? `<i class="wlvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</i>` : '');
+    el.setAttribute('aria-label', `Level ${L}, ${PHRASES[L-1].n} chữ` + (st ? `, ${st} sao` : isDone(L) ? ', đã qua' : ''));
+    el.onclick = () => { chosen = L; renderLevels(); BB.sfx('tap'); };
     grid.appendChild(el);
   }
   $('wStart').textContent = `Chơi Level ${chosen} · ${PHRASES[chosen-1].n} chữ cái`;
 }
+function resumeBtn(){
+  let b = $('wResume');
+  if (!b) {
+    b = document.createElement('button'); b.id = 'wResume'; b.className = 'btn';
+    $('wStart').before(b);
+    b.onclick = () => { $('wmenu').classList.add('hidden'); state = 'play'; renderBoard(); hud(); };
+  }
+  return b;
+}
 function toMenu(){
+  if (state === 'reveal') return;                       // đang lật ô: khoá ☰
+  clearTimers();
   state = 'menu';
-  chosen = Math.min(getLv(), LV_MAX);
+  const next = bestLv() + 1;
+  chosen = inGame ? level : Math.min(next, LV_MAX);
   renderLevels();
-  const done = getLv() - 1;
-  $('wBestTxt').textContent = done ? `Đã qua tới Level ${done}/${LV_MAX}` : '';
+  const done = bestLv();
+  $('wBestTxt').textContent = done ? (done >= LV_MAX ? `Đã qua hết ${LV_MAX} level` : `Đã qua tới Level ${done}/${LV_MAX}`) : '';
+  const rb = resumeBtn();
+  rb.classList.toggle('hidden', !inGame);
+  rb.textContent = `Chơi tiếp Level ${level} (lượt ${rows.length + 1}/${MAX_TRIES})`;
+  $('wStart').classList.toggle('alt', inGame);
   $('wresult').classList.add('hidden'); $('wmenu').classList.remove('hidden');
-  puzzle = PHRASES[chosen-1]; level = chosen; rows = []; cur = [];
+  if (!inGame) { puzzle = PHRASES[chosen-1]; level = chosen; rows = []; cur = []; hintShown = false; }
   renderBoard(); renderKeys(); hud();
 }
+// Vào game từ hub: thử thách ngày → mở thẳng level đó; ván dở → giữ nguyên bàn và mở menu có nút chơi tiếp.
+// Có ván dở mà bấm thử thách ngày: không xoá ván, mở menu chọn sẵn level thử thách, vẫn còn nút chơi tiếp.
+function enter(){
+  const req = BB.takeRequest('word');
+  if (req == null) { toMenu(); return; }
+  if (!(inGame && rows.length)) { startLevel(req); return; }
+  toMenu();
+  chosen = Math.min(LV_MAX, Math.max(1, Math.floor(req) || 1)); renderLevels();
+  toast(`Thử thách hôm nay: Level ${chosen}`);
+}
+// Rời game giữa lúc lật ô: chốt luôn kết quả để không mất tiến độ.
+BB.onLeave('word', () => {
+  if (state !== 'reveal') return;
+  clearTimers();
+  const last = rows[rows.length - 1];
+  renderKeys();
+  const snap = { level, puzzle, tries: rows.length, ms: performance.now() - startedAt };
+  if (last && last.res.every(r => r === 'green')) finish(true, snap, true);
+  else if (rows.length >= MAX_TRIES) finish(false, snap, true);
+  else { state = 'play'; lockMenu(false); }
+});
 
-document.querySelectorAll('#wKeys button').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); key(b.dataset.k || b.dataset.a); }));
+// ---------- chữ trên màn hình (markup thuộc index.html, chỉnh lại cho khớp luật mới) ----------
+function syncCopy(){
+  const how = document.querySelectorAll('#wmenu .how > div > span:last-child');
+  if (how[0]) how[0].innerHTML = 'Gõ chữ cái, bấm <b>â ê ô / ă / ơ ư</b> để đổi nguyên âm và <b>á à ả ã ạ</b> để thêm dấu thanh. Dấu tự vào đúng chữ như bộ gõ: <b>mua</b> + <b>à</b> ra <b>mùa</b>. Bàn phím máy tính gõ được VNI: a1 = á, o6 = ô, u7 = ư, d9 = đ.';
+  if (how[1]) how[1].innerHTML = '<b>Xanh lá</b>: đúng chữ, đúng chỗ. <b>Vàng</b>: có chữ đó nhưng sai chỗ. <b>Xanh dương</b>: có nguyên âm đó nhưng khác dấu (o, ô, ơ tính chung), có thể ở chỗ khác. <b>Xám</b>: không có.';
+  if (how[2]) how[2].innerHTML = 'Mỗi level 1 cụm từ, càng lên càng dài. Từ đoán phải đánh vần được thành tiếng Việt. Kẹt quá thì bấm <b>💡</b> xem chủ đề.';
+  const lg = document.querySelector('#wordApp .wlegend');
+  if (lg) lg.innerHTML = [['green', 'Đúng chữ, đúng chỗ'], ['yellow', 'Đúng chữ, sai chỗ'], ['blue', 'Có nguyên âm, khác dấu'], ['gray', 'Không có']]
+    .map(([c, t]) => `<span><i class="sw ${c}" aria-hidden="true"></i>${t}</span>`).join('');
+  const labels = { del: 'Xoá', enter: 'Đoán', mu: 'Dấu mũ: â ê ô', trang: 'Dấu trăng: ă', moc: 'Dấu móc: ơ ư' };
+  document.querySelectorAll('#wKeys button').forEach(b => {
+    const a = b.dataset.a;
+    if (labels[a]) b.setAttribute('aria-label', labels[a]);
+    else if (TONES.includes(a)) b.setAttribute('aria-label', TONE_NAME[TONES.indexOf(a)]);
+  });
+  $('wBoard').setAttribute('role', 'group'); $('wBoard').setAttribute('aria-label', 'Bảng đoán');
+  $('wToast').setAttribute('role', 'status'); $('wToast').setAttribute('aria-live', 'polite');
+  if (!$('wLive')) {
+    const lv = document.createElement('div'); lv.id = 'wLive'; lv.className = 'wsr';
+    lv.setAttribute('aria-live', 'polite'); lv.setAttribute('role', 'status');
+    $('wBoard').after(lv);
+  }
+}
+syncCopy();
+
+// ---------- sự kiện ----------
+document.querySelectorAll('#wKeys button').forEach(b => {
+  b.addEventListener('pointerdown', e => { e.preventDefault(); BB.haptic('tap'); key(b.dataset.k || b.dataset.a); });
+  b.addEventListener('click', e => { if (e.detail === 0) key(b.dataset.k || b.dataset.a); });   // Enter/Space khi phím đang focus
+});
+const VNI = { 1: TONES[0], 2: TONES[1], 3: TONES[2], 4: TONES[3], 5: TONES[4], 6: 'mu', 7: 'moc', 8: 'trang', 9: 'dd', 0: 'notone' };
 document.addEventListener('keydown', e => {
   if (!window.APP || window.APP.active !== 'word' || state !== 'play') return;
-  if (e.key === 'Backspace') key('del');
-  else if (e.key === 'Enter') key('enter');
-  else if (/^[a-zđ]$/i.test(e.key)) key(e.key.toLowerCase());
+  if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+  const btn = e.target && e.target.closest && e.target.closest('button');
+  const onBtn = btn && btn.getClientRects().length > 0;     // a hidden, still-focused button must not eat Enter
+  if (e.key === 'Backspace') { e.preventDefault(); key('del'); }
+  else if (e.key === 'Enter') { if (onBtn) return; e.preventDefault(); key('enter'); }
+  else if (/^[0-9]$/.test(e.key)) { e.preventDefault(); if (!cur.length) return; key(VNI[e.key]); }
+  else if (e.key.length <= 2 && [...e.key.normalize('NFC')].length === 1) {
+    const ch = e.key.normalize('NFC').toLowerCase();
+    if (!LETTERS.has(split(ch).base)) return;
+    e.preventDefault(); key(ch);
+  }
 });
-$('wHint').onclick = () => { if (state === 'play') { hintShown = true; hud(); } };
+$('wHint').onclick = () => { if (state === 'play' || state === 'reveal') { hintShown = true; hud(); BB.sfx('pop'); } $('wHint').blur(); };
 $('wStart').onclick = () => startLevel(chosen);
 $('wrNext').onclick = () => startLevel(passed ? (level < LV_MAX ? level + 1 : 1) : level);
 $('wrReveal').onclick = () => {
-  $('wrBig').textContent = puzzle.words.map(w => w.join('')).join(' ').toUpperCase();
+  $('wrBig').textContent = answer(puzzle).toUpperCase();
   $('wrDetail').textContent = 'Lần sau sẽ đoán ra thôi!';
   $('wrReveal').classList.add('hidden');
   $('wrNext').textContent = level < LV_MAX ? `Level ${level+1} →` : 'Về Level 1';
-  passed = true;   // cho phép đi tiếp, nhưng không đánh dấu ✓ level này
+  passed = true;   // cho đi tiếp, nhưng level này không có sao nên không có ✓
 };
 $('wrMenu').onclick = toMenu;
 $('wMenuBtn').onclick = toMenu;
-window.addEventListener('resize', () => { if (window.APP && window.APP.active === 'word' && puzzle) renderBoard(); });
-window.wordEnter = toMenu;
-window.wordBest = () => getLv() - 1;
+let rz = 0;
+window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { if (window.APP && window.APP.active === 'word' && puzzle) renderBoard(); }); });
+window.wordEnter = enter;
+window.wordBest = bestLv;
+// Cho test: đọc đáp án và chạy các hàm thuần, không đụng tới trạng thái ván.
+window.__word = { PHRASES, LV_MAX, tonePos, validSyllable, evaluateFor: (p, g) => { const s = puzzle; puzzle = p; const r = evaluate(g); puzzle = s; return r; },
+  state: () => ({ state, level, rows: rows.length, cur: cur.join(''), puzzle: answer(puzzle), inGame }) };
 })();
-

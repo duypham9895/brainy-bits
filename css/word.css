@@ -1,1 +1,39 @@
 /* word: game-specific styles. Loaded after app.css, so rules here may override it. */
+/* Màu ô: chữ trên nền đạt >= 4.5:1 (trắng/#2e7d3a 5.1, #2a1300/#d4a72c 7.9, trắng/#2563eb 5.2). */
+#wordApp{--w-green:#2e7d3a;--w-yellow:#d4a72c;--w-yellow-ink:#2a1300;--w-blue:#2563eb;--w-gray:#3d3a37;--w-ease:cubic-bezier(0.22,1,0.36,1)}
+.wboard{gap:var(--wg,5px)}
+.wrow{gap:var(--wg,5px)}
+.wcell{--bg:transparent;--bd:rgba(255,255,255,.14);--ink:#fff}
+.wcell.green{--bg:var(--w-green);--bd:var(--w-green);background:var(--w-green);border-color:var(--w-green)}
+.wcell.yellow{--bg:var(--w-yellow);--bd:var(--w-yellow);--ink:var(--w-yellow-ink);background:var(--w-yellow);border-color:var(--w-yellow);color:var(--w-yellow-ink)}
+.wcell.blue{--bg:var(--w-blue);--bd:var(--w-blue);background:var(--w-blue);border-color:var(--w-blue)}
+.wcell.gray{--bg:var(--w-gray);--bd:var(--w-gray);--ink:#cfc8c0}
+/* Lật ô lần lượt; màu chỉ hiện ở nửa sau vòng lật. */
+.wcell.flip{animation:wFlip .48s var(--w-ease) both;animation-delay:calc(var(--i,0) * 90ms)}
+@keyframes wFlip{
+  0%{transform:rotateX(0);background:transparent;border-color:rgba(255,255,255,.45);color:#fff}
+  49%{transform:rotateX(90deg);background:transparent;border-color:rgba(255,255,255,.45);color:#fff}
+  50%{transform:rotateX(90deg);background:var(--bg);border-color:var(--bd);color:var(--ink)}
+  100%{transform:rotateX(0);background:var(--bg);border-color:var(--bd);color:var(--ink)}
+}
+.wlegend i.sw.green{background:var(--w-green)} .wlegend i.sw.yellow{background:var(--w-yellow)}
+.wlegend i.sw.blue{background:var(--w-blue)} .wlegend i.sw.gray{background:var(--w-gray)}
+#wKeys button{min-height:44px}
+#wKeys button.green{background:var(--w-green);color:#fff}
+#wKeys button.yellow{background:var(--w-yellow);color:var(--w-yellow-ink)}
+#wKeys button.blue{background:var(--w-blue);color:#fff}
+#wKeys button.gray{background:#26221f;color:#a39a92}
+#wKeys button:focus-visible,#wHint:focus-visible{outline:2px solid #ffcf8a;outline-offset:2px}
+#wHint{min-height:44px;padding:8px 16px}
+#wMenuBtn:disabled{opacity:.45}
+.wstars{display:flex;justify-content:center;gap:6px;font-size:34px;line-height:1;margin:6px 0 2px;color:rgba(255,255,255,.18)}
+.wstars span.on{color:#ffcf5a}
+.wrule{margin:2px 0 8px;font-size:12.5px;color:#cfc0b0}
+#wordApp .lv .wlvst{display:block;font-style:normal;font-size:11px;letter-spacing:1px;color:#ffcf5a;line-height:1.2}
+#wToast{max-width:calc(100% - 24px);white-space:normal;text-align:center}
+@media (prefers-reduced-motion: reduce){
+  .wcell.flip{animation:none}
+  #wKeys button:active{transform:none}
+}
+/* vùng chỉ cho trình đọc màn hình */
+.wsr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
