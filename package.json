@@ -1,0 +1,15 @@
+{
+  "name": "brainy-bits",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Five small Vietnamese brain-training games in one static page.",
+  "scripts": {
+    "parity": "node scripts/parity-check.mjs",
+    "test": "playwright test",
+    "serve": "python3 -m http.server 8765 --bind 127.0.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

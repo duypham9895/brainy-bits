@@ -32,3 +32,4 @@ Bảng định tuyến đầy đủ — phòng ban nào vào, gọi lệnh gì: 
 |---|---|---|
 | 2026-11-20 | Tạo app từ `/vibe:new`; nguồn là artifact claude.ai `2GpBGbRjPnqCCy3nvreoa3` của Duy, export ở `reference/original.html` | Duy: "build 1 webapp game làm đúng exactly những gì đang có trong link này" |
 | 2026-11-20 | S3 bản port 1:1: `index.html` = bản gốc, chỉ bỏ "(Copy)" ở `<title>`; cổng `npm run parity` + smoke test 6/6 | Giữ đúng y hệt là yêu cầu; mọi nâng cấp chờ Duy duyệt |
+| 2026-11-20 | Soát 6 phòng (76 phát hiện, 65 xác nhận) + nghiên cứu repo nguồn mở 5 hướng (10 repo giữ); tầng review `docs/index.html` | Duy yêu cầu "check thật kĩ chỗ nào cần enhance" và "dive deep research các repo opensource" |
