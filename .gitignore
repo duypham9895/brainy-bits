@@ -1,0 +1,61 @@
+# Secrets & local env (KHÔNG BAO GIỜ commit .env thật, kể cả repo private)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.secrets/
+.claude/settings.local.json
+
+# Khoá riêng tư, chứng chỉ & file cấu hình credential
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*credentials*.json
+*service-account*.json
+*client_secret*.json
+*oauth*token*.json
+*auth*token*.json
+*access_token*.json
+*refresh_token*.json
+*youtube_token*.json
+*.token
+
+# Database cục bộ (dùng file migration + backup, không commit binary DB)
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Dependencies, build & cache
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+dist/
+build/
+.next/
+.wrangler/
+.vercel/
+.netlify/
+coverage/
+.cache/
+
+# OS & editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.swn
+*~
+*.bak
+*.log
+
+# Playwright
+test-results/
+playwright-report/
+_site/
