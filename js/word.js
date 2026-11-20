@@ -117,17 +117,28 @@ function evaluate(guess){
 }
 
 // ---------- vẽ bảng ----------
+// Ô lớn nhất vừa chỗ trống của .wstage. Bố cục do CSS quyết (css/word.css): dọc thì gợi ý và chú giải
+// nằm trên/dưới bảng, ngang (điện thoại xoay ngang) thì nằm hai bên bảng.
 function cellSize(){
   const n = N(), stage = document.querySelector('#wordApp .wstage');
-  const avail = Math.min(window.innerWidth, 520) - 24;
-  const gap = avail < 330 && n >= 10 ? 3 : 5;
-  const byW = Math.floor((avail - n * gap) / (n + 0.55));
-  let byH = 50;
+  const hint = $('wHint'), lg = document.querySelector('#wordApp .wlegend');
+  let availW = Math.min(window.innerWidth, 900) - 24, availH = 6 * 50 + 25;
   if (stage && stage.clientHeight) {
-    const used = ($('wHint').offsetHeight || 0) + (document.querySelector('#wordApp .wlegend')?.offsetHeight || 0) + 36;
-    byH = Math.floor((stage.clientHeight - used - (MAX_TRIES - 1) * gap) / MAX_TRIES);
+    const cs = getComputedStyle(stage), gapS = parseFloat(cs.columnGap) || 0;
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const side = [hint, lg].filter(e => e && e.offsetParent);
+    if (cs.flexDirection === 'row') {
+      availW = stage.clientWidth - padX - side.reduce((a, e) => a + e.offsetWidth + gapS, 0);
+      availH = stage.clientHeight - padY;
+    } else {
+      availW = Math.min(stage.clientWidth - padX, 900);
+      availH = stage.clientHeight - padY - side.reduce((a, e) => a + e.offsetHeight + (parseFloat(cs.rowGap) || 0), 0);
+    }
   }
-  return { sz: Math.max(18, Math.min(50, byW, byH)), gap };
+  const gap = availW < 330 && n >= 10 ? 3 : availH > 420 ? 6 : 5;
+  const byW = Math.floor((availW - n * gap) / (n + 0.55));
+  const byH = Math.floor((availH - (MAX_TRIES - 1) * gap) / MAX_TRIES);
+  return { sz: Math.max(16, Math.min(76, byW, byH)), gap };
 }
 const RES_TXT = { green: 'đúng chỗ', yellow: 'sai chỗ', blue: 'khác dấu', gray: 'không có' };
 function renderBoard(){
@@ -435,8 +446,9 @@ function syncCopy(){
   if (how[1]) how[1].innerHTML = '<b>Xanh lá</b>: đúng chữ, đúng chỗ. <b>Vàng</b>: có chữ đó nhưng sai chỗ. <b>Xanh dương</b>: có nguyên âm đó nhưng khác dấu (o, ô, ơ tính chung), có thể ở chỗ khác. <b>Xám</b>: không có.';
   if (how[2]) how[2].innerHTML = 'Mỗi level 1 cụm từ, càng lên càng dài. Từ đoán phải đánh vần được thành tiếng Việt. Kẹt quá thì bấm <b>💡</b> xem chủ đề.';
   const lg = document.querySelector('#wordApp .wlegend');
-  if (lg) lg.innerHTML = [['green', 'Đúng chữ, đúng chỗ'], ['yellow', 'Đúng chữ, sai chỗ'], ['blue', 'Có nguyên âm, khác dấu'], ['gray', 'Không có']]
-    .map(([c, t]) => `<span><i class="sw ${c}" aria-hidden="true"></i>${t}</span>`).join('');
+  // Nhãn đầy đủ và nhãn ngắn (cùng chữ với RES_TXT); css/word.css chọn cái nào hiện theo bề ngang.
+  if (lg) lg.innerHTML = [['green', 'Đúng chữ, đúng chỗ', 'Đúng chỗ'], ['yellow', 'Đúng chữ, sai chỗ', 'Sai chỗ'], ['blue', 'Có nguyên âm, khác dấu', 'Khác dấu'], ['gray', 'Không có', 'Không có']]
+    .map(([c, t, s]) => `<span><i class="sw ${c}" aria-hidden="true"></i><span class="wl-l">${t}</span><span class="wl-s">${s}</span></span>`).join('');
   const labels = { del: 'Xoá', enter: 'Đoán', mu: 'Dấu mũ: â ê ô', trang: 'Dấu trăng: ă', moc: 'Dấu móc: ơ ư' };
   document.querySelectorAll('#wKeys button').forEach(b => {
     const a = b.dataset.a;

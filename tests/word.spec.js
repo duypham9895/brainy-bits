@@ -202,3 +202,29 @@ test('Review #4: thử thách ngày không xoá ván dở', async ({ page }) => 
   const s = await st(page);
   expect([s.level, s.rows]).toEqual([1, 1]);
 });
+
+// Responsive: xoay ngang thì bảng nằm trọn trên bàn phím và nút 💡 trong màn hình; laptop thì bàn phím không kéo dài.
+for (const [w, h] of [[667, 375], [844, 390], [320, 568], [1920, 1080]]) {
+  test(`R1: bảng dài nhất vừa màn ${w}x${h}`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await open(page);
+    await pick(page, 49); await page.click('#wStart');
+    const r = await page.evaluate(() => {
+      const R = s => document.querySelector(s).getBoundingClientRect();
+      return { b: R('#wBoard'), k: R('#wKeys'), hint: R('#wHint'), lg: R('#wordApp .wlegend'), hud: R('#wordApp .ghud'), vw: innerWidth, vh: innerHeight,
+        row: getComputedStyle(document.querySelector('#wordApp .wstage')).flexDirection === 'row' };
+    });
+    expect(r.b.bottom).toBeLessThanOrEqual(r.k.top + 1);
+    expect(r.b.top).toBeGreaterThanOrEqual(0);
+    expect(r.b.top).toBeGreaterThanOrEqual(r.hud.bottom - 1);
+    if (r.row) {
+      expect(r.hint.right).toBeLessThanOrEqual(r.b.left + 1);
+      expect(r.lg.left).toBeGreaterThanOrEqual(r.b.right - 1);
+    }
+    expect(r.lg.bottom).toBeLessThanOrEqual(r.k.top + 1);
+    expect(r.hint.top).toBeGreaterThanOrEqual(0);
+    expect(r.hint.bottom).toBeLessThanOrEqual(r.vh);
+    expect(r.k.width).toBeLessThanOrEqual(640);
+    expect(r.k.bottom).toBeLessThanOrEqual(r.vh + 1);
+  });
+}
