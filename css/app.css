@@ -2,26 +2,24 @@
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:#0a150e;overflow:hidden;
     font-family:"Baloo 2",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;
-    -webkit-user-select:none;user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent}
+    -webkit-user-select:none;user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   #wrap{position:fixed;inset:0;display:flex;flex-direction:column}
   #hud{position:relative;flex:none;display:flex;align-items:center;gap:8px;
-    padding:calc(10px + env(safe-area-inset-top)) 12px 14px;
+    padding:calc(10px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 14px max(12px, env(safe-area-inset-left));
     background:linear-gradient(180deg,#070f0a,#0c1810);box-shadow:0 4px 18px rgba(0,0,0,.35);z-index:2}
   .pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);border-radius:999px;
     padding:4px 12px;font-weight:700;font-size:15px;line-height:1.4;white-space:nowrap}
   #hLevel{color:var(--accent)}
   #hStreak{background:linear-gradient(90deg,#ff6a3d,#ffb02e);border:0;color:#2a1300;transition:transform .15s}
   #hStreak.bump{transform:scale(1.18)}
-  .grow{flex:1}
-  #pauseBtn{width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;
-    font-size:14px;font-weight:800;display:grid;place-items:center}
+  .grow{flex:1;min-width:0}
   #timebar{position:absolute;left:12px;right:12px;bottom:5px;height:5px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden}
   #timefill{display:block;height:100%;width:100%;border-radius:9px;background:linear-gradient(90deg,#7ee081,#ffd54a);transition:background .3s}
   #timefill.low{background:linear-gradient(90deg,#ff6a3d,#ff3d5a)}
   #cv{flex:1;display:block;width:100%;min-height:0;touch-action:none}
 
   .overlay{position:fixed;inset:0;background:rgba(6,14,9,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-    display:flex;align-items:flex-start;justify-content:center;padding:18px;z-index:5;overflow:auto;touch-action:pan-y}
+    display:flex;align-items:flex-start;justify-content:center;padding:18px;z-index:5;overflow:auto;touch-action:manipulation;overscroll-behavior:contain}
   .overlay > .card, .overlay > .hubwrap{margin:auto}
   .hidden{display:none!important}
   .card{background:linear-gradient(170deg,#1b3326 0%,#12241a 100%);border:1px solid rgba(255,255,255,.1);
@@ -72,10 +70,11 @@
   .gt em{display:block;font-style:normal;color:#ffd54a;font-size:13px;margin-top:4px;font-weight:700}
   /* game koi */
   #kwrap{position:fixed;inset:0;display:flex;flex-direction:column;background:#0b3533}
-  #khud{position:relative;flex:none;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;
+  #khud{position:relative;flex:none;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
     background:linear-gradient(180deg,#06201f,#0a2a29);box-shadow:0 4px 18px rgba(0,0,0,.35);z-index:2}
   #kPond{color:#7fe3d0}
-  .roundbtn{width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:14px;font-weight:800;display:grid;place-items:center}
+  .roundbtn{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:14px;font-weight:800;display:grid;place-items:center;padding:0}
+  .ico{width:20px;height:20px;fill:currentColor;display:block}
   #kcv{flex:1;display:block;width:100%;min-height:0;touch-action:none}
   #koiApp .card{background:linear-gradient(170deg,#124341 0%,#0a2826 100%)}
   .koih{margin:0;font-size:30px;font-weight:800;line-height:1.1;background:linear-gradient(90deg,#ffb38a,#ff6b3d);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -88,7 +87,7 @@
   .lv.on{border-color:var(--accent);background:rgba(255,176,46,.18)}
   /* khung chung cho game mới */
   .gwrap{position:fixed;inset:0;display:flex;flex-direction:column}
-  .ghud{position:relative;flex:none;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;
+  .ghud{position:relative;flex:none;display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
     box-shadow:0 4px 18px rgba(0,0,0,.35);z-index:2}
   .gamecard.mem{background:linear-gradient(160deg,#2c2450,#1a1533)}
   .gamecard.rain{background:linear-gradient(160deg,#173a5c,#0e2338)}
@@ -140,8 +139,8 @@
     font-size:calc(var(--cs) * .5);font-weight:800;color:#fff;line-height:1}
   .wcell.filled{border-color:rgba(255,255,255,.45)}
   .wcell.caret{border-color:#ffcf8a}
-  .wcell.green{background:#3fa34d;border-color:#3fa34d}
-  .wcell.yellow{background:#d4a72c;border-color:#d4a72c}
+  .wcell.green{background:#2e7d3a;border-color:#2e7d3a}
+  .wcell.yellow{background:#d4a72c;border-color:#d4a72c;color:#2a1300}
   .wcell.blue{background:#3b82f6;border-color:#3b82f6}
   .wcell.gray{background:#3d3a37;border-color:#3d3a37;color:#cfc8c0}
   .wlegend{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-size:12.5px;color:#cfc0b0}
@@ -149,15 +148,15 @@
   #wToast{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:#fff;color:#2a1a12;font-weight:700;font-size:14px;
     padding:6px 14px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}
   #wToast.on{opacity:1}
-  #wKeys{flex:none;display:flex;flex-direction:column;gap:6px;padding:6px 6px calc(10px + env(safe-area-inset-bottom));background:#120c09}
-  .wkrow{display:flex;gap:5px;justify-content:center}
+  #wKeys{flex:none;display:flex;flex-direction:column;gap:6px;padding:6px max(4px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));background:#120c09}
+  .wkrow{display:flex;gap:4px;justify-content:center}
   #wKeys button{flex:1;max-width:44px;border:0;border-radius:8px;padding:11px 0;font-family:inherit;font-size:18px;font-weight:700;color:#fff;
     background:#4a3e36;box-shadow:inset 0 -3px 0 rgba(0,0,0,.3)}
   #wKeys button.wide{max-width:none;flex:1.6;font-size:14px}
   #wKeys button.mod{background:#6b4a2f;font-size:16px}
   #wKeys button.tone{background:#5a3f6b;font-size:20px}
   #wKeys button.enter{background:linear-gradient(180deg,#ffbf3d,#ff7a2e);color:#2a1300}
-  #wKeys button.green{background:#3fa34d} #wKeys button.yellow{background:#d4a72c} #wKeys button.gray{background:#26221f;color:#8a817a}
+  #wKeys button.green{background:#2e7d3a} #wKeys button.yellow{background:#d4a72c;color:#2a1300} #wKeys button.gray{background:#26221f;color:#a39a92}
   #wKeys button:active{transform:scale(.95)}
 
   /* ---- core: toast + reduced-motion flash (js/core.js) ---- */
@@ -168,3 +167,88 @@
   #bbToast.on{opacity:1;transform:translate(-50%,0)}
   .bb-flash{animation:bbFlash .4s ease-out}
   @keyframes bbFlash{0%,100%{filter:none}40%{filter:brightness(1.6) saturate(1.4)}}
+
+  /* ---- shell: gestures, safe area, focus, small screens (SHELL-01/02/11/15) ---- */
+  /* The page can be pinch-zoomed; only surfaces where a drag or rapid taps are gameplay block it. */
+  #cv,#kcv,#rcv,.rpad,#wKeys,.mgrid{touch-action:none}
+  .overlay{padding:max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left))}
+  .mstage,.wstage{padding-left:max(12px, env(safe-area-inset-left));padding-right:max(12px, env(safe-area-inset-right))}
+  .rpad{padding-left:max(12px, env(safe-area-inset-left));padding-right:max(12px, env(safe-area-inset-right))}
+  .card{animation:pop .28s cubic-bezier(0.22,1,0.36,1)}
+  #hStreak{transition:transform .15s cubic-bezier(0.22,1,0.36,1)}
+  :focus{outline:none}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+  .gamecard:focus-visible,.dailycard:focus-visible{outline-offset:4px}
+  #hud .pill,#khud .pill,.ghud .pill{min-width:0;flex:0 1 auto}
+  @media (max-width:374px){
+    #hud,#khud,.ghud{gap:6px}
+    #hud .pill,#khud .pill,.ghud .pill{font-size:13px;padding:4px 7px}
+    #hud #hLevel{flex-shrink:0}
+    /* css/train.css (max-width:359px) sets 14px/9px on the train HUD, which loads later and makes
+       "Level 11 · 15 ga" spill into the next pill at 320px; :root raises specificity to win. */
+    :root #trainApp #hud{gap:5px}
+    :root #trainApp #hud .pill{font-size:13px;padding:4px 7px}
+  }
+  /* css/mem.css sets padding:8px for short landscape phones and loads later; keep the notch clear there. */
+  @media (orientation: landscape) and (max-height: 500px){
+    #memApp .mstage{padding-left:max(8px, env(safe-area-inset-left));padding-right:max(8px, env(safe-area-inset-right))}
+  }
+
+  /* ---- hub (home) ---- */
+  .hubtop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+  .hubtitle{margin:0;display:flex;align-items:center;gap:10px;line-height:1.1}
+  .hubmark{width:34px;height:34px;flex:none}
+  .iconbtn{flex:none;width:44px;height:44px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;
+    background:rgba(255,255,255,.1);color:#e3efe7}
+  .iconbtn .ico{width:22px;height:22px}
+  .hubstrip{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px}
+  .hstat{display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap;background:rgba(255,255,255,.06);
+    border-radius:16px;padding:10px 8px;line-height:1.2}
+  .hstat b{font-size:24px;font-weight:800;color:#ffd54a;font-variant-numeric:tabular-nums}
+  .hstat small{flex-basis:100%;text-align:center;font-size:13.5px;color:#a9c2b2;font-weight:600}
+  .dailycard{display:grid;grid-template-columns:1fr auto;grid-template-areas:"k go" "g go";align-items:center;gap:2px 12px;width:100%;
+    text-align:left;margin:0 0 6px;padding:14px 16px;border-radius:20px;border:1px solid rgba(255,213,74,.35);font-family:inherit;color:#fff;
+    background:linear-gradient(160deg,#3a2f12,#1f1a0b)}
+  .dailycard .dk{grid-area:k;font-size:13px;font-weight:700;letter-spacing:.04em;color:#ffd54a}
+  .dailycard b{grid-area:g;font-size:18px;line-height:1.25}
+  .dailycard .dgo{grid-area:go;min-height:44px;display:grid;place-items:center;padding:0 16px;border-radius:14px;font-weight:800;font-size:16px;
+    background:linear-gradient(180deg,#ffbf3d,#ff7a2e);color:#2a1300}
+  .dailycard.done{border-color:rgba(126,224,129,.35);background:linear-gradient(160deg,#1f3b2b,#132619)}
+  .dailycard.done .dgo{background:rgba(126,224,129,.16);color:#9ff0a2}
+  .hubsub{margin:12px 0 10px}
+  .gi svg{width:48px;height:48px;display:block;margin:auto}
+  .gt em.fresh{color:#a9c2b2;font-weight:600}
+  .gamecard,.dailycard,.iconbtn{transition:transform .15s cubic-bezier(0.22,1,0.36,1)}
+  .dailycard:active,.iconbtn:active{transform:scale(.98)}
+  #hubShare{margin-top:2px}
+
+  /* ---- settings sheet ---- */
+  #settings{z-index:25}
+  .setcard{text-align:left}
+  .setcard h2{text-align:center;margin-bottom:8px}
+  .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:4px 2px;
+    border-bottom:1px solid rgba(255,255,255,.08);font-size:17px;font-weight:700}
+  .switch{flex:none;position:relative;width:56px;height:44px;border:0;padding:0;background:none}
+  .switch i{position:absolute;left:2px;right:2px;top:9px;height:26px;border-radius:999px;background:rgba(255,255,255,.18);
+    transition:background .2s cubic-bezier(0.22,1,0.36,1)}
+  .switch i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;
+    transition:transform .2s cubic-bezier(0.22,1,0.36,1)}
+  .switch[aria-checked="true"] i{background:#4caf50}
+  .switch[aria-checked="true"] i::after{transform:translateX(26px)}
+  .btn.danger{background:linear-gradient(180deg,#ff6b6b,#d63a3a);color:#fff;box-shadow:0 6px 0 #8f2020,0 10px 20px rgba(0,0,0,.3)}
+  .btn.alt.danger{background:rgba(255,93,108,.12);color:#ffb3ba;box-shadow:none}
+  .confirm{margin-top:10px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row2 .btn{margin-top:10px}
+
+  /* ---- reduced motion (SHELL-14): keep fades and colour changes, drop scale and slide ---- */
+  @media (prefers-reduced-motion: reduce){
+    .card{animation:bbFade .2s linear}
+    @keyframes bbFade{from{opacity:0}to{opacity:1}}
+    .btn:active,.gamecard:active,.dailycard:active,.iconbtn:active,.chip:active,.lv:active,
+    .mtile:active,.rpad button:active,#wKeys button:active{transform:none}
+    #hStreak.bump{transform:none}
+    .mtile{transition:background .12s}
+    .switch i::after{transition:none}
+    #bbToast,#bbToast.on{transform:translate(-50%,0);transition:opacity .25s linear}
+  }

@@ -2,9 +2,29 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Brainy Bits</title>
+<meta name="description" content="5 trò chơi nhỏ luyện trí nhớ, tính nhẩm và tư duy. Chơi ngay trên điện thoại, không cần cài.">
+<meta name="theme-color" content="#0a150e">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="vi_VN">
+<meta property="og:title" content="Brainy Bits">
+<meta property="og:description" content="5 trò chơi nhỏ luyện trí nhớ, tính nhẩm và tư duy.">
+<meta property="og:image" content="https://duypham9895.github.io/brainy-bits/icons/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brainy Bits">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/train.css">
@@ -17,12 +37,12 @@
 <div id="trainApp" style="display:none">
 <div id="wrap">
   <div id="hud">
-    <div class="pill" id="hLevel">Màn 1 · 3 ga</div>
+    <div class="pill" id="hLevel">Level 1 · 5 ga</div>
     <div class="pill" id="hScore">✓ 0/0</div>
     <div class="pill hidden" id="hStreak">🔥 3</div>
     <div class="grow"></div>
-    <div class="pill" id="hTime">60s</div>
-    <button id="pauseBtn" aria-label="Tạm dừng">❚❚</button>
+    <div class="pill" id="hTime">90s</div>
+    <button class="roundbtn" id="pauseBtn" aria-label="Tạm dừng"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg></button>
     <div id="timebar"><i id="timefill"></i></div>
   </div>
   <canvas id="cv"></canvas>
@@ -30,13 +50,13 @@
 
 <div id="menu" class="overlay">
   <div class="card">
-    <div class="logo">🚂</div>
+    <div class="logo" aria-hidden="true">🚂</div>
     <h1>Đường Ray Tư Duy</h1>
-    <p class="sub">Đưa mỗi đoàn tàu về đúng nhà ga cùng màu</p>
+    <p class="sub">Đưa mỗi đoàn tàu về đúng nhà ga cùng màu, cùng hình</p>
     <div class="how">
-      <div><span class="i">👆</span><span><b>Chạm ô tròn</b> ở ngã rẽ để đổi đoạn ray (thẳng hoặc cong). Đoạn ray sáng là hướng tàu sẽ đi.</span></div>
-      <div><span class="i">🎨</span><span>Tàu màu nào phải vào <b>ga cùng màu</b>.</span></div>
-      <div><span class="i">⏱️</span><span>Mỗi level 90 giây, đúng <b>≥ 80%</b> để qua. Level 1 có 5 ga, mỗi level thêm 1 ga.</span></div>
+      <div><span class="i" aria-hidden="true">👆</span><span><b>Chạm ô tròn</b> ở ngã rẽ để đổi đoạn ray (thẳng hoặc cong). Đoạn ray sáng là hướng tàu sẽ đi.</span></div>
+      <div><span class="i" aria-hidden="true">🎨</span><span>Tàu phải vào <b>ga cùng màu, cùng hình</b>.</span></div>
+      <div><span class="i" aria-hidden="true">⏱️</span><span>90 giây ra tàu, đúng <b>≥ 80%</b> để qua. Level 1 có 5 ga, mỗi level thêm 1 ga.</span></div>
     </div>
     <div class="label">Chọn level</div>
     <div class="lvgrid" id="lvgrid"></div>
@@ -56,47 +76,74 @@
       <div><b id="rStreak">0</b>chuỗi đúng dài nhất</div>
     </div>
     <p class="note" id="rDetail"></p>
-    <button class="btn" id="rNext">Màn tiếp theo</button>
+    <button class="btn" id="rNext">Level tiếp theo</button>
     <button class="btn alt" id="rMenu">Về menu</button>
   </div>
 </div>
 
 <div id="paused" class="overlay hidden">
   <div class="card">
-    <div class="logo">⏸️</div>
+    <div class="logo" aria-hidden="true">⏸️</div>
     <h2>Tạm dừng</h2>
     <button class="btn" id="resumeBtn">Chơi tiếp</button>
-    <button class="btn alt" id="restartBtn">Chơi lại màn này</button>
+    <button class="btn alt" id="restartBtn">Chơi lại level này</button>
     <button class="btn alt" id="quitBtn">Về menu</button>
   </div>
 </div>
 </div><!-- /trainApp -->
 
 <!-- ================= TRANG CHỦ ================= -->
-<div id="hub" class="overlay hubbg">
+<div id="hub" class="overlay hubbg" data-bb-wired="1">
   <div class="hubwrap">
-    <div class="hubtitle">🧠 Brainy Bits</div>
-    <p class="sub" style="margin-bottom:18px">Chọn một trò để chơi</p>
+    <div class="hubtop">
+      <h1 class="hubtitle"><svg class="hubmark" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="4" y="4" width="18" height="18" rx="5" fill="#ffd54a"/><rect x="26" y="4" width="18" height="18" rx="5" fill="#ff8a3d"/><rect x="4" y="26" width="18" height="18" rx="5" fill="#7ee081"/><rect x="27.5" y="27.5" width="15" height="15" rx="4" fill="none" stroke="#ffd54a" stroke-opacity=".6" stroke-width="3"/><circle cx="35" cy="35" r="3" fill="#ffd54a"/></svg>Brainy Bits</h1>
+      <button class="iconbtn" id="hubSettings" aria-label="Cài đặt" aria-haspopup="dialog"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="6" width="16" height="2.2" rx="1.1"/><circle cx="9" cy="7.1" r="2.6"/><rect x="4" y="15.8" width="16" height="2.2" rx="1.1"/><circle cx="15" cy="16.9" r="2.6"/></svg></button>
+    </div>
+    <div class="hubstrip">
+      <div class="hstat"><span aria-hidden="true">🔥</span><b id="hubStreak">0</b><small>ngày liên tiếp</small></div>
+      <div class="hstat"><span aria-hidden="true">⭐</span><b id="hubStars">0</b><small>sao đã có</small></div>
+    </div>
+    <button class="dailycard" id="hubDaily">
+      <span class="dk">Thử thách hôm nay <span id="hubDailyNo"></span></span>
+      <b id="hubDailyGame">&nbsp;</b>
+      <span class="dgo" id="hubDailyState">Chơi</span>
+    </button>
+    <p class="sub hubsub">Chọn một trò để chơi</p>
     <button class="gamecard" id="openTrain">
-      <span class="gi">🚂</span>
+      <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M6 40h36" stroke="#a9c2b2" stroke-width="3" stroke-linecap="round"/><rect x="11" y="8" width="26" height="26" rx="8" fill="#ffb02e"/><rect x="16" y="13" width="16" height="9" rx="3" fill="#2a1300"/><circle cx="18" cy="28" r="2.4" fill="#2a1300"/><circle cx="30" cy="28" r="2.4" fill="#2a1300"/><path d="M15 34l-4 6M33 34l4 6" stroke="#ffb02e" stroke-width="3" stroke-linecap="round"/></svg></span>
       <span class="gt"><b>Đường Ray Tư Duy</b><small>Đổi ngã rẽ, đưa tàu về đúng ga cùng màu</small><em id="hubTrain"></em></span>
     </button>
     <button class="gamecard koi" id="openKoi">
-      <span class="gi">🐟</span>
+      <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M7 24c6-10 20-12 28-4l7-6v20l-7-6c-8 8-22 6-28-4z" fill="#ffb38a"/><path d="M16 17c3 2 3 6 0 8M24 15c3 3 3 9 0 12" stroke="#ff6b3d" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="12.5" cy="22.5" r="1.8" fill="#0d2c2e"/></svg></span>
       <span class="gt"><b>Cho Cá Koi Ăn</b><small>Mỗi con cá chỉ được cho ăn một lần, nhớ kỹ nhé</small><em id="hubKoi"></em></span>
     </button>
     <button class="gamecard mem" id="openMem">
-      <span class="gi">🟨</span>
+      <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><g fill="#463d7a"><rect x="5" y="5" width="11" height="11" rx="3"/><rect x="18.5" y="5" width="11" height="11" rx="3"/><rect x="5" y="18.5" width="11" height="11" rx="3"/><rect x="32" y="18.5" width="11" height="11" rx="3"/><rect x="18.5" y="32" width="11" height="11" rx="3"/><rect x="32" y="32" width="11" height="11" rx="3"/></g><g fill="#ffd54a"><rect x="32" y="5" width="11" height="11" rx="3"/><rect x="18.5" y="18.5" width="11" height="11" rx="3"/><rect x="5" y="32" width="11" height="11" rx="3"/></g></svg></span>
       <span class="gt"><b>Ô Sáng Ghi Nhớ</b><small>Nhớ vị trí các ô vừa sáng rồi chạm lại đúng</small><em id="hubMem"></em></span>
     </button>
     <button class="gamecard rain" id="openRain">
-      <span class="gi">🌧️</span>
+      <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M24 5c7 10 13 17 13 24a13 13 0 0 1-26 0c0-7 6-14 13-24z" fill="#7cc7ff"/><path d="M24 23v12M18 29h12" stroke="#0e2338" stroke-width="3.4" stroke-linecap="round"/></svg></span>
       <span class="gt"><b>Mưa Phép Tính</b><small>Giải phép tính trước khi giọt mưa chạm mặt nước</small><em id="hubRain"></em></span>
     </button>
     <button class="gamecard word" id="openWord">
-      <span class="gi">🔤</span>
+      <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><rect x="3" y="12" width="20" height="24" rx="5" fill="#3fa34d"/><rect x="25" y="12" width="20" height="24" rx="5" fill="#ffcf8a"/><path d="M8 31l5-14 5 14M9.8 26h6.4" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M31 17v14h8" stroke="#2a1a12" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>
       <span class="gt"><b>Đoán Cụm Từ</b><small>Đoán cụm 2 từ tiếng Việt trong 6 lượt</small><em id="hubWord"></em></span>
     </button>
+    <button class="btn alt" id="hubShare">Chia sẻ kết quả</button>
+  </div>
+</div>
+
+<div id="settings" class="overlay hidden">
+  <div class="card setcard">
+    <h2>Cài đặt</h2>
+    <div class="setrow"><span>Âm thanh</span><button class="switch" id="setSound" role="switch" aria-checked="true" aria-label="Âm thanh"><i></i></button></div>
+    <div class="setrow" id="setHapticRow"><span>Rung khi chạm</span><button class="switch" id="setHaptic" role="switch" aria-checked="true" aria-label="Rung khi chạm"><i></i></button></div>
+    <button class="btn alt danger" id="setReset">Xoá tiến độ</button>
+    <div class="confirm hidden" id="setConfirm">
+      <p class="note">Xoá hết level đã qua, sao và chuỗi ngày? Không lấy lại được.</p>
+      <div class="row2"><button class="btn alt" id="setResetNo">Thôi</button><button class="btn danger" id="setResetYes">Xoá hết</button></div>
+    </div>
+    <button class="btn" id="setClose">Xong</button>
   </div>
 </div>
 
@@ -108,22 +155,22 @@
       <div class="pill" id="kScore">Điểm 0</div>
       <div class="grow"></div>
       <div class="pill" id="kLevel">Cấp 1</div>
-      <button class="roundbtn" id="kPauseBtn" aria-label="Tạm dừng">❚❚</button>
+      <button class="roundbtn" id="kPauseBtn" aria-label="Tạm dừng"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg></button>
     </div>
     <canvas id="kcv"></canvas>
   </div>
 
   <div id="kmenu" class="overlay">
     <div class="card">
-      <div class="logo">🐟</div>
+      <div class="logo" aria-hidden="true">🐟</div>
       <h1 class="koih">Cho Cá Koi Ăn</h1>
       <p class="sub">Luyện trí nhớ và khả năng theo dõi nhiều thứ cùng lúc</p>
       <div class="how">
-        <div><span class="i">👆</span><span><b>Chạm vào cá koi</b> để cho ăn. Mỗi con chỉ được ăn <b>đúng 1 lần</b>.</span></div>
-        <div><span class="i">🧠</span><span>Cá bơi lung tung và trông giống hệt nhau, nên phải <b>nhớ</b> con nào đã ăn rồi.</span></div>
-        <div><span class="i">⏳</span><span>Sau mỗi lần cho ăn phải chờ <b>vòng hẹn giờ</b> ở dưới đầy lại.</span></div>
-        <div><span class="i">🐡</span><span>Từ level 3 có <b>cá xám</b> lẫn vào. Đừng chạm vào chúng.</span></div>
-        <div><span class="i">🏆</span><span>Mỗi level 1 hồ. Nhầm <b>tối đa 1 lần</b> là qua. Level 1 có 6 cá, mỗi level thêm 1 con.</span></div>
+        <div><span class="i" aria-hidden="true">👆</span><span><b>Chạm vào cá koi</b> để cho ăn. Mỗi con chỉ được ăn <b>đúng 1 lần</b>.</span></div>
+        <div><span class="i" aria-hidden="true">🧠</span><span>Cá bơi lung tung và trông giống hệt nhau, nên phải <b>nhớ</b> con nào đã ăn rồi.</span></div>
+        <div><span class="i" aria-hidden="true">⏳</span><span>Sau mỗi lần cho ăn phải chờ <b>vòng hẹn giờ</b> ở dưới đầy lại.</span></div>
+        <div><span class="i" aria-hidden="true">🐡</span><span>Từ level 3 có <b>cá xám</b> lẫn vào. Đừng chạm vào chúng.</span></div>
+        <div><span class="i" aria-hidden="true">🏆</span><span>Mỗi level 1 hồ. Nhầm <b>tối đa 1 lần</b> là qua. Level 1 có 6 cá, mỗi level thêm 1 con.</span></div>
       </div>
       <div class="label">Chọn level</div>
       <div class="lvgrid" id="klvgrid"></div>
@@ -161,7 +208,7 @@
 
   <div id="kpaused" class="overlay hidden">
     <div class="card">
-      <div class="logo">⏸️</div>
+      <div class="logo" aria-hidden="true">⏸️</div>
       <h2>Tạm dừng</h2>
       <button class="btn" id="kResumeBtn">Chơi tiếp</button>
       <button class="btn alt" id="kQuitBtn">Về menu</button>
@@ -177,7 +224,7 @@
       <div class="pill" id="mRound">Lượt 1/3</div>
       <div class="grow"></div>
       <div class="pill" id="mScore">✓ 0</div>
-      <button class="roundbtn" id="mPause" aria-label="Tạm dừng">❚❚</button>
+      <button class="roundbtn" id="mPause" aria-label="Tạm dừng"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg></button>
     </div>
     <div class="mstage">
       <p class="mhint" id="mHint"></p>
@@ -186,13 +233,13 @@
   </div>
   <div id="mmenu" class="overlay">
     <div class="card">
-      <div class="logo">🟨</div>
+      <div class="logo" aria-hidden="true">🟨</div>
       <h1 class="mem-h">Ô Sáng Ghi Nhớ</h1>
       <p class="sub">Luyện trí nhớ vị trí</p>
       <div class="how">
-        <div><span class="i">👀</span><span>Một vài ô sẽ <b>sáng vàng</b> trong vài giây.</span></div>
-        <div><span class="i">👆</span><span>Khi ô tắt, <b>chạm lại đúng các ô vừa sáng</b>, thứ tự nào cũng được.</span></div>
-        <div><span class="i">🏆</span><span>Mỗi level 3 lượt, đúng hoàn toàn <b>ít nhất 2 lượt</b> là qua. Level 1 có 3 ô, mỗi level thêm 1 ô.</span></div>
+        <div><span class="i" aria-hidden="true">👀</span><span>Một vài ô sẽ <b>sáng vàng</b> trong vài giây.</span></div>
+        <div><span class="i" aria-hidden="true">👆</span><span>Khi ô tắt, <b>chạm lại đúng các ô vừa sáng</b>, thứ tự nào cũng được.</span></div>
+        <div><span class="i" aria-hidden="true">🏆</span><span>Mỗi level 3 lượt, đúng hoàn toàn <b>ít nhất 2 lượt</b> là qua. Level 1 có 3 ô, mỗi level thêm 1 ô.</span></div>
       </div>
       <div class="label">Chọn level</div>
       <div class="lvgrid" id="mlvgrid"></div>
@@ -213,7 +260,7 @@
   </div>
   <div id="mpaused" class="overlay hidden">
     <div class="card">
-      <div class="logo">⏸️</div>
+      <div class="logo" aria-hidden="true">⏸️</div>
       <h2>Tạm dừng</h2>
       <button class="btn" id="mResume">Chơi tiếp</button>
       <button class="btn alt" id="mQuit">Về menu</button>
@@ -229,7 +276,7 @@
       <div class="pill" id="rScore">✓ 0/11</div>
       <div class="grow"></div>
       <div class="pill" id="rLives">💧💧💧</div>
-      <button class="roundbtn" id="rPause" aria-label="Tạm dừng">❚❚</button>
+      <button class="roundbtn" id="rPause" aria-label="Tạm dừng"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg></button>
     </div>
     <canvas id="rcv"></canvas>
     <div class="rbar"><div class="rdisp empty" id="rDisp">&nbsp;</div></div>
@@ -237,18 +284,18 @@
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
       <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
-      <button data-k="del" class="k-del">⌫</button><button data-k="0">0</button><button data-k="ok" class="k-ok">OK</button>
+      <button data-k="del" class="k-del" aria-label="Xoá">⌫</button><button data-k="0">0</button><button data-k="ok" class="k-ok">OK</button>
     </div>
   </div>
   <div id="rmenu" class="overlay">
     <div class="card">
-      <div class="logo">🌧️</div>
+      <div class="logo" aria-hidden="true">🌧️</div>
       <h1 class="rain-h">Mưa Phép Tính</h1>
       <p class="sub">Luyện tính nhẩm nhanh</p>
       <div class="how">
-        <div><span class="i">💧</span><span>Giọt mưa mang <b>phép tính</b> rơi dần xuống hồ.</span></div>
-        <div><span class="i">🔢</span><span>Bấm <b>đáp án</b> trên bàn phím số. Gõ đúng là giọt tự vỡ, không cần bấm OK.</span></div>
-        <div><span class="i">🏆</span><span>Giải đủ số phép của level trước khi <b>3 giọt</b> rơi xuống nước. Mỗi level phép tính khó hơn một chút.</span></div>
+        <div><span class="i" aria-hidden="true">💧</span><span>Giọt mưa mang <b>phép tính</b> rơi dần xuống hồ.</span></div>
+        <div><span class="i" aria-hidden="true">🔢</span><span>Bấm <b>đáp án</b> trên bàn phím số. Gõ đúng là giọt tự vỡ, không cần bấm OK.</span></div>
+        <div><span class="i" aria-hidden="true">🏆</span><span>Giải đủ số phép của level trước khi <b>3 giọt</b> rơi xuống nước. Mỗi level phép tính khó hơn một chút.</span></div>
       </div>
       <div class="label">Chọn level</div>
       <div class="lvgrid" id="rlvgrid"></div>
@@ -269,7 +316,7 @@
   </div>
   <div id="rpaused" class="overlay hidden">
     <div class="card">
-      <div class="logo">⏸️</div>
+      <div class="logo" aria-hidden="true">⏸️</div>
       <h2>Tạm dừng</h2>
       <button class="btn" id="rResume">Chơi tiếp</button>
       <button class="btn alt" id="rQuit">Về menu</button>
@@ -284,14 +331,14 @@
       <div class="pill" id="wLevel">Level 1</div>
       <div class="pill" id="wTries">Lượt 1/6</div>
       <div class="grow"></div>
-      <button class="roundbtn" id="wMenuBtn" aria-label="Menu">☰</button>
+      <button class="roundbtn" id="wMenuBtn" aria-label="Về menu"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="6" width="16" height="2.4" rx="1.2"/><rect x="4" y="10.8" width="16" height="2.4" rx="1.2"/><rect x="4" y="15.6" width="16" height="2.4" rx="1.2"/></svg></button>
     </div>
     <div class="wstage">
       <div id="wToast"></div>
       <button id="wHint">💡 Xem gợi ý chủ đề</button>
       <div class="wboard" id="wBoard"></div>
       <div class="wlegend">
-        <span><i style="background:#3fa34d"></i>Đúng chữ, đúng chỗ</span>
+        <span><i style="background:#2e7d3a"></i>Đúng chữ, đúng chỗ</span>
         <span><i style="background:#d4a72c"></i>Đúng chữ, sai chỗ</span>
         <span><i style="background:#3b82f6"></i>Đúng nguyên âm, sai dấu</span>
         <span><i style="background:#3d3a37"></i>Không có</span>
@@ -307,13 +354,13 @@
   </div>
   <div id="wmenu" class="overlay">
     <div class="card">
-      <div class="logo">🔤</div>
+      <div class="logo" aria-hidden="true">🔤</div>
       <h1 class="word-h">Đoán Cụm Từ</h1>
       <p class="sub">Đoán cụm 2 từ tiếng Việt trong 6 lượt</p>
       <div class="how">
-        <div><span class="i">⌨️</span><span>Gõ chữ cái, rồi bấm <b>â ê ô / ă / ơ ư</b> để đổi chữ vừa gõ, và bấm <b>á à ả ã ạ</b> để thêm dấu thanh. Mỗi ô là 1 chữ cái kèm dấu.</span></div>
-        <div><span class="i">🟩</span><span><b>Xanh lá</b>: đúng chữ, đúng chỗ. <b>Vàng</b>: có chữ đó nhưng sai chỗ. <b>Xanh dương</b>: đúng nguyên âm nhưng sai dấu. <b>Xám</b>: không có.</span></div>
-        <div><span class="i">🏆</span><span>Mỗi level 1 cụm từ, càng lên càng dài. Kẹt quá thì bấm <b>💡</b> xem chủ đề.</span></div>
+        <div><span class="i" aria-hidden="true">⌨️</span><span>Gõ chữ cái, rồi bấm <b>â ê ô / ă / ơ ư</b> để đổi chữ vừa gõ, và bấm <b>á à ả ã ạ</b> để thêm dấu thanh. Mỗi ô là 1 chữ cái kèm dấu.</span></div>
+        <div><span class="i" aria-hidden="true">🟩</span><span><b>Xanh lá</b>: đúng chữ, đúng chỗ. <b>Vàng</b>: có chữ đó nhưng sai chỗ. <b>Xanh dương</b>: đúng nguyên âm nhưng sai dấu. <b>Xám</b>: không có.</span></div>
+        <div><span class="i" aria-hidden="true">🏆</span><span>Mỗi level 1 cụm từ, càng lên càng dài. Kẹt quá thì bấm <b>💡</b> xem chủ đề.</span></div>
       </div>
       <div class="label">Chọn level</div>
       <div class="lvgrid" id="wlvgrid"></div>
@@ -338,11 +385,20 @@
 <script src="vendor/zzfx-micro.js"></script>
 <script src="vendor/confetti.js"></script>
 <script src="js/core.js"></script>
+<script src="js/train-map.js"></script>
 <script src="js/train.js"></script>
 <script src="js/koi.js"></script>
 <script src="js/mem.js"></script>
 <script src="js/rain.js"></script>
 <script src="js/word.js"></script>
+<!-- Game split files (js/<game>-<part>.js) go here, after their game's main file and before hub.js.
+     The orchestrator finalises these tags. -->
 <script src="js/hub.js"></script>
+<script>
+// Offline cache: only on https or localhost, where service workers are allowed.
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
+  addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+</script>
 </body>
 </html>
