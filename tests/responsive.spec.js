@@ -19,6 +19,9 @@ const VIEWPORTS = [
   { name: 'laptop-1920', width: 1920, height: 1080, touch: false },
 ];
 
+const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36';
+const ZALO_UA = 'Mozilla/5.0 (Linux; Android 14; SM-A546E Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/138.0.7204.179 Mobile Safari/537.36 Zalo android/12100587';
+
 const GAMES = [
   { key: 'train', open: '#openTrain', menu: '#menu', start: '#startBtn', wait: 4200 },
   { key: 'koi', open: '#openKoi', menu: '#kmenu', start: '#kStartBtn', wait: 1500 },
@@ -43,7 +46,7 @@ function audit(touch) {
     const r = el.getBoundingClientRect();
     // Target size uses layout size: a tile mid flip/pop animation (transform: scale) is not a small target.
     const lw = el.offsetWidth || r.width, lh = el.offsetHeight || r.height;
-    const inScroller = el.closest('.overlay');            // overlays scroll vertically by design
+    const inScroller = el.closest('.overlay, #installDialog');   // overlays and the install guide scroll vertically by design
     if (r.right > vw + 1 || r.left < -1) out.push(`off-screen horizontally: ${name(el)} [${Math.round(r.left)}..${Math.round(r.right)}] vw=${vw}`);
     if (!inScroller && (r.bottom > vh + 1 || r.top < -1)) out.push(`off-screen vertically: ${name(el)} [${Math.round(r.top)}..${Math.round(r.bottom)}] vh=${vh}`);
     // Letter and number pads: a 9-key row cannot be 44 px wide on a 320 px phone (system keyboards are
@@ -105,6 +108,57 @@ for (const vp of VIEWPORTS) {
         await page.waitForTimeout(g.wait);
         await check(`${g.key}-play`);
       }
+      expect(problems, problems.join('\n')).toEqual([]);
+    });
+
+    test('install banner, settings row and the open install guide', async ({ page }, info) => {
+      const problems = [];
+      const shot = async label => { if (process.env.RESP_SHOTS) await page.screenshot({ path: info.outputPath(`${vp.name}-${label}.png`) }); };
+      const check = async label => { for (const p of await page.evaluate(audit, vp.touch)) problems.push(`${label}: ${p}`); await shot(label); };
+      // Touch sizes keep the default device's Android UA (visit #2 shows the banner); mouse sizes
+      // get a desktop UA, where the banner never shows and the settings row offers the QR code.
+      if (!vp.touch) await page.addInitScript(ua => Object.defineProperty(navigator, 'userAgent', { get: () => ua }), DESKTOP_UA);
+      await page.addInitScript(() => { try { if (!localStorage.getItem('bb_install')) localStorage.setItem('bb_install', '{"visits":1}'); } catch (e) {} });
+      await page.goto('/');
+      if (vp.touch) await expect(page.locator('#installBanner')).toBeVisible();
+      else await expect(page.locator('#installBanner')).toBeHidden();
+      await page.waitForTimeout(400);
+      await check('hub-banner');
+      await page.click('#hubSettings');
+      await expect(page.locator('#setInstallRow')).toBeVisible();
+      await expect(page.locator('#setInstallBtn')).toHaveAttribute('data-mode', vp.touch ? 'mobile' : 'desktop');
+      await check('settings');
+      if (vp.touch) await page.click('#setInstallBtn');
+      else { await page.keyboard.press('Escape'); await page.evaluate(() => window.BBInstall.open()); }
+      await expect(page.locator('#installDialog')).toBeVisible();
+      await page.waitForTimeout(400);
+      await check('install-start');
+      await page.click(vp.touch ? '#installTab-ios' : '#installTab-android');
+      await page.waitForTimeout(250);
+      await check('install-other-tab');
+      const d = await page.evaluate(() => { const r = document.getElementById('installDialog').getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: innerHeight }; });
+      if (d.top < -1 || d.bottom > d.h + 1) problems.push(`install dialog outside the viewport ${Math.round(d.top)}..${Math.round(d.bottom)} vh=${d.h}`);
+      expect(problems, problems.join('\n')).toEqual([]);
+    });
+
+    test('install guide in an in-app browser, link field showing', async ({ page }, info) => {
+      const problems = [];
+      const shot = async label => { if (process.env.RESP_SHOTS) await page.screenshot({ path: info.outputPath(`${vp.name}-${label}.png`) }); };
+      await page.addInitScript(ua => {
+        Object.defineProperty(navigator, 'userAgent', { get: () => ua });
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('blocked')) } });
+      }, ZALO_UA);
+      await page.goto('/');
+      await expect(page.locator('#hub')).toBeVisible();
+      await page.evaluate(() => window.BBInstall.open());
+      await expect(page.locator('#installInApp')).toBeVisible();
+      await page.click('#installCopyBtn');                // tallest state: link field + status line
+      await expect(page.locator('#installLinkField')).toBeVisible();
+      await page.waitForTimeout(400);
+      for (const p of await page.evaluate(audit, vp.touch)) problems.push(`install-inapp: ${p}`);
+      await shot('install-inapp');
+      const d = await page.evaluate(() => { const r = document.getElementById('installDialog').getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: innerHeight }; });
+      if (d.top < -1 || d.bottom > d.h + 1) problems.push(`install dialog outside the viewport ${Math.round(d.top)}..${Math.round(d.bottom)} vh=${d.h}`);
       expect(problems, problems.join('\n')).toEqual([]);
     });
   });

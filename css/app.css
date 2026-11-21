@@ -64,6 +64,8 @@
     -webkit-user-select:none;user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   [id$="App"]{color:#fff}
   [hidden]{display:none!important}
+  /* install banner stays out unless css/install.css loads and the <head> gate opts in */
+  .bbi-banner{display:none}
   button{cursor:pointer}
   button:disabled{cursor:not-allowed}
 

@@ -17,6 +17,8 @@ jobs:
         run: npm run parity
       - name: Difficulty engine tests
         run: npm run test:sim
+      - name: Install platform detection tests
+        run: npm run test:install
       # Calibration gates (seeded, full N = 1200 per MERGED-SPEC §6; koi 2000). Only koi passes at full N.
       # mem (G2/G3 at legacy L6-L8), train, rain and word miss gates in legacy levels; Duy lifted the
       # legacy freeze (E3, 2026-11-21) and the retune lands in the next PR. Until then they report

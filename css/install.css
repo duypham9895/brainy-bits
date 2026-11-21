@@ -1,0 +1,207 @@
+/* Install guide. Art tokens and SVG classes for js/install-art.js.
+   Same theme structure as css/app.css: light default, dark via the
+   color-scheme meta, dark via the OS unless the meta forces light.
+   Coral --bb-art-hl measured >= 3:1 against bg, surface and raise in both themes. */
+:root{
+  --bb-art-bg:#ebe3d3;--bb-art-surface:#fffdf8;--bb-art-raise:#efe7d8;
+  --bb-art-ink:#192a21;--bb-art-muted:#52685b;--bb-art-rule:rgba(25,42,33,.14);
+  --bb-art-link:#1d5ea6;--bb-art-hl:#d1432a;
+}
+:root:has(> head > meta[name="color-scheme"][content="dark"]){
+  --bb-art-bg:#0e1712;--bb-art-surface:#1e3027;--bb-art-raise:#2b4136;
+  --bb-art-ink:#f3efe6;--bb-art-muted:#afc3b6;--bb-art-rule:rgba(255,255,255,.14);
+  --bb-art-link:#8cc4ff;--bb-art-hl:#ff8a6b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not(:has(> head > meta[name="color-scheme"][content="light"])){
+    --bb-art-bg:#0e1712;--bb-art-surface:#1e3027;--bb-art-raise:#2b4136;
+    --bb-art-ink:#f3efe6;--bb-art-muted:#afc3b6;--bb-art-rule:rgba(255,255,255,.14);
+    --bb-art-link:#8cc4ff;--bb-art-hl:#ff8a6b;
+  }
+}
+
+.bbi-art{display:block;inline-size:100%;max-inline-size:260px;block-size:auto;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.bbi-art text{fill:var(--bb-art-ink);font-family:inherit}
+.bbi-art .a-bg{fill:var(--bb-art-bg)}
+.bbi-art .a-surf{fill:var(--bb-art-surface)}
+.bbi-art .a-raise{fill:var(--bb-art-raise)}
+.bbi-art .a-rulef{fill:var(--bb-art-rule)}
+.bbi-art .a-rule{stroke:var(--bb-art-rule);stroke-width:1;fill:none}
+.bbi-art .a-ico{fill:none;stroke:var(--bb-art-ink);stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.bbi-art .a-dot{fill:var(--bb-art-ink)}
+.bbi-art text.a-muted{fill:var(--bb-art-muted)}
+.bbi-art text.a-link{fill:var(--bb-art-link)}
+.bbi-art .a-linkline{stroke:var(--bb-art-link);stroke-width:2;fill:none}
+.bbi-art .a-hl{fill:none;stroke:var(--bb-art-hl);stroke-width:2.5}
+.bbi-art .a-hlfill{fill:var(--bb-art-hl);fill-opacity:.1}
+
+/* ======================= Install guide UI =======================
+   Text highlight and step badge tokens. Highlight text sits on --bb-surface only
+   (light #b8371f on #fffdf8, dark #ff8a6b on #16241d: both >= 4.5:1, checked in tests). */
+:root{--bbi-hl-ink:#b8371f;--bbi-badge:#b8371f;--bbi-badge-ink:#ffffff;--bbi-ease:cubic-bezier(0.32,0.72,0,1)}
+:root:has(> head > meta[name="color-scheme"][content="dark"]){--bbi-hl-ink:#ff8a6b;--bbi-badge:#ff8a6b;--bbi-badge-ink:#1c1005}
+@media (prefers-color-scheme:dark){
+  :root:not(:has(> head > meta[name="color-scheme"][content="light"])){--bbi-hl-ink:#ff8a6b;--bbi-badge:#ff8a6b;--bbi-badge-ink:#1c1005}
+}
+
+/* ---- home banner: in or out before first paint (data-bb-install-banner set in <head>) ---- */
+.bbi-banner{display:none;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:4px 12px;
+  margin:0 0 14px;padding:12px 4px 12px 14px;border-radius:18px;background:var(--bb-surface);color:var(--bb-ink);
+  box-shadow:0 1px 2px rgba(25,42,33,.08)}
+:root[data-bb-install-banner] .bbi-banner{display:grid}
+.bbi-banner-ico{width:24px;height:24px;margin-top:2px;color:var(--bb-accent)}
+.bbi-banner-txt{min-width:0;display:grid;justify-items:start;gap:8px}
+.bbi-banner-txt p{margin:0;font-size:max(16px,1rem);font-weight:700;line-height:1.45;color:var(--bb-ink)}
+.bbi-x{flex:none;width:44px;height:44px;margin-top:-6px;border:0;border-radius:12px;background:transparent;color:var(--bb-sub);
+  display:grid;place-items:center;transition:background-color .15s var(--ease),color .15s var(--ease)}
+.bbi-x svg{width:18px;height:18px}
+
+/* tonal pill button: banner CTA and settings row */
+.bbi-pill{min-height:44px;padding:8px 16px;border:0;border-radius:12px;background:var(--bb-soft);color:var(--bb-ink);box-shadow:inset 0 0 0 1px var(--bb-rule);
+  font-family:inherit;font-size:.9rem;font-weight:800;line-height:1.3;text-align:center;
+  transition:background-color .15s var(--ease),transform .12s var(--ease)}
+.bbi-pill:active{transform:scale(.97)}
+
+/* ---- settings row ---- */
+.bbi-setrow{flex-wrap:wrap;row-gap:8px}
+.bbi-setrow[hidden]{display:none}
+.bbi-setrow > span{flex:1 1 12rem}
+.bbi-settitle{display:flex;align-items:center;gap:6px}
+.bbi-check[hidden]{display:none}
+.bbi-check{width:20px;height:20px;flex:none;color:var(--bb-daily-done-ink)}
+.bbi-setrow .bbi-pill{flex:none}
+
+/* ---- guide dialog: bottom sheet on phones, centred card from 600px ---- */
+dialog.bbi-dialog{margin:auto auto 0;padding:0;border:0;width:100%;max-width:100%;max-height:min(92dvh,100%);
+  border-radius:24px 24px 0 0;background:var(--bb-bg);color:var(--bb-ink);box-shadow:0 -14px 44px rgba(0,0,0,.28);
+  overflow:hidden;overscroll-behavior:contain;opacity:0;
+  transition-property:opacity,transform,display,overlay;transition-duration:.32s;transition-timing-function:var(--bbi-ease);
+  transition-behavior:allow-discrete}
+dialog.bbi-dialog[open]{display:flex;flex-direction:column;opacity:1;@starting-style{opacity:0}}
+@media (prefers-reduced-motion:no-preference){
+  dialog.bbi-dialog{transform:translateY(32px)}
+  dialog.bbi-dialog[open]{transform:none;@starting-style{transform:translateY(32px)}}
+}
+dialog.bbi-dialog::backdrop{background-color:rgba(15,25,20,0);
+  transition-property:background-color,display,overlay;transition-duration:.32s;transition-timing-function:var(--bbi-ease);transition-behavior:allow-discrete}
+dialog.bbi-dialog[open]::backdrop{background-color:rgba(15,25,20,.62);@starting-style{background-color:rgba(15,25,20,0)}}
+.bbi-dialog [hidden]{display:none !important}
+
+.bbi-sheet{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;width:100%}
+.bbi-head{flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:18px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left))}
+.bbi-head h2{margin:0;font-size:1.22rem;font-weight:800;line-height:1.35;color:var(--bb-ink);text-wrap:balance}
+.bbi-head .bbi-en{margin-top:2px}
+.bbi-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:2px max(16px, env(safe-area-inset-right)) 18px max(16px, env(safe-area-inset-left));display:grid;align-content:start;gap:14px}
+.bbi-foot{flex:none;padding:10px max(16px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  border-top:1px solid var(--bb-rule);background:var(--bb-bg)}
+
+.bbi-en{margin:3px 0 0;font-size:.9rem;font-weight:600;line-height:1.45;color:var(--bb-sub)}
+.bbi-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+
+/* tabs: same tonal segmented control as the theme switch in settings */
+.bbi-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:14px;background:var(--bb-soft)}
+.bbi-tab{min-height:44px;padding:6px 10px;border:0;border-radius:10px;background:transparent;color:var(--bb-ink);
+  font-family:inherit;font-size:.98rem;font-weight:800;transition:background-color .15s var(--ease),color .15s var(--ease)}
+.bbi-tab[aria-selected="true"]{background:var(--bb-accent);color:var(--bb-accent-ink)}
+.bbi-panel{display:grid;gap:12px;border-radius:18px}
+
+/* step cards */
+.bbi-steps{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.bbi-step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;
+  padding:14px;border-radius:18px;background:var(--bb-surface)}
+.bbi-num{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  background:var(--bbi-badge);color:var(--bbi-badge-ink);font-size:1.06rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.bbi-txt{min-width:0;padding-top:3px}
+.bbi-vi{margin:0;font-size:max(17px,1.0625rem);font-weight:700;line-height:1.5;color:var(--bb-ink)}
+.bbi-hl{color:var(--bbi-hl-ink);font-weight:800}
+.bbi-artwrap{grid-column:1/-1;display:grid;justify-items:center}
+.bbi-artwrap .bbi-art{max-block-size:min(236px,32dvh)}
+
+/* notes */
+.bbi-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;
+  padding:12px 14px;border-radius:16px;background:var(--bb-soft);color:var(--bb-ink)}
+.bbi-note-ico{width:20px;height:20px;margin-top:1px;color:var(--bb-sub)}
+.bbi-note-vi{margin:0;font-size:.96rem;font-weight:700;line-height:1.5}
+.bbi-note.is-warn{background:var(--bb-daily-bg);box-shadow:inset 0 0 0 1.5px var(--bb-daily-bd)}
+.bbi-note.is-warn .bbi-note-ico{color:var(--bb-brass)}
+.bbi-artnote{margin:0;font-size:.86rem;font-weight:600;line-height:1.45;color:var(--bb-sub)}
+.bbi-artnote.bbi-en{margin-top:-10px}
+.bbi-footnote{padding:2px 2px 0}
+.bbi-footnote .bbi-note-vi{color:var(--bb-ink)}
+
+/* in-app panel */
+.bbi-inapp{display:grid;gap:10px;padding:16px 14px;border-radius:18px;background:var(--bb-surface);
+  box-shadow:inset 0 0 0 1.5px var(--bb-daily-bd)}
+.bbi-inapp h3{margin:0;font-size:1.08rem;font-weight:800;line-height:1.4;color:var(--bb-ink)}
+.bbi-inapp-head .bbi-en{margin-top:1px}
+.bbi-inapp .bbi-en{margin-top:-6px}
+.bbi-inapp-head .bbi-en,.bbi-status .bbi-en{margin-top:1px}
+.bbi-link{width:100%;min-height:44px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--bb-rule-ui);
+  background:var(--bb-bg);color:var(--bb-ink);font:600 max(16px,1rem)/1.3 ui-monospace,Menlo,monospace;
+  -webkit-user-select:text;user-select:text}   /* app.css turns selection off on html,body; the link must be copyable */
+.bbi-status{margin:0;min-height:1.4em;font-size:.94rem;font-weight:700;line-height:1.45;color:var(--bb-daily-done-ink)}
+.bbi-status:empty{min-height:0}
+.bbi-status .bbi-en{display:block}
+
+/* primary buttons */
+.bbi-primary{width:100%;min-height:48px;padding:8px 16px;border:0;border-radius:14px;background:var(--bb-accent);color:var(--bb-accent-ink);
+  font-family:inherit;font-size:1rem;font-weight:800;line-height:1.3;display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px 8px;
+  box-shadow:0 3px 0 var(--bb-accent-press);transition:transform .12s var(--ease),filter .15s var(--ease)}
+.bbi-primary:active{transform:translateY(2px);box-shadow:0 1px 0 var(--bb-accent-press)}
+.bbi-btn-en{font-size:.86rem;font-weight:700;opacity:.88}
+.bbi-installnow .bbi-primary{min-height:52px}
+.bbi-primary.is-tonal{background:var(--bb-soft);color:var(--bb-ink);box-shadow:inset 0 0 0 1px var(--bb-rule)}
+.bbi-primary.is-tonal:active{box-shadow:inset 0 0 0 1px var(--bb-rule)}
+
+#hub .bbi-banner :focus-visible,#settings .bbi-pill:focus-visible,dialog.bbi-dialog :focus-visible{outline:3px solid var(--bb-focus);outline-offset:3px}
+dialog.bbi-dialog .bbi-primary:focus-visible,dialog.bbi-dialog .bbi-tab[aria-selected="true"]:focus-visible{outline-color:var(--bb-focus-warm)}
+dialog.bbi-dialog .bbi-primary.is-tonal:focus-visible{outline-color:var(--bb-focus)}
+.bbi-panel:focus-visible{outline-offset:2px}
+
+@media (min-width:600px){
+  .bbi-banner{margin:0}
+  .bbi-banner-txt{grid-auto-flow:column;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 16px}
+  dialog.bbi-dialog{margin:auto;width:min(480px,calc(100% - 32px));max-height:min(88dvh,860px);border-radius:24px;
+    border:1px solid var(--bb-rule);box-shadow:0 26px 64px rgba(0,0,0,.35)}
+  .bbi-foot{border-radius:0 0 24px 24px}
+}
+/* short landscape phones: give the scrolling steps more room */
+@media (max-height:500px){
+  .bbi-head{padding-top:12px;padding-bottom:8px}
+  .bbi-head h2{font-size:1.08rem}
+  .bbi-foot{padding-top:8px;padding-bottom:max(10px, env(safe-area-inset-bottom))}
+  .bbi-foot .bbi-primary{min-height:44px}
+  dialog.bbi-dialog{max-height:94dvh}
+}
+/* very short viewports (400% zoom, large text): the header scrolls away with the steps, so the
+   content gets the height instead of a fixed title block */
+@media (max-height:420px){
+  .bbi-sheet{overflow-y:auto;overscroll-behavior:contain}
+  .bbi-body{flex:none;overflow:visible}
+  .bbi-foot{position:sticky;bottom:0}
+  .bbi-head > div > .bbi-en{display:none}
+}
+@media (prefers-reduced-motion:no-preference) and (min-width:600px){
+  dialog.bbi-dialog{transform:scale(.96) translateY(8px)}
+  dialog.bbi-dialog[open]{transform:none;@starting-style{transform:scale(.96) translateY(8px)}}
+}
+
+@media (hover:hover) and (pointer:fine){
+  .bbi-pill:hover,.bbi-x:hover{background:var(--bb-soft);filter:brightness(.96)}
+  .bbi-x:hover{color:var(--bb-ink)}
+  .bbi-tab[aria-selected="false"]:hover{background:var(--bb-surface)}
+  .bbi-primary:hover{filter:brightness(1.06)}
+}
+@media (prefers-reduced-motion:reduce){
+  dialog.bbi-dialog,dialog.bbi-dialog::backdrop{transition-duration:.12s}
+  .bbi-pill:active,.bbi-primary:active{transform:none}
+}
+@media (forced-colors:active){
+  .bbi-banner,dialog.bbi-dialog,.bbi-step,.bbi-note,.bbi-inapp,.bbi-pill,.bbi-tab,.bbi-primary,.bbi-close,.bbi-x{border:1px solid CanvasText}
+  /* the selected tab is a fill, not an outline, so it never looks like the focus ring */
+  .bbi-tab[aria-selected="true"]{forced-color-adjust:none;background:Highlight;color:HighlightText}
+  dialog.bbi-dialog .bbi-tab[aria-selected="true"]:focus-visible{outline-color:CanvasText}
+}
