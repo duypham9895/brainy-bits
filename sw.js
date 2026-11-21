@@ -1,6 +1,6 @@
 // Brainy Bits offline cache. Same-origin requests go to the network first, so stale files are
 // never served while online. Bump VERSION when the precache list changes; activate deletes old caches. Pattern after mdn/pwa-examples (CC0-1.0), own code.
-const VERSION = 'bb-v2';
+const VERSION = 'bb-v3';
 const FONT_CACHE = 'bb-fonts-v1';
 const PRECACHE = [
   './', 'index.html', 'manifest.webmanifest',
@@ -25,12 +25,17 @@ self.addEventListener('activate', e => {
 
 // Same-origin files: network first so a new deploy (or a local edit during preview) shows up on
 // the next load without anyone bumping VERSION; the cache is only the offline fallback.
+// cache: 'no-cache' makes every online fetch revalidate with the server (ETag -> 304 when unchanged),
+// so GitHub Pages' max-age=600 cannot hand back a stale file or pair new HTML with old JS.
+// Fetching by req.url (not the Request) avoids WebKit rejecting a mode:'navigate' request in init.
 async function sameOrigin(req) {
   const c = await caches.open(VERSION);
   try {
-    const res = await fetch(req);
+    const res = await fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' });
     if (res.ok && res.type === 'basic') c.put(req, res.clone());
-    return res;
+    if (res.type !== 'basic') return res;
+    const h = new Headers(res.headers); h.set('Cache-Control', 'no-cache');
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
   } catch (err) {
     const hit = await c.match(req, { ignoreSearch: req.mode === 'navigate' });
     if (hit) return hit;
