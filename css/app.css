@@ -179,11 +179,13 @@
   :focus{outline:none}
   :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
   .gamecard:focus-visible,.dailycard:focus-visible{outline-offset:4px}
-  #hud .pill,#khud .pill,.ghud .pill{min-width:0;flex:0 1 auto}
+  /* Pills never shrink: a shrinking pill clips its text whenever the font renders wider than on the
+     dev Mac (Baloo 2 still loading, Linux/Android fallbacks). A crowded HUD wraps to a second row instead. */
+  #hud .pill,#khud .pill,.ghud .pill{flex:none;min-width:auto}
+  #hud,#khud,.ghud{flex-wrap:wrap;row-gap:6px}
   @media (max-width:374px){
     #hud,#khud,.ghud{gap:6px}
     #hud .pill,#khud .pill,.ghud .pill{font-size:13px;padding:4px 7px}
-    #hud #hLevel{flex-shrink:0}
     /* css/train.css (max-width:359px) sets 14px/9px on the train HUD, which loads later and makes
        "Level 11 · 15 ga" spill into the next pill at 320px; :root raises specificity to win. */
     :root #trainApp #hud{gap:5px}

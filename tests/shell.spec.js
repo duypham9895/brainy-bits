@@ -36,9 +36,13 @@ test('head has description, Open Graph, theme colour, icons and gstatic preconne
 });
 
 for (const w of [320, 362, 390]) {
-  test(`round HUD buttons stay 44px and on screen at ${w}px (SHELL-01, SHELL-06)`, async ({ page }) => {
+  for (const wideFont of [false, true])
+  test(`round HUD buttons stay 44px and on screen at ${w}px${wideFont ? ' with a wide fallback font' : ''} (SHELL-01, SHELL-06)`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: 700 });
     await page.goto('/#tau');
+    // CI (Linux) and Android render wider than the dev Mac, and Baloo 2 may still be loading:
+    // force a wide fallback so clipped pills show up locally too.
+    if (wideFont) await page.addStyleTag({ content: '*{font-family:Verdana,"DejaVu Sans",sans-serif !important}' });
     const r = await page.evaluate(() => {
       document.getElementById('hLevel').textContent = 'Level 11 · 15 ga';
       const s = document.getElementById('hStreak'); s.textContent = '🔥 12'; s.classList.remove('hidden');

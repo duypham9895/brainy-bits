@@ -3,7 +3,7 @@
 #trainApp #pauseBtn{width:44px;height:44px;flex:none;font-size:15px}
 #trainApp #pauseBtn:focus-visible,#trainApp .lv:focus-visible{outline:2px solid #ffd54a;outline-offset:2px}
 /* HUD pills may shrink on 320px phones instead of pushing Pause off-screen. */
-#trainApp #hud .pill{min-width:0}
+#trainApp #hud .pill{min-width:auto}
 #trainApp .lv{min-height:44px}
 #trainApp .lv .lvst{display:block;font-size:10px;line-height:1;letter-spacing:1px;color:#ffd54a;margin-top:2px}
 #trainApp .lv.done::after{content:none}
