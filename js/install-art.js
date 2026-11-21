@@ -24,7 +24,9 @@
     return '<text x="' + x + '" y="' + y + '" font-size="' + (o.size || 14) + '"' +
       (o.weight ? ' font-weight="' + o.weight + '"' : '') +
       (o.anchor ? ' text-anchor="' + o.anchor + '"' : '') +
-      (o.cls ? ' class="' + o.cls + '"' : '') + '>' + str + '</text>';
+      (o.cls ? ' class="' + o.cls + '"' : '') +
+      // fit: pin the width so a wider system font (Linux, some Android skins) never spills out of its box
+      (o.fit ? ' textLength="' + o.fit + '" lengthAdjust="spacingAndGlyphs"' : '') + '>' + str + '</text>';
   }
 
   function rect(cls, x, y, w, h, rx) {
@@ -248,7 +250,7 @@
       text(66, 89, 'Copy link', { size: 14 }) +
       '<line class="a-rule" x1="58" y1="106" x2="240" y2="106"/>' +
       highlight(54, 112, 190, 38, 10) +
-      text(66, 136, 'Open in Safari/Chrome', { size: 13.5, weight: 600 }));
+      text(66, 136, 'Open in Safari/Chrome', { size: 13.5, weight: 600, fit: 164 }));
   }
 
   window.BB_INSTALL_ART = Object.freeze({
