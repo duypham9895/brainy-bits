@@ -1,0 +1,620 @@
+[
+ {
+  "angle": "dda",
+  "recommendation": "Khuyến nghị cho Brainy Bits: dùng MỘT thuật toán chung, gọi tạm là 'Ladder', gồm bốn lớp. Mỗi game chỉ phải khai một bảng knob.\n\n1) Trục độ khó vô hướng (offline, tất định). D_base(L) = sqrt((L−1)/29) với L=1..30, lấy từ đường căn bậc hai của abagames (MIT). Thêm răng cưa chu kỳ 5: màn 5k là đỉnh (D + 0,05, thêm cơ chế mới), màn 5k+1 là màn nghỉ (D − 0,04 so với đỉnh, vẫn > màn 5k−1). Mỗi game khai knobs[] gồm {min ở D=0, max ở D=1, curve, hardCap theo giới hạn người, unlockAt}. Knob = lerp(min, max, D) rồi kẹp ở hardCap. Một knob mới chỉ được mở ở màn đỉnh, và màn đó hạ các knob cũ một nấc (dạy trước, thử sau). Thêm 10 màn thì chỉ cần kéo L lên 31..40: D > 1 sẽ ngoại suy, nhưng phải kẹp hardCap, và khi một knob chạm trần thì chuyển sang knob kế tiếp trong danh sách ưu tiên.\n\n2) Pass rate mục tiêu theo màn: p*(L) = 0,92 − 0,17·D_base(L), tức khoảng 92% ở màn 1 và khoảng 75% ở màn 30. Màn đỉnh lấy p* − 0,07, màn nghỉ lấy p* + 0,05. Accuracy từng thao tác giữ trong dải 80–88% để bám quy tắc 85% (Wilson 2019, CC BY 4.0). Lưu ý: dải 92→75 là lựa chọn thiết kế của tôi, CHƯA có nguồn nào cho game. Quy tắc 85% chỉ được chứng minh cho phân loại nhị phân với SGD.\n\n3) Calibration bằng bot Monte Carlo trong Node (headless, mô phỏng bằng các hàm __rainTest/... đã có): ba hồ sơ người (yếu, trung bình, giỏi), mỗi màn ≥ 400 lần chạy (±2,5 điểm %). Dùng staircase 3-down-1-up của Levitt hoặc bisection trên D cục bộ để chỉnh knob sao cho pass rate mô phỏng của hồ sơ trung bình ≈ p*(L). Nhóm yếu phải đạt ≥ 85% ở màn 1–5 (bài học churn của Roohi 2020). Pass rate của bot ≠ của người (King 2018): đặt một bước hiệu chỉnh logistic ρ_người = σ(β0 + β1·logit ρ_bot), khởi tạo β0=0, β1=1, rồi fit lại sau khi Duy cùng vài người playtest và export JSON. Hồ sơ người (reaction time, working memory, error rate) lấy từ mũi research về mô phỏng người, mũi này không xác minh các số đó.\n\n4) Runtime DDA cục bộ, kín đáo và do người chơi chọn. Elo/Rasch kiểu Birdbrain: P = σ(θ − b_L), cập nhật θ ± K(y−P), lưu trong localStorage. Khi P < 0,5 sau 2 lần thua liên tiếp thì HIỆN nút 'bản nhẹ hơn' (một nấc, tối đa −15% knob) theo Active DDA của Chen, không tự hạ âm thầm, để tránh rubber band. Không server, không tracking, chạy được trên GitHub Pages.\n\nRule viết ra cho lệnh 'thêm 10 màn': đọc bảng knob và D của màn cuối, kéo L thêm 10, giữ chu kỳ răng cưa 5, chạy bot để kiểm p*(L), rồi kiểm hardCap. Game mới chỉ cần khai knobs[], hardCap và một hàm simulate(levelSpec, profile) → {pass, accuracy}.\n\nChưa xác minh: full text Hunicke 2005 và luận văn Chen (chỉ có nguồn thứ cấp); số tương quan trong bài King; các con số 168 màn / 95.266 người; target % của Duolingo (không công bố); K của Elo và dải p* 92→75 là đề xuất của tôi. Các bài ACM/IEEE/arXiv chỉ dùng ý tưởng, không copy code. Code dùng được trực tiếp chỉ có phần MIT của abagames. Không có repo DDA nào trong các nguồn này cung cấp code để copy.",
+  "missing": [
+   "Adaptive psychometric method hiệu quả hơn staircase cho calibration offline: QUEST (Watson & Pelli 1983), PEST, hoặc fit psychometric function (logistic/Weibull) trên toàn lưới knob. Fit trên lưới cho ra cả đường cong P(pass | knob) thay vì chỉ một điểm. Chưa xác minh nguồn ở lượt này.",
+   "Chưa có cách gộp NHIỀU knob thành một trục D (ví dụ: rain có tốc độ, phép toán, spawn rate). Cần quy tắc trọng số hoặc rule 'mỗi màn chỉ đổi 1–2 knob', và kiểm tra tính đơn điệu bằng mô phỏng: pass rate màn L+1 ≤ pass rate màn L, trừ các màn nghỉ.",
+   "Game word không hợp với khung per-trial accuracy hay staircase. Độ khó của word đến từ tần suất từ, độ phức tạp dấu và số ứng viên còn lại (entropy). Cần một đo lường riêng, ví dụ số lượt đoán trung bình của một solver tối ưu hoặc solver giống người.",
+   "Ràng buộc 'fairness' khi DDA chạy trong màn: sao và điểm phải gắn với phiên bản knob thực tế đã chơi. Nếu không, bảng tiến độ trong localStorage không còn có nghĩa.",
+   "Phải xác minh lại các mức sàn/trần knob hiện có trong js/train.js, koi.js, mem.js, rain.js, word.js trước khi ngoại suy lên màn 30. Mũi dda này chưa đọc code, nên mọi trần sinh lý (working memory, reaction time) phải lấy từ mũi human-model.",
+   "Chưa nêu hiệu ứng học (learning effect) giữa các lần thử: bot Monte Carlo không học, còn người thì học. Pass rate của lần thử đầu khác với lần thứ 3. Mô phỏng nên tách 'first-attempt pass rate' khỏi 'pass trong ≤ 3 lần'.",
+   "Tiếp cận người dùng: hạ độ khó theo lựa chọn (Chen) nên đi cùng prefers-reduced-motion và tuỳ chọn chậm hơn cho các game có thời gian thực (rain, koi, train). Đây là chuẩn a11y, không phải DDA, nhưng nó tác động trực tiếp lên độ khó cảm nhận."
+  ],
+  "findings": [
+   {
+    "claim": "Quy tắc 85% (Wilson, Shenhav, Straccia, Cohen, Nature Communications 2019): với learner học bằng stochastic gradient descent trên bài toán phân loại nhị phân có Gaussian noise, error rate tối ưu khi luyện là ER* = ½(1 − erf(1/√2)) ≈ 0,1587, tức accuracy khoảng 85%. Bài báo ghi rõ giới hạn: không phủ batch learning và task nhiều hơn 2 lựa chọn, và điểm tối ưu dịch theo kiểu noise (Laplacian khoảng 18,4% lỗi, Cauchy 25%).",
+    "formula_or_number": "ER* = 0.5*(1 - erf(1/sqrt(2))) ≈ 0.1587 → accuracy mục tiêu ≈ 0.85 (Laplacian ≈ 0.816, Cauchy 0.75)",
+    "source_title": "The Eighty Five Percent Rule for optimal learning (Nat Commun 10:4646, 2019)",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6831579/",
+    "licence": "Bài báo CC BY 4.0. Công thức là ý tưởng, dùng tự do khi ghi nguồn. Repo code trên GitHub chưa kiểm licence.",
+    "verified_how": "Đọc bản PMC bằng WebFetch: xác nhận công thức Eq.6/Eq.30, các điều kiện và dòng licence CC BY 4.0. Tác giả và tạp chí đối chiếu thêm qua WebSearch (DOAJ, RePEc).",
+    "apply_to": "Dùng làm neo cho target accuracy MỖI LẦN THỬ (per-trial), không phải pass rate của cả màn: tỉ lệ ô nhớ đúng ở mem, tỉ lệ giọt giải đúng ở rain, tỉ lệ cá cho ăn đúng ở koi. Đây là dải học tốt; nó không phải con số chứng minh cho game có thời gian thực."
+   },
+   {
+    "claim": "Transformed up-down staircase (Levitt 1971, JASA 49:467–477): quy tắc k-down-1-up (sai 1 lần thì dễ đi một nấc, đúng k lần liên tiếp thì khó lên một nấc) hội tụ về mức mà p^k = 0,5. 2-down-1-up cho 70,7%, 3-down-1-up cho 79,4%. Mức 70,7% cần ít trial hơn nhưng đo kém ổn định hơn.",
+    "formula_or_number": "p_target = 0.5^(1/k): k=2 → 0.707, k=3 → 0.794, k=4 → 0.841",
+    "source_title": "Levitt H. (1971) Transformed up-down methods in psychoacoustics, JASA 49, 467–477",
+    "source_url": "https://link.springer.com/article/10.3758/BF03204988",
+    "licence": "Phương pháp toán học, không có bản quyền trên thuật toán. Không copy text bài báo.",
+    "verified_how": "WebSearch ra nhiều nguồn thứ cấp (MIT OCW lab, Springer) đều ghi đúng citation và 70,7%/79,4%. Tôi tự kiểm số học 0.5^(1/3)=0.7937. Chưa đọc full text gốc của Levitt.",
+    "apply_to": "(a) Calibration offline: chạy staircase trên một knob vô hướng với bot Monte Carlo để tìm nhanh giá trị knob cho pass rate mục tiêu. (b) Tuỳ chọn trong màn: 3-down-1-up lên fall speed của rain hoặc show time của mem để giữ khoảng 79%, gần dải 85%. Dùng 4-down-1-up (≈84%) nếu muốn bám đúng quy tắc 85%."
+   },
+   {
+    "claim": "Hunicke (2005) 'The case for dynamic difficulty adjustment in games', ACE 2005, tr. 429–433. Hệ thống Hamlet (Hunicke & Chapman, Northwestern, trên engine Half-Life) dùng mô hình xác suất để quyết định lúc nào người chơi cần giúp, rồi chỉnh cung/cầu tài nguyên trong môi trường (thêm vật phẩm, bớt đối thủ). Wikipedia cảnh báo phải chỉnh có chừng mực để tránh hiệu ứng 'rubber band' (AI đua nhanh hẳn lên khi bạn dẫn và chậm lại khi bạn tụt).",
+    "formula_or_number": "Không có công thức số. Nguyên tắc: can thiệp kín đáo, chỉnh theo bước nhỏ, có kẹp (clamp) biên độ.",
+    "source_title": "Hunicke 2005 ACE; trang Hamlet của Northwestern; Wikipedia Dynamic game difficulty balancing",
+    "source_url": "https://users.cs.northwestern.edu/~hunicke/pubs/Hamlet.pdf",
+    "licence": "Bài ACM có bản quyền: chỉ dùng ý tưởng, không copy text hay code. Wikipedia CC BY-SA (chỉ trích ý).",
+    "verified_how": "Citation và số trang lấy từ reference list do WebSearch trả về. Nội dung Hamlet lấy từ snippet của search. Mục rubber band đọc bằng WebFetch trên Wikipedia. CHƯA đọc full text bài 2005 nên các nhận định chi tiết trong bài chưa xác minh.",
+    "apply_to": "Runtime DDA của Brainy Bits: chỉ đi tối đa ±1 nấc knob mỗi lần chỉnh, kẹp ở ±15% so với spec của màn, và không bao giờ tự động đổi ngay giữa màn những thứ người chơi nhìn thấy rõ (số ga train, số cá koi), để tránh cảm giác bị 'rubber band'."
+   },
+   {
+    "claim": "Jenova Chen, luận văn MFA tại USC 'Flow in Games' và game flOw (2006): đề xuất 'Active DDA' / 'Embedded Difficulty Adjustment'. Người chơi tự chọn độ khó qua hành động trong game, máy không tự âm thầm chỉnh. Chen nói một hiểu lầm phổ biến là cho rằng 'máy sẽ đổi độ khó dựa trên cách tôi chơi'.",
+    "formula_or_number": "Không có công thức. Thiết kế: lựa chọn độ khó nằm sẵn trong gameplay.",
+    "source_title": "Joystiq Q&A: Jenova Chen (Engadget, 2006); Engadget 'Flow in Games: an interactive thesis'",
+    "source_url": "https://www.engadget.com/2006/09/18/joystiq-qanda-jenova-chen/",
+    "licence": "Bài báo chí, chỉ dùng ý tưởng.",
+    "verified_how": "WebSearch ra lời trích của Chen qua Engadget/Joystiq và Wikipedia. Chưa mở được file luận văn gốc.",
+    "apply_to": "Khi Elo cục bộ dự báo P(pass) < 0,5 sau 2 lần thua liên tiếp: HIỆN nút 'Thử bản nhẹ hơn' (ví dụ thêm 1 s show time ở mem, giảm 10% tốc độ ở rain, bớt 1 cá ở koi) để người chơi tự bấm. Không hạ âm thầm. Đánh dấu sao riêng cho lần thắng bằng bản nhẹ."
+   },
+   {
+    "claim": "Flow channel (Schell, The Art of Game Design, theo bài trên Game Developer): khó tăng nhanh hơn kỹ năng thì người chơi lo âu, kỹ năng vượt độ khó thì chán. Bài đề xuất 'Oscillation Method', tức chuỗi tình huống căng rồi thả (tense and release), thay vì một đường dốc đều. Các nguồn khác về pacing (bugnet, Puzzledorf postmortem) cũng tả đường cong răng cưa có màn nghỉ sau đỉnh.",
+    "formula_or_number": "Răng cưa: chu kỳ 5 màn, đỉnh ở màn 5k, màn 5k+1 là màn nghỉ (dễ hơn đỉnh trước một chút)",
+    "source_title": "Understanding the Flow Channel in Game Design (Shakira Reid-Thomas, Game Developer, 2015-10-05)",
+    "source_url": "https://www.gamedeveloper.com/design/understanding-the-flow-channel-in-game-design",
+    "licence": "Bài blog, chỉ dùng ý tưởng.",
+    "verified_how": "Đọc bằng WebFetch: xác nhận tác giả, ngày, Oscillation Method. Bài không dùng chữ 'sawtooth' (đọc được 100k ký tự đầu). Hình răng cưa lấy từ snippet search của các bài blog khác, đó là nguồn thực hành chứ không phải nghiên cứu peer-reviewed.",
+    "apply_to": "Lịch 30 màn chung cho mọi game: các màn 5, 10, 15, 20, 25, 30 là đỉnh ('màn sếp', thêm 1 knob mới hoặc knob mạnh nhất). Các màn 6, 11, 16, 21, 26 là màn nghỉ: D thấp hơn màn đỉnh liền trước nhưng vẫn cao hơn màn 4, 9, 14..."
+   },
+   {
+    "claim": "abagames, 'Joys of Small Game Development': dùng đường cong độ khó căn bậc hai, Difficulty = sqrt(elapsed_frames × 0.0001) + 1 (60 frame/s). Lý do là căn bậc hai tăng êm hơn tuyến tính: đầu dốc, cuối thoải. Repo dùng licence MIT.",
+    "formula_or_number": "D(t) = 1 + sqrt(frames*0.0001) → áp vào màn: D_base(L) = sqrt((L-1)/(Lmax_ref-1)), Lmax_ref = 30",
+    "source_title": "Rising Difficulty Curve (abagames/joys-of-small-game-development-en)",
+    "source_url": "https://abagames.github.io/joys-of-small-game-development-en/difficulty/curve.html",
+    "licence": "MIT (gh api repos/abagames/joys-of-small-game-development-en → license.spdx_id = MIT)",
+    "verified_how": "WebFetch lấy nguyên văn công thức. gh api xác nhận SPDX MIT.",
+    "apply_to": "Trục độ khó vô hướng D(L) ∈ [0,1] cho L=1..30, nội suy mọi knob qua D. Khi thêm màn 31–40, công thức tự kéo dài (D>1) mà không phải sửa 30 màn cũ. Bắt buộc kẹp mỗi knob ở giới hạn sinh lý người (trần working memory, trần reaction time, lấy từ mũi research khác)."
+   },
+   {
+    "claim": "King (Gudmundsson et al., IEEE CIG 2018, 'Human-Like Playtesting with Deep Learning'): độ khó màn trong Candy Crush được định nghĩa là average success rate (số lần thắng / số lần thử). Ánh xạ success rate của agent sang của người KHÔNG tuyến tính. King dùng binomial regression với đặc trưng loại màn cộng success rate của agent, vì phương sai Var(ρ) = ρ(1−ρ)/n. Agent học từ nước đi của người tương quan với độ khó thật tốt hơn MCTS và tốn ít compute hơn nhiều.",
+    "formula_or_number": "ρ_player = σ(β0 + β1·f(ρ_agent) + β·levelTypeFeatures), binomial regression; Var(ρ) = ρ(1−ρ)/n",
+    "source_title": "Human-Like Playtesting with Deep Learning (King AI R&D, 2018)",
+    "source_url": "https://www.Gwern.net/doc/reinforcement-learning/imitation-learning/2018-gudmundsson.pdf",
+    "licence": "© IEEE 2018: chỉ dùng phương pháp, không copy text hay code.",
+    "verified_how": "Tải PDF và chạy pdftotext để đọc abstract cùng mục 'E. Binomial Regression'. Xác nhận định nghĩa độ khó và nhận xét mapping phi tuyến. Không lấy số tương quan cụ thể. Đã xoá file PDF tạm.",
+    "apply_to": "Calibration bot Monte Carlo: pass rate thô của bot KHÔNG phải pass rate của người. Cần một bước hiệu chỉnh logistic từ bot sang người. Trước khi có dữ liệu người, dùng playtest của Duy cùng vài người quen, ghi local rồi export JSON thủ công, để fit β0 và β1. Với n lần thử, sai số chuẩn là sqrt(ρ(1−ρ)/n), nên mỗi màn cần ≥ 400 lần mô phỏng để ±2,5 điểm %."
+   },
+   {
+    "claim": "Roohi et al., 'Predicting Game Difficulty and Churn Without Players' (CHI PLAY 2020, Angry Birds Dream Blast): dùng agent DRL kết hợp mô hình dân số người chơi để dự báo pass rate và churn từng màn. Bài nêu người chơi kém kiên trì hoặc kém kỹ năng nhạy hơn với độ khó cao và bỏ game sớm.",
+    "formula_or_number": "Không lấy số. Định tính: độ khó cao ở màn đầu gây churn sớm cho nhóm người chơi yếu.",
+    "source_title": "Predicting Game Difficulty and Churn Without Players (arXiv:2008.12937)",
+    "source_url": "https://arxiv.org/abs/2008.12937",
+    "licence": "arXiv non-exclusive distribution licence 1.0: chỉ dùng ý tưởng.",
+    "verified_how": "WebFetch trang abs arXiv: xác nhận tiêu đề, năm, venue và kết luận định tính. Trang abs không nêu số màn hay số người chơi. Các con số 168 màn / 95.266 người trong snippet search CHƯA xác minh được là của bài này.",
+    "apply_to": "Màn 1–5 của mỗi game: pass rate mục tiêu ≥ 90% (màn dạy). Không đặt màn đỉnh trước màn 5. Mô phỏng phải chạy cho NHIỀU hồ sơ người (yếu, trung bình, giỏi), không chỉ một bot trung bình, và kiểm tra riêng pass rate của nhóm yếu."
+   },
+   {
+    "claim": "Duolingo Birdbrain (IEEE Spectrum, Bicknell, Brust, Settles, 2023-02-05): mô hình logistic regression lấy cảm hứng từ item response theory, dự báo xác suất trả lời đúng từ năng lực người học và độ khó bài (tổng độ khó các feature). Bước cập nhật là 'một dạng tổng quát của Elo'. Trả lời sai thì hạ năng lực và nâng độ khó bài. Nếu model đã đoán đúng thì tham số gần như không đổi. Blog chính thức của Duolingo cho biết A/B test với Birdbrain cho kết quả học tốt hơn khi bài khớp độ khó với người học. Không nguồn nào công bố con số target accuracy.",
+    "formula_or_number": "P = σ(θ − b_L); sau mỗi lần thử: θ ← θ + K(y − P), b_L ← b_L − K(y − P) (Elo/Rasch, K ≈ 0.3–0.5 là đề xuất của tôi, CHƯA có nguồn)",
+    "source_title": "How Duolingo's AI Learns What You Need to Learn (IEEE Spectrum 2023); Duolingo blog 'Learning how to help you learn: Introducing Birdbrain'",
+    "source_url": "https://spectrum.ieee.org/duolingo",
+    "licence": "Bài báo chí, chỉ dùng ý tưởng. Elo/Rasch là phương pháp công khai.",
+    "verified_how": "WebFetch IEEE Spectrum lấy nguyên văn các câu về IRT/logistic/Elo. WebFetch blog Duolingo xác nhận nội dung A/B và việc blog không có target %. Nhận định '3PL IRT' của một trang bên thứ ba bị loại vì mâu thuẫn với nguồn gốc.",
+    "apply_to": "Ước lượng kỹ năng cục bộ cho mỗi game, lưu trong localStorage qua window.BB (không cần server): θ_game của người chơi; b_L của mỗi màn khởi tạo từ calibration offline (b_L = logit nghịch của pass rate mô phỏng). Dùng P để (1) quyết định có hiện nút 'bản nhẹ hơn' kiểu Chen hay không, (2) gợi ý màn tiếp theo, (3) thống kê offline khi Duy export."
+   }
+  ]
+ },
+ {
+  "angle": "rating",
+  "recommendation": "Khuyến nghị: dùng MỘT thang độ khó chung theo logit (Rasch/Elo) cho mọi game, gồm hai nửa tách bạch.\n\n(1) OFFLINE, phía tác giả (Node, hoặc Playwright khi cần): mỗi game khai báo hàm thuần cfg(L) → knobs, cộng một bot có tham số ability θ (độ trễ phản xạ, giới hạn working memory, tỉ lệ lỗi; phần này do mũi research khác lo). Chạy Monte Carlo cho mỗi màn với một dải θ, khớp đường 2PL p(pass|θ)=1/(1+e^(−a(θ−b_L))) để ra b_L và a. Ràng buộc chấp nhận: b_L tăng đơn điệu và đều, mục tiêu b_L ≈ b_1 + δ·(L−1) với δ≈0.12–0.18 logit/màn (con số này là lựa chọn thiết kế, chưa có nguồn, cần hiệu chỉnh bằng bot), và một người có θ=b_{L−1} phải qua màn L với xác suất khoảng 0.70–0.85 (Papoušek 75%, Wilson 85%). Mỗi khi Duy nói \"thêm 10 màn\", quy trình là: nối tiếp thang b_L, tìm cfg(L) đạt b_L bằng search trên knob hoặc thêm knob mới khi knob cũ chạm trần, chạy lại bot, ghi bảng b_L vào file levels-<game>.json làm hợp đồng. Game mới chỉ cần cfg(L), bot và cùng ràng buộc đó.\n\n(2) ONLINE, trên máy người chơi (GitHub Pages, không server): độ khó màn ĐÓNG BĂNG (không học từ đám đông như Lichess, vì không có server). Chỉ cập nhật rating người chơi theo từng game bằng Elo của Pelánek: θ += U(n)·(won − σ(θ−b_L)), U(n)=1/(1+0.05n). Trạng thái chỉ là {θ, n} mỗi game, tính lại tất định từ bb_log có sẵn trong core.js. Rating dùng để gợi ý \"màn vừa sức\" và chọn màn cho Daily, không khoá màn. Bỏ Glicko-2 đầy đủ (public domain nhưng cần 10–15 ván mỗi period, volatility vô ích ở đây). Không dùng TrueSkill (patent tới 2029); openskill (MIT) là thừa. BKT để phase 2 cho rain và word, nơi có kỹ năng con.\n\nChưa xác minh: tài liệu chính thức về puzzle rating của Lichess (chỉ có qua forum), cơ chế của chess.com (không kiểm), ngày hết hạn patent TrueSkill trên USPTO, δ logit/màn, và việc luật 85% áp dụng cho game giải trí. Nguồn cùng họ model, không có verifier ngoài.",
+  "missing": [
+   "Phương pháp staircase trong tâm lý vật lý (Levitt 1971, transformed up-down: 1-up/2-down hội tụ ~70.7%, 1-up/3-down ~79.4%). Phương pháp này phù hợp hơn Elo cho game một người, không server, trong một phiên. Cần xác minh nguồn trước khi dùng.",
+   "Màn gồm nhiều lượt (mem có 3 round, rain có nhiều giọt, koi có nhiều lần cho ăn), nên nên cập nhật rating theo từng lượt nhỏ thay vì chỉ một bit won/lost mỗi màn. Một bit mỗi màn cho rất ít thông tin, và bb_log hiện không lưu kết quả từng lượt, trái với kết luận 'không cần lưu thêm sự kiện'.",
+   "Khi độ khó màn đã đóng băng, Elo thực chất là ước lượng θ theo Rasch với tham số item đã biết. Có thể dùng MLE/EAP trực tiếp, đơn giản và ổn định hơn so với cập nhật K.",
+   "Các mô hình DDA trong game (ví dụ Hunicke 2005 Hamlet; Flow channel của Csikszentmihalyi; đường cong răng cưa với màn nghỉ sau mỗi đỉnh). Góc rating chưa nói cách biến thang b_L thành đường cong 1→30 có nhịp nghỉ, nghe 'như người thật chỉnh tay'. Chưa xác minh nguồn.",
+   "Chưa có bằng chứng nào nối θ của bot Monte Carlo với người chơi thật. Cần một bước hiệu chỉnh: Duy hoặc vài người chơi thật chơi vài màn để neo thang, nếu không thì b_L chỉ là độ khó tương đối giữa các màn.",
+   "Số kiểu Elo hiển thị cho trẻ hoặc người chơi bình thường có thể gây áp lực. Đây là quyết định sản phẩm cần Duy chốt, không phải chi tiết kỹ thuật.",
+   "Mọi tính toán rating đều chạy trong localStorage, nên mất khi xoá dữ liệu trình duyệt. Mô tả đúng là 'tính lại được từ bb_log', không phải 'bền'."
+  ],
+  "findings": [
+   {
+    "claim": "Glicko và Glicko-2 được chính tác giả tuyên bố là public domain. Spec Glicko-2 (bản sửa ngày 22/03/2022) cho mặc định: rating 1500, RD 350, volatility 0.06; τ hợp lý trong khoảng 0.3–1.2 (nhỏ tới 0.2 nếu kết quả bất thường). Đổi thang bằng μ=(r−1500)/173.7178. Glicko-2 'works best' khi mỗi rating period có trung bình ít nhất 10–15 ván.",
+    "source_title": "Mark Glickman, glicko.net + 'Example of the Glicko-2 system' (PDF, 2022-03-22)",
+    "source_url": "http://www.glicko.net/glicko/glicko2.pdf",
+    "formula_or_number": "g(φ)=1/sqrt(1+3φ²/π²); E=1/(1+exp(−g(φ_j)(μ−μ_j))); v=[Σ g²E(1−E)]⁻¹; Δ=vΣg(s−E); σ' tính lặp bằng thuật toán Illinois với ε=1e-6",
+    "licence": "Public domain (glicko.net: 'The Glicko and Glicko-2 systems are in the public domain.')",
+    "verified_how": "WebFetch glicko.net/glicko.html (trích nguyên câu public domain); tải PDF rồi đọc trực tiếp trang 1–3 để lấy công thức và hằng số",
+    "apply_to": "Có thể dùng cho rating người chơi theo từng game (bb_rating[g] = {r, RD, σ}). Nhưng một người chơi Brainy Bits chỉ chơi vài màn mỗi phiên, ít hơn hẳn 10–15 ván mỗi period, nên phần volatility gần như vô ích. Chỉ nên lấy ý RD (độ bất định giảm dần), bỏ bước lặp σ."
+   },
+   {
+    "claim": "Pelánek (Computers & Education 2016) coi mỗi câu trả lời là một 'trận' giữa học viên và item: P(đúng)=1/(1+e^−(θ−d)), cập nhật θ:=θ+K(đúng−P) và d:=d+K(P−đúng). Bài viết khuyên dùng hàm bất định U(n)=a/(1+bn) với a=1, b=0.05 làm điểm khởi đầu. Mô hình chỉ cần lưu một tham số cho mỗi học viên và mỗi item. Trong mô phỏng, khi độ khó item đã ước lượng tốt thì khoảng 10 câu trả lời đủ cho skill estimate tương quan 0.8 với ground truth.",
+    "source_title": "Pelánek R., 'Applications of the Elo rating system in adaptive educational systems', Computers & Education 2016, DOI 10.1016/j.compedu.2016.03.017 (accepted manuscript do tác giả host)",
+    "source_url": "https://www.fi.muni.cz/~xpelanek/publications/CAE-elo.pdf",
+    "formula_or_number": "θ := θ + U(n)·(won − 1/(1+e^−(θ−b_L))), với U(n)=1/(1+0.05n) theo đơn vị logit",
+    "licence": "Bài báo khoa học (công thức toán học không có bản quyền; không sao chép văn bản)",
+    "verified_how": "Tải PDF, chạy pdftotext, grep rồi đọc nguyên văn các dòng 360–380, 1040–1046, 1425–1472",
+    "apply_to": "Lõi đề xuất cho js/core.js: một hàm BB.rate(game, level, won) dùng chung cho mọi game hiện tại và tương lai. Trạng thái {θ, n} cho mỗi game lưu trong localStorage, tính lại tất định từ bb_log có sẵn (append-only), nên không cần migration."
+   },
+   {
+    "claim": "Hệ thống Outline Maps (Papoušek et al. 2014, theo Pelánek 2016) đặt một target success rate, ví dụ 75%, rồi chọn câu hỏi sao cho tỉ lệ đúng thực tế của học viên bám gần mục tiêu đó.",
+    "source_title": "Pelánek 2016, mục 4.1 System Structure",
+    "source_url": "https://www.fi.muni.cz/~xpelanek/publications/CAE-elo.pdf",
+    "formula_or_number": "target P(pass) ≈ 0.75 ⇒ b_L = θ − ln(0.75/0.25) ≈ θ − 1.10 logit",
+    "licence": "Bài báo khoa học (ý tưởng)",
+    "verified_how": "Trích dòng 1139 trong bản pdftotext: 'The system uses a target success rate (e.g., 75 %)'",
+    "apply_to": "Quy tắc gán target rating cho màn: một người chơi đã qua màn L−1 với rating đúng bằng độ khó của nó thì phải có xác suất qua màn L khoảng 70–80%. Dùng làm tiêu chí chấp nhận khi chạy Monte Carlo bot (xem khuyến nghị)."
+   },
+   {
+    "claim": "Wilson, Shenhav, Straccia & Cohen (Nature Communications 10:4646, 2019): với nhóm thuật toán học dựa trên gradient descent trong bài toán phân loại nhị phân, tỉ lệ lỗi tối ưu khi huấn luyện vào khoảng 15.87%, tức chừng 85% chính xác.",
+    "source_title": "The Eighty Five Percent Rule for optimal learning",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6831579",
+    "formula_or_number": "error* ≈ 0.1587 (accuracy ≈ 85%)",
+    "licence": "Bài open access trên PMC (ý tưởng, không sao chép)",
+    "verified_how": "WebSearch, khớp metadata trên PMC, DOAJ, RePEc và Princeton (DOI 10.1038/s41467-019-12552-4). Chưa đọc toàn văn.",
+    "apply_to": "Biên trên của dải mục tiêu (75–85% pass). Lưu ý: kết quả chỉ chứng minh cho classifier học bằng SGD, chưa chứng minh cho game giải trí. Đây là heuristic, không phải luật."
+   },
+   {
+    "claim": "IRT 2PL: p(θ)=1/(1+e^(−a(θ−b))), trong đó b là difficulty/location (điểm có xác suất 50% khi không có đoán mò) và a là discrimination (độ dốc). Mô hình 1PL/Rasch giả định mọi item có cùng discrimination và không có tham số đoán. 3PL thêm c (pseudo-guessing).",
+    "source_title": "Wikipedia, Item response theory",
+    "source_url": "https://en.wikipedia.org/wiki/Item_response_theory",
+    "formula_or_number": "p = c + (1−c)/(1+e^(−a(θ−b)))",
+    "licence": "Văn bản CC BY-SA 4.0 (chỉ dùng công thức toán, không chép văn bản)",
+    "verified_how": "WebFetch bài Wikipedia, trích định nghĩa a, b, c và câu về Rasch/1PL",
+    "apply_to": "Thang độ khó chung cho cả 5 game: mỗi màn (game g, level L) có một số b_{g,L} theo logit. Offline: cho bot với nhiều mức θ chạy cấu hình màn, khớp đường cong pass-rate theo θ để ra b (chỗ pass=50%) và a (game càng may rủi như koi/rain thì a càng thấp). Có thể đặt c>0 cho word, vì đoán mò 6 lượt vẫn có xác suất trúng."
+   },
+   {
+    "claim": "Elo chuẩn: E_A=1/(1+10^((R_B−R_A)/400)), R'_A=R_A+K(S_A−E_A). FIDE dùng K=40 cho người mới (dưới 30 ván hoặc dưới 18 tuổi và dưới 2300), K=20 cho người luôn dưới 2400, K=10 khi đã từng đạt 2400 và có ít nhất 30 ván. Thang 400/ln10 ≈ 173.7 điểm cho mỗi logit, trùng hằng số 173.7178 của Glicko-2.",
+    "source_title": "Wikipedia, Elo rating system",
+    "source_url": "https://en.wikipedia.org/wiki/Elo_rating_system",
+    "formula_or_number": "điểm hiển thị = 1000 + 173.7·θ (logit); K giảm dần theo số ván giống U(n)",
+    "licence": "Công thức toán, public knowledge; văn bản Wikipedia CC BY-SA 4.0",
+    "verified_how": "WebFetch bài Wikipedia, trích công thức và các bậc K của FIDE",
+    "apply_to": "Lớp hiển thị: tính nội bộ bằng logit, chỉ đổi sang 'điểm Elo' kiểu cờ nếu Duy muốn khoe rating trên hub. Hằng số 173.7 cho phép dùng chung một thang với Glicko-2 nếu sau này cần."
+   },
+   {
+    "claim": "Lichess xem mỗi lần giải puzzle là một 'ván' giữa người chơi và puzzle, dùng Glicko-2: giải trượt thì rating puzzle tăng, giải được thì giảm. Mã nguồn lila là AGPL-3.0.",
+    "source_title": "Lichess forum (trích blog Lichess) + GitHub lichess-org/lila",
+    "source_url": "https://lichess.org/forum/general-chess-discussion/puzzle-rating-question",
+    "formula_or_number": "—",
+    "licence": "lila: AGPL-3.0 (gh api). Không được chép code vào Brainy Bits, chỉ học ý tưởng.",
+    "verified_how": "gh api repos/lichess-org/lila trả về license=AGPL-3.0. Cơ chế puzzle Glicko-2 chỉ thấy qua bài forum trích blog Lichess, CHƯA đọc được trang tài liệu chính thức. Coi đây là bán xác minh.",
+    "apply_to": "Brainy Bits không có server nên KHÔNG thể học độ khó màn từ dữ liệu đám đông như Lichess (vế d:=d+K(P−đúng) cần dữ liệu nhiều người). Độ khó màn phải đóng băng và hiệu chỉnh offline bằng bot. Chỉ rating người chơi được cập nhật trên máy họ."
+   },
+   {
+    "claim": "TrueSkill đã được cấp patent và tên đã đăng ký trademark, chỉ dùng được trong dự án Microsoft hoặc dự án thương mại có license. Theo Wikipedia, patent hết hạn ngày 09/04/2029 (US8538910B2). Phương án thay thế mở là Weng & Lin, JMLR 12 (2011) 267–300, với độ chính xác ngang TrueSkill và code ngắn hơn. Bản JS openskill.js 5.1.0 dùng license MIT.",
+    "source_title": "Wikipedia TrueSkill; Weng & Lin, 'A Bayesian Approximation Method for Online Ranking', JMLR 2011; philihp/openskill.js",
+    "source_url": "https://jmlr.org/papers/v12/weng11a.html",
+    "formula_or_number": "—",
+    "licence": "TrueSkill: patent + trademark (TRÁNH). openskill.js: MIT (gh api + package.json).",
+    "verified_how": "WebFetch Wikipedia TrueSkill trích câu patent/trademark. gh api repos/philihp/openskill.js (license=MIT, version 5.1.0). JMLR xác nhận qua WebSearch. Ngày hết hạn patent chưa kiểm trên USPTO.",
+    "apply_to": "Không dùng TrueSkill. Không cần openskill vì Brainy Bits là một người đấu với màn, không có đội nhiều người. Elo/Rasch là đủ."
+   },
+   {
+    "claim": "Bayesian Knowledge Tracing (Corbett & Anderson, UMUAI 4(4):253–278, DOI 10.1007/BF01099821) mô hình hoá mastery theo từng kỹ năng bằng các tham số prior, learns, guesses, slips (thêm forgets trong pyBKT).",
+    "source_title": "pyBKT README (CAHLR/pyBKT); Springer DOI 10.1007/BF01099821",
+    "source_url": "https://github.com/CAHLR/pyBKT",
+    "formula_or_number": "P(L_{t+1}) = P(L_t|obs) + (1−P(L_t|obs))·learn; P(đúng)=P(L)(1−slip)+(1−P(L))·guess (công thức BKT chuẩn, chưa trích nguyên văn)",
+    "licence": "pyBKT: MIT (gh api). Công thức BKT là public knowledge.",
+    "verified_how": "gh api repos/CAHLR/pyBKT (license=MIT). WebFetch README lấy tên tham số. WebSearch xác nhận metadata bài báo. Công thức cập nhật ghi theo hiểu biết chuẩn, chưa trích từ nguồn.",
+    "apply_to": "Chỉ đáng dùng khi một game có nhiều kỹ năng rời rạc: rain (cộng, trừ, nhân, chia, mỗi phép là một skill) và word (từng loại dấu thanh). Dùng để chọn phép tính hoặc dấu cần ôn, KHÔNG dùng để điều khiển độ khó tổng thể của màn. Đặt sau Elo, phase 2."
+   },
+   {
+    "claim": "Repo hiện có js/core.js với bb_log append-only lưu {g, lv, won, stars, score, d, ms} và bb_stats lưu best/stars. LV_MAX hiện tại: train 11, koi 10, mem 13, rain 10, word 12. Knobs koi viết dạng hàm params(d) (koi=min(5+d,15), cd=min(1.3+0.15d,3.2), decoys). Rain dùng spec(L) (fall=max(8,13−0.55(L−1)), every=max(2.7,4.6−0.2(L−1)), target=10+L). Phần lớn knob đang bị kẹp trần trước level 30.",
+    "source_title": "Mã nguồn Brainy Bits (local)",
+    "source_url": "js/core.js",
+    "formula_or_number": "koi chạm trần ở d=10 (15 cá), cd chạm trần 3.2 ở d≈12.7; rain fall chạm 8 ở L≈10, every chạm 2.7 ở L≈10.5",
+    "licence": "Code của Duy",
+    "verified_how": "Đọc trực tiếp js/core.js dòng 190–240, js/koi.js dòng 45–51, js/rain.js dòng 32–46. Chưa đọc kỹ train.js, mem.js, word.js.",
+    "apply_to": "Lên level 30 không thể chỉ nới trần min()/max(). Cần thêm knob mới (cá đổi hướng, decoy giống thật hơn, nhiều phép tính trong một giọt, mưa gió...) và để thang b_L quyết định knob nào tăng. bb_log đã đủ để tính rating người chơi, không cần lưu thêm sự kiện."
+   }
+  ]
+ },
+ {
+  "angle": "staircase",
+  "recommendation": "Khuyến nghị: thang 1..30 viết tay làm xương sống, cộng một lớp thích nghi nhẹ, có biên, theo mô hình hai tầng. Không dùng QUEST trong lúc chơi.\n\n1) Tầng A, thang tác giả (deterministic). Mỗi game khai báo `spec(L)` nội suy giữa các knob anchor ở L1, L10, L20, L30. Mỗi level chỉ đổi 1 knob chính, theo nhịp 'tăng, tăng, nghỉ' (level thứ 3 của mỗi cụm 3 đổi sang knob khác hoặc giữ nguyên làm level thở). Monte Carlo bot (Node, chạy offline trong CI) phải xác nhận tỉ lệ thắng giảm đơn điệu, nằm trong dải mục tiêu: ≈90% ở L1, hạ dần về ≈70-75% ở L30. Lý do không đặt thấp hơn: Lomas 2013 cho thấy người chơi online ở lại lâu hơn khi game dễ. García-Pérez 1998 cho thấy không thể suy tỉ lệ thắng từ công thức, nên bắt buộc phải đo. Thêm 10 level mới tức là kéo anchor L40 rồi chạy lại bot.\n\n2) Tầng B, lớp thích nghi trong ván, kiểu Kaernbach weighted up-down. Một biến `adj` nằm trong [−1.0, +0.5] 'level-equivalent', mặc định 0. Mỗi trial (drop, cá, tàu) đúng thì adj += 0.05, sai thì adj −= 0.05·(0.85/0.15) ≈ 0.28. Biên lệch hẳn về phía dễ: game chỉ được dễ đi tối đa 1 level và khó thêm tối đa nửa level, nên người chơi không bao giờ bị phạt quá level đã chọn. Chỉ áp cho knob liên tục, vô hình (fall speed, spawn interval, swim speed). Không áp cho knob đếm được mà người chơi nhìn thấy (số ô mem, số ga train, độ dài cụm từ word), vì đổi những knob đó giữa ván trông như gian lận. mem và word không bật tầng B.\n\n3) Tầng C, gợi ý giữa các ván, có hysteresis theo Brain Workshop/Jaeggi. Thắng 3 sao thì gợi ý nhảy level. Thua 3 lần liên tiếp cùng level thì gợi ý lùi 1 level, hoặc mở 'hint'. Chỉ GỢI Ý, không tự hạ level đã mở khoá, và có feedforward ghi rõ 'level này khó hơn ở điểm nào'.\n\nCảnh báo cho các phòng khác: ở mem, công thức hiện tại t = 2+L đẩy L30 lên 32 ô sáng, gần chắc vượt giới hạn trí nhớ ngắn hạn của người thật. Từ khoảng L14, đường lên độ khó phải chuyển sang knob khác (show time ngắn hơn, ô mồi, thứ tự). Con số giới hạn cụ thể chưa được kiểm trong vòng tìm hiểu này, cần mũi 'human simulation' đo.\n\nChưa xác minh: full text Levitt, PEST 1967, Kaernbach 1991 và García-Pérez 1998 (chỉ mới đọc abstract hoặc nguồn thứ cấp); giấy phép CC BY của Wilson 2019; con số 0.85 có áp dụng được cho game hành động hay không. Brain Workshop là GPL, chỉ mượn ý tưởng ngưỡng, không copy code. Review: same vendor, same priors, no external verifier ran.",
+  "missing": [
+   "Cần một chỉ số độ khó 1 chiều (difficulty index) ánh xạ ra nhiều knob (tốc độ, số vật, thời gian hiển thị). Staircase chỉ chạy trên một biến vô hướng. Angle này chưa nói cách gộp knob, ví dụ nội suy theo log hay theo đường cong cho từng knob.",
+   "Lấy mẫu psychometric function (logistic/Weibull theo level) từ dữ liệu bot Monte Carlo để TẠO 30 level tĩnh tại các mốc xác suất thắng mục tiêu. Đây là cách dùng staircase/psychometrics phù hợp nhất cho level cố định, rõ hơn adapt trong ván.",
+   "Lapse rate / guess rate (tham số λ, γ của psychometric function): người chơi thật có lỗi bất cẩn khoảng 2-5%, khiến xác suất đúng không bao giờ chạm 100%. Không mô hình lapse thì target 85% ở level cao sẽ bị lệch. Con số 2-5% chưa xác minh.",
+   "Game word (Wordle-like) không có trial liên tục để staircase. Cần cách khác như độ khó theo tần suất từ/thanh điệu, hoặc rating Elo/Glicko cho puzzle. Angle này bỏ qua game này.",
+   "Khi up/down trong ván có thể bị cảm nhận là rubber-banding hoặc 'game gian lận'. Thiếu nguồn về perception của DDA (ví dụ Hunicke 2005 Hamlet, chưa xác minh) và quyết định nên hiển thị hay ẩn adapt.",
+   "Clamp sàn/trần và giới hạn tốc độ thay đổi (max step per trial) để tránh adj trôi khi người chơi AFK hoặc spam. Đây là yêu cầu thực thi bắt buộc nhưng angle này chưa nêu.",
+   "Thứ tự trial trong một ván không độc lập (mệt mỏi, học, chuỗi thua làm tilt), vi phạm giả định i.i.d. của Levitt/Kaernbach. Cần nói rõ đây là giới hạn và phải kiểm bằng bot có mô hình học/mệt.",
+   "Nguồn upstream chính thức của Brain Workshop (SourceForge/brainworkshop GitHub org) chưa đối chiếu; mới kiểm bản mirror ktec."
+  ],
+  "findings": [
+   {
+    "claim": "Transformed up-down staircase (Levitt 1971): luật 1-up-2-down hội tụ quanh điểm có xác suất đúng 70.7%, 1-up-3-down quanh 79.4% (thêm: 4-down 84.1%, 5-down 87.1%). Đây là thuật toán thích nghi đơn giản nhất: chỉ cần đếm chuỗi đúng liên tiếp, không cần mô hình.",
+    "formula_or_number": "p_target = 0.5^(1/k) với luật k-down-1-up: k=2 → 0.707, k=3 → 0.794, k=4 → 0.841",
+    "source_title": "Levitt H. (1971) Transformed Up-Down Methods in Psychoacoustics, JASA 49:467-477, doi 10.1121/1.1912375",
+    "source_url": "https://moodle2.units.it/pluginfile.php/553227/mod_resource/content/0/Levitt_1971_SCALA.pdf",
+    "licence": "Bài báo có bản quyền; dùng Ý TƯỞNG/công thức (không bảo hộ), tự viết code",
+    "verified_how": "WebSearch: nhiều nguồn thứ cấp (Springer s13428-024-02430-3, MIT OCW lab) cùng xác nhận 0.707/0.794 và citation; công thức 0.5^(1/k) tự kiểm bằng tính tay. Chưa đọc trực tiếp bảng gốc trong PDF Levitt.",
+    "apply_to": "Lớp thích nghi nhẹ trong level (in-run): ví dụ rain fall speed / spawn every, koi speed, train spawn interval. Dùng luật 3-down-1-up (~79%) chứ không 2-down (~71%) vì game giải trí cần tỉ lệ thắng cao hơn bài đo ngưỡng."
+   },
+   {
+    "claim": "Weighted up-down (Kaernbach 1991): thay vì đếm chuỗi, dùng bước lên/xuống không đều; cân bằng khi S_up·p = S_down·(1−p). Với target 75%: đúng → khó thêm 1 bước, sai → dễ đi 3 bước. Đơn giản hơn transformed up-down và được báo cáo hơi hiệu quả hơn 1-up-2-down trong Monte Carlo.",
+    "formula_or_number": "S_harder / S_easier = (1−p)/p ; p=0.75 → 1:3 ; p=0.85 → ~1:5.7",
+    "source_title": "Kaernbach C. (1991) Simple adaptive testing with the weighted up-down method, Perception & Psychophysics 49:227-229, doi 10.3758/BF03214307",
+    "source_url": "https://link.springer.com/content/pdf/10.3758/BF03214307.pdf",
+    "licence": "Ý tưởng/công thức, tự viết code",
+    "verified_how": "WebSearch trả abstract Springer + trang tóm tắt + bài Kaernbach trên auditory.org 2009 (https://auditory.org/postings/2009/409.html) nêu luật −1/+3. Chưa đọc full text 1991.",
+    "apply_to": "Engine chung js/difficulty.js: một biến liên tục `adj` (offset quanh level hiện tại), cập nhật theo từng trial/từng drop: đúng → adj += a, sai → adj −= a·(p/(1−p)). Một dòng code, áp được cho mọi game có trial rời (rain mỗi drop, koi mỗi lần cho ăn, mem mỗi round, train mỗi tàu)."
+   },
+   {
+    "claim": "García-Pérez (1998): với staircase bước cố định, điểm hội tụ thực tế phụ thuộc vào TỈ LỆ bước lên/xuống nhiều hơn là vào luật up/down; staircase ngắn (≤20 reversals) bị bias và kém chính xác. Hệ quả: không được tin rằng '2-down = đúng 70.7%' trong một ván 90 giây — phải đo bằng mô phỏng.",
+    "formula_or_number": "Convergence % không đổi khi Δ−/Δ+ giữ ở một tỉ số đặc thù cho từng luật; ≤20 reversals → bias",
+    "source_title": "García-Pérez M.A. (1998) Forced-choice staircases with fixed step sizes: asymptotic and small-sample properties, Vision Research 38(12):1861-1881, doi 10.1016/s0042-6989(97)00340-4",
+    "source_url": "https://produccioncientifica.ucm.es/documentos/5df8a7132999525886b6fa35?lang=en",
+    "licence": "Ý tưởng, không dùng code",
+    "verified_how": "WebSearch: abstract qua cổng UCM + Scilit. Tỉ số cụ thể cho từng luật CHƯA xác minh (cần full paper).",
+    "apply_to": "Quy tắc kiểm định offline: mọi tham số lớp thích nghi phải được chạy Monte Carlo bot (Node) để đo tỉ lệ thắng thực, không suy từ công thức Levitt. Ván ngắn (train 90 s, mem 3 round) → không bật adapt trong-ván, chỉ adapt giữa các ván."
+   },
+   {
+    "claim": "PEST (Taylor & Creelman 1967): bước thay đổi kích thước, giảm một nửa mỗi khi đổi chiều (reversal), logic tương đương Wald sequential test. QUEST (Watson & Pelli 1983): Bayesian, giữ phân phối posterior của ngưỡng và đặt trial kế tiếp ở mode posterior.",
+    "formula_or_number": "PEST: step ← step/2 tại mỗi reversal. QUEST: x_next = mode(posterior), dừng khi CI đủ hẹp hoặc đủ N trial",
+    "source_title": "Taylor & Creelman (1967) JASA 41:782-787; Watson & Pelli (1983) Perception & Psychophysics 33(2):113-120, doi 10.3758/BF03202828",
+    "source_url": "https://link.springer.com/article/10.3758/BF03208701",
+    "licence": "Ý tưởng; code tham khảo jsQUEST là MIT (xem finding riêng)",
+    "verified_how": "WebSearch: citation từ Springer/Scilit; luật halving lấy từ Findlay 1978 (nguồn thứ cấp) — chưa đọc bản gốc 1967.",
+    "apply_to": "Placement test lần đầu (tuỳ chọn): đoán nhanh 'người chơi nên bắt đầu ở level nào' với step-halving trên chỉ số level 1..30, sau đó tắt hẳn. Không dùng QUEST trong gameplay: quá nặng cho người chơi nhỏ tuổi/ván ngắn và khó giải thích vì sao game đổi."
+   },
+   {
+    "claim": "jsQUEST là bản JavaScript của QUEST chạy client-side, giấy phép MIT, repo kurokida/jsQUEST (push cuối 2022-09-30).",
+    "formula_or_number": "license SPDX = MIT",
+    "source_title": "kurokida/jsQUEST",
+    "source_url": "https://github.com/kurokida/jsQUEST",
+    "licence": "MIT",
+    "verified_how": "gh api repos/kurokida/jsQUEST → license.spdx_id = MIT; có file LICENSE và dist/.",
+    "apply_to": "Chỉ nếu sau này cần placement test Bayesian; vendor dist file vào repo (GitHub Pages, không CDN bắt buộc), ghi vào licences.json. Hiện tại KHÔNG cần — staircase tự viết ~20 dòng là đủ."
+   },
+   {
+    "claim": "Brain Workshop (app dual n-back mã nguồn mở) dùng luật thích nghi GIỮA các session, không trong session: ≥80% → lên 1 level; <50% trong 3 session liên tiếp ở cùng level → xuống 1 level; level tối thiểu 1. Chế độ Jaeggi: 90/75 và hạ ngay sau 1 session. Số trial = 20 + n^2 mặc định.",
+    "formula_or_number": "THRESHOLD_ADVANCE=80, THRESHOLD_FALLBACK=50, THRESHOLD_FALLBACK_SESSIONS=3, JAEGGI_ADVANCE=90, JAEGGI_FALLBACK=75; num_trials_total = num_trials + factor·back^exponent (mặc định 20 + 1·n^2)",
+    "source_title": "Brain Workshop 4.8.1 source, brainworkshop.pyw (mirror ktec/brainworkshop)",
+    "source_url": "https://raw.githubusercontent.com/ktec/brainworkshop/master/brainworkshop.pyw",
+    "licence": "GPL (dòng 14 file nguồn: 'The code is GPL licensed') — KHÔNG copy code; chỉ học ý tưởng ngưỡng",
+    "verified_how": "curl file nguồn + grep dòng 343-356, 681-687 và hàm retrieve_progress dòng ~3280-3300 (đọc logic trực tiếp).",
+    "apply_to": "Lớp 'gợi ý level' giữa các ván trong core.js: luật hạ phải trễ hơn luật lên (hysteresis, 3 lần thua mới gợi ý lùi) — đúng triết lý 'không bao giờ thấy bất công'. Brainy Bits nên chỉ GỢI Ý lùi/nhảy, không tự đổi level đã mở khoá."
+   },
+   {
+    "claim": "Jaeggi et al. 2008 (PNAS): n tăng 1 khi ít hơn 3 lỗi mỗi modality trong block, giảm 1 khi nhiều hơn 5 lỗi, còn lại giữ nguyên; mỗi session 20 block, mỗi block 20+n trial.",
+    "formula_or_number": "errors<3 → n+1 ; errors>5 → n−1 ; 3..5 → giữ ; block = 20+n trials",
+    "source_title": "Jaeggi, Buschkuehl, Jonides, Perrig (2008) Improving fluid intelligence with training on working memory, PNAS 105:6829",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2383929",
+    "licence": "Ý tưởng",
+    "verified_how": "WebFetch PMC2383929, trích nguyên văn mục Methods. (Lưu ý: hiệu quả 'tăng IQ' bị tranh cãi; ở đây chỉ mượn luật điều chỉnh, không mượn claim.)",
+    "apply_to": "Mẫu 'dead band' (vùng giữ nguyên) cho mem và rain: có vùng trung tính rộng để độ khó không giật lên xuống mỗi lần. mem: round hoàn hảo → nhích lên, sai ≥ nửa số ô → nhích xuống, còn lại giữ."
+   },
+   {
+    "claim": "Lomas et al. CHI 2013, hai thí nghiệm online 10K và 70K người chơi: gần như mọi trường hợp, người chơi chơi lâu hơn khi game DỄ hơn, trái với giả thuyết inverted-U. Ví dụ: target lớn (tỉ lệ thành công 63%) cho 34% số lượt ước lượng nhiều hơn và 18% thời gian nhiều hơn target nhỏ (29%). Điều kiện hấp dẫn nhất lại học chậm nhất; tác giả gợi ý 'feedforward' báo trước độ khó.",
+    "formula_or_number": "success 63% vs 29% → +34% trials, +18% time",
+    "source_title": "Lomas, Patel, Forlizzi, Koedinger (2013) Optimizing challenge in an educational game using large-scale design experiments, CHI 2013 pp.89-98, doi 10.1145/2470654.2470668",
+    "source_url": "https://www.stat.cmu.edu/~brian/463-663/project-part-one/Optimizing%20Challenge.pdf",
+    "licence": "Ý tưởng",
+    "verified_how": "Tải PDF, pdftotext, đọc abstract và mục Results (Target Size).",
+    "apply_to": "Đặt mục tiêu tỉ lệ thắng CAO cho game giải trí (khuyến nghị ~80-85% ở level mới mở, không phải 50-70% như phòng lab). Thêm feedforward: màn chọn level ghi rõ 'Level 24 · khó hơn 23 ở: tốc độ rơi' trước khi chơi."
+   },
+   {
+    "claim": "'Eighty Five Percent Rule': với learner kiểu gradient-descent và nhiễu Gaussian, tỉ lệ lỗi huấn luyện tối ưu ≈15.87% (độ chính xác ~85%); tác giả lưu ý kết quả chứng minh cho tác vụ hai lựa chọn.",
+    "formula_or_number": "error* ≈ 15.87% → accuracy ≈ 84-85%",
+    "source_title": "Wilson, Shenhav, Straccia, Cohen (2019) The Eighty Five Percent Rule for optimal learning, Nature Communications 10:4646, doi 10.1038/s41467-019-12552-4",
+    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6831579",
+    "licence": "CC BY (Nature Comms open access — CHƯA kiểm trực tiếp trang licence); chỉ dùng con số",
+    "verified_how": "WebSearch: PMC + DOAJ + thông cáo University of Arizona cùng xác nhận 15.87%. Không có bằng chứng con số này áp dụng nguyên xi cho game hành động.",
+    "apply_to": "Hằng số mục tiêu mặc định của engine: p_target = 0.85 ở mức trial (từng drop/từng con cá/từng tàu); kết hợp Lomas để không đặt thấp hơn ~0.80. Luật Kaernbach với p=0.85 → bước khó:dễ ≈ 1:5.7."
+   }
+  ]
+ },
+ {
+  "angle": "cognitive",
+  "recommendation": "Kết luận: dùng MỘT engine chung, trong đó mỗi level là một vector knob. Engine nội suy có ràng buộc trần nhận thức, rồi hiệu chỉnh bằng bot Monte Carlo có tham số lấy từ các norm ở trên. Không để mỗi game một thuật toán riêng.\n\n1) Trần nhận thức cho từng game (level 30 không được vượt):\n- mem: t = 2 + L hiện ra 32 ô ở level 30, vượt xa K ≈ 4 object (Luck & Vogel; Cowan) và cả mức có chunk. Giữ t trong khoảng 3 → 10–12. Từ level khoảng 15 trở đi, độ khó đến từ show time giảm, lưới lớn hơn (ô ≥ 44 px), và một chế độ 'theo thứ tự' với độ dài 4 → 7 bám Corsi 6,2 ± 1,3.\n- koi: người chơi phải theo dõi tập cá đã ăn mà không có dấu hình, tức là bài toán MOT. Theo dõi ổn định khoảng 4 con, tới 8 con khi cá chậm và thưa. Không tăng đồng thời số cá và tốc độ: mỗi level chỉ đẩy một trục, xen kẽ (số koi → tốc độ → mật độ/decoy).\n- rain: một phép cộng nhỏ mất khoảng 0,65–0,83 s, nên fall time không phải nút cổ chai. Trục khó đúng là số giọt đồng thời, spawn interval và loại phép tính (+ nhỏ → − → × trong bảng → có nhớ → ÷).\n- train: dùng H = log2(số ga) làm trục (Hick–Hyman), cộng mật độ tàu. Slope phải đo từ người chơi thật.\n- word: chấm D theo tần suất từ, ký tự lặp, dấu thanh và entropy còn lại sau một lượt đoán. Đích là bot đạt khoảng 3,5–4,5 lượt ở level giữa.\n- Mọi game: target ≥ 9,6 mm (khoảng 44 px). Kích thước target không bao giờ được dùng làm trục khó.\n\n2) Rule cho engine:\n- Mỗi game khai một manifest các knob {tên, min, max, trần nhận thức, hướng}.\n- Độ khó mục tiêu đi theo đường cong pass-rate của bot: khoảng 95% ở level 1, giảm dần về khoảng 55–60% ở level 30. Cứ mỗi 5 level chèn một level 'thở' dễ hơn.\n- Mỗi bước chỉ tăng 1–2 knob, và không knob nào được vượt trần của nó.\n- 'Thêm 10 màn' nghĩa là nối thêm vào đường cong từ level hiện có cuối cùng và chạy lại bot.\n\n3) Bot người: mỗi người chơi giả lấy capacity ~ N(4, 1), RT ~ ex-Gaussian, thời gian giải phép tính và thời gian Hick theo từng game, cùng xác suất lỗi tăng khi load vượt capacity. Chạy khoảng 1000 ván mỗi level trong Node để xếp thứ tự level. Sau đó hiệu chỉnh μ, σ, τ và b bằng log của 2–3 người chơi thật, chỉ lưu trong localStorage, không có server, đúng ràng buộc GitHub Pages.\n\nChưa xác minh được:\n- slope Hick bằng ms/bit (không có nguồn sơ cấp, nên phải đo);\n- ngưỡng tốc độ MOT bằng deg/s (PDF không truy cập được);\n- RT tuyệt đối của trừ, nhân, chia (Campbell & Xue chỉ xác minh tới abstract);\n- norm của Visual Patterns Test (manual đã tuyệt bản);\n- solve rate của word game tiếng Việt;\n- con số 4,5 lượt / 8% thua của Wordle chỉ từ một ngày, bằng chứng yếu;\n- phần cộng thêm cho phép cộng có nhớ là ước lượng của tôi.\n\nTất cả nguồn là paper, nên chỉ lấy con số và công thức, không chép code hay văn bản. Riêng arXiv 2311.16777 có licence CC BY 4.0. Phần review ở đây là tác giả tự kiểm: same vendor, same priors, không có external verifier nào chạy.",
+  "missing": [
+   "Power law of practice / learning curve: người chơi nhanh lên theo số lần chơi (RT ~ a + b·N^-c). Bot phải có tham số học để mô phỏng được đường cong qua 30 level, chứ không phải một người chơi bất biến. Chưa có nguồn nào được kiểm cho mục này.",
+   "Spatial pattern span (ví dụ Visual Patterns Test, Della Sala et al.): phù hợp với mem hơn K=4 của change detection hay Corsi, vì mem sáng ô đồng thời trên lưới. Cần tìm và kiểm norm trước khi đặt trần t cho L11–30.",
+   "Encoding/consolidation time trong working memory: thời gian nhìn ở mem hiện là 1,0 + 0,3·t giây. Chưa có nguồn nào cho biết ms/item cần để mã hoá, nên chưa kiểm được việc giảm thời gian nhìn có phải một trục khó hợp lệ không.",
+   "Speed–accuracy tradeoff và lapse rate (bấm nhầm, mất tập trung): bot cần xác suất lỗi tăng dưới áp lực thời gian, ví dụ cho rain khi có 5 giọt cùng lúc và koi khi cooldown tăng. Hiện mới chỉ mô hình hoá RT.",
+   "Dual-task / multitasking cost: train và rain đều buộc người chơi theo dõi nhiều thứ cùng lúc. Chưa có nguồn nào về việc chi phí này tăng theo số luồng song song.",
+   "Kiểm chéo giữa các mốc: mem L10 đã là 12 ô và koi L10 đã là 15 con (cộng 4 cá xám). Cả hai đều vượt xa mọi giới hạn nhận thức đã trích. Chưa ai đối chiếu xem tỉ lệ qua màn thực tế (từ localStorage BB.record) có khớp với dự đoán của mô hình không, trước khi kéo dài lên 30.",
+   "Nguồn tần suất từ tiếng Việt có licence permissive cho word: chưa có corpus hay danh sách tần suất nào được kiểm licence.",
+   "Mức thử thách mục tiêu (ví dụ tỉ lệ thắng 70–85% mỗi level, flow, DDA): góc cognitive này không đưa ra con số nào có nguồn cho tỉ lệ thắng mong muốn mà bot phải hiệu chỉnh theo."
+  ],
+  "findings": [
+   {
+    "claim": "Trí nhớ làm việc thị giác giữ được khoảng 4 object cùng lúc. Một object có 4 feature (màu + hướng + ...) được nhớ tốt ngang object 1 feature, nên capacity tính theo object chứ không theo feature.",
+    "formula_or_number": "K ≈ 4 object (change-detection, màu hoặc hướng)",
+    "source_title": "Luck & Vogel (1997), The capacity of visual working memory for features and conjunctions, Nature 390:279–281, doi:10.1038/36846",
+    "source_url": "https://www.doi.org/10.1038/36846",
+    "licence": "Paper có bản quyền; chỉ dùng con số và ý tưởng (fact), không chép văn bản hay hình",
+    "verified_how": "WebSearch ra bản ghi Nature/IDEAS/PubMed-ModelDB khớp tiêu đề, tập 390, trang 279 và câu 'only four colours or orientations'. Chưa mở full PDF để đọc thời gian trình chiếu từng thí nghiệm.",
+    "apply_to": "mem (số ô sáng t) và koi (số con đã cho ăn phải nhớ). Đặt K=4 làm trục khó gốc của mô hình bot: p(nhớ đúng một item) giảm mạnh khi load > 4."
+   },
+   {
+    "claim": "Cowan cho rằng giới hạn trung tâm của short-term memory trung bình khoảng 4 chunk (không phải 7±2), và chính tác giả ghi nhận con số này còn tranh cãi.",
+    "formula_or_number": "≈ 4 chunk, dao động khoảng 3–5 giữa các cá nhân",
+    "source_title": "Cowan (2001), The magical number 4 in short-term memory, Behavioral and Brain Sciences 24(1):87–114, PMID 11515286",
+    "source_url": "https://pubmed.ncbi.nlm.nih.gov/11515286/",
+    "licence": "Bản quyền Cambridge UP; chỉ lấy con số",
+    "verified_how": "WebSearch ra bản ghi PubMed, trang Cambridge và PDF của tác giả (memory.psych.missouri.edu), đều khớp tập, trang và kết luận '4 chunks'. Biên '±1' là cách đọc thông dụng, tôi chưa thấy nó trong abstract.",
+    "apply_to": "Rule chung cho mọi game: một level chỉ được vượt 4 item 'phải giữ trong đầu' khi game cho phép chunk (pattern trên lưới, ghép cặp, nhóm màu). Phiên bản bot: capacity_i ~ Normal(4, 1), cắt về [2, 7]."
+   },
+   {
+    "claim": "Corsi block span (nhớ một chuỗi vị trí theo thứ tự) ở người lớn khỏe mạnh trung bình 6,2 khối, SD 1,3, nên phần lớn người chơi nằm trong khoảng 5–7.",
+    "formula_or_number": "span = 6.2 ± 1.3 (Kessels et al. 2000, theo PsyToolkit và Millisecond trích lại)",
+    "source_title": "Kessels, van Zandvoort, Postma, Kappelle, de Haan (2000), The Corsi Block-Tapping Task: Standardization and Normative Data, Applied Neuropsychology 7:252–258",
+    "source_url": "https://www.psytoolkit.org/library/corsi.html",
+    "licence": "Chỉ lấy con số chuẩn (fact). Thư viện PsyToolkit không ghi licence trên trang nên không chép code của nó",
+    "verified_how": "WebFetch PsyToolkit trích đúng câu 'average block span of 6.2 blocks (SD=1.3)'. Manual của Millisecond trích cùng số từ Table 2. Tôi CHƯA đọc bảng gốc của Kessels.",
+    "apply_to": "mem: nếu thêm chế độ 'nhớ theo thứ tự' cho level 21–30, độ dài chuỗi nên đi 4 → 7, chỉ vài level trên cùng đụng 8. mem hiện tại sáng ô đồng thời, không theo thứ tự, nên đây là cận dưới thận trọng cho trục thứ tự, không phải trần của t."
+   },
+   {
+    "claim": "Số mục tiêu theo dõi được trong Multiple Object Tracking (MOT) không cố định ở 4. Khi object chậm có thể theo tới 8; khi rất nhanh chỉ theo được 1. Capacity là một resource đổi qua lại với tốc độ và độ chen chúc (crowding).",
+    "formula_or_number": "Mặc định ~4 mục tiêu (Pylyshyn & Storm 1988); khoảng 1 (nhanh) → 8 (chậm) (Alvarez & Franconeri 2007)",
+    "source_title": "Pylyshyn & Storm (1988), Spatial Vision 3(3):179–197; Alvarez & Franconeri (2007), How many objects can you track?, Journal of Vision 7(13):14",
+    "source_url": "https://dash.harvard.edu/entities/publication/c5600f24-cfc6-4d53-aca2-d244ec64059f",
+    "licence": "Journal of Vision là open access. Chỉ dùng con số và ý tưởng",
+    "verified_how": "Bản ghi Harvard DASH trích abstract: 'observers can track a maximum of about 4', 'At slow speeds it is possible to track up to 8 objects'. Bản ghi Pylyshyn & Storm khớp qua PDF ở ruccs.rutgers.edu. KHÔNG lấy được ngưỡng tốc độ tính bằng deg/s: PDF Northwestern bị từ chối kết nối, JOV trả 403. Vì vậy chưa có con số chuyển tốc độ sang px/s.",
+    "apply_to": "koi: con cá đã cho ăn KHÔNG được đánh dấu bằng hình (js/koi.js chỉ đặt cờ f.fed), nên người chơi phải tự theo dõi tập 'đã ăn' trong khi cá bơi. Với koi = 5 + d, tối đa 15, giữa ván người chơi phải theo khoảng 7 con, gấp đôi mốc 4. Việc này chỉ làm được khi cá chậm (spd 30–42 px/s) và không chen nhau. Trục khó cho level 11–30: đẩy số koi lên tới khoảng 8–10, rồi tăng tốc độ VÀ mật độ (giảm area theo con), không tăng thẳng tới 15+ cùng lúc với tốc độ."
+   },
+   {
+    "claim": "Cộng nhẩm sinh ra kết quả ngay cả với số nhỏ (toán hạng 1–4) đã mất khoảng 0,64–0,83 s ở sinh viên đại học. Phép cộng hai số giống nhau nhanh hơn (643 ms so với 716 ms), và thời gian tăng theo tổng (677 ms cho 2+1, 826 ms cho 4+3 ở nhóm chịu size-effect mạnh).",
+    "formula_or_number": "RT_add_small ≈ 640–830 ms; tie 643 ms, non-tie 716 ms; tăng gần tuyến tính theo tổng",
+    "source_title": "Barrouillet & Thevenot (2013), On the problem-size effect in small additions, Cognition 128(1):35–44",
+    "source_url": "https://access.archive-ouverte.unige.ch/access/metadata/2c3ad80b-2334-48ee-8cc9-1521d7816171/download",
+    "licence": "Bản lưu trữ mở của Université de Genève. Chỉ lấy con số",
+    "verified_how": "Tải PDF rồi chạy pdftotext, đọc thẳng trong text: '643 ms and 716 ms', '677 ms for 2 + 1 to 826 ms for 4 + 3'. Đây là thời gian bấm phím vocal/production trong lab, CHƯA gồm thời gian gõ đáp án trên bàn phím điện thoại.",
+    "apply_to": "rain: thời gian rơi (fall 13 s → sàn 8 s) đang rộng gấp hơn 10 lần thời gian giải một phép cộng nhỏ. Vì vậy khó thật nằm ở số giọt đồng thời (tối đa 5) và spawn interval, không nằm ở fall. Trong bot: thời gian giải ~ ex-Gaussian với mean khoảng 0,7 s cho tổng ≤ 10, cộng thêm khoảng 0,15–0,4 s cho mỗi đơn vị toán hạng lớn hơn hoặc mỗi bước nhớ (mức thêm này là ƯỚC LƯỢNG, chưa có nguồn), cộng thời gian gõ mỗi chữ số."
+   },
+   {
+    "claim": "Problem-size effect (bài lớn chậm hơn và sai nhiều hơn) có ở mọi phép tính, nhưng độ lớn của nó phụ thuộc cách học. Với phép nhân, chênh lệch RT giữa bài lớn và bài nhỏ là 144 ms ở người Mỹ và 52 ms ở người Trung Quốc. Đây là nguồn trực tiếp gần nhất cho người chơi Việt Nam học bảng cửu chương thuộc lòng (suy luận, chưa đo).",
+    "formula_or_number": "Nhân: PSE 144 ms (Mỹ) và 52 ms (Trung Quốc)",
+    "source_title": "Prado et al. (2013), The neural bases of the multiplication problem-size effect across countries, Frontiers in Human Neuroscience 7:189; Campbell & Xue (2001), Cognitive arithmetic across cultures, JEP:General 130(2):299–315",
+    "source_url": "https://www.frontiersin.org/journals/human-neuroscience/articles/10.3389/fnhum.2013.00189/full",
+    "licence": "Frontiers là open access (thường CC BY, trang fetch được không in licence). Chỉ lấy con số",
+    "verified_how": "WebFetch bài Frontiers trả về PSE 144/52 ms. Campbell & Xue chỉ xác minh qua tiêu đề và abstract; PDF trên uwaterloo trả 404 nên RT tuyệt đối từng phép tính CHƯA xác minh.",
+    "apply_to": "rain: thứ tự mở khoá phép tính nên là + nhỏ → − nhỏ → × bảng cửu chương → + có nhớ → ÷ ngược bảng. Vì problem-size effect nhỏ ở người học thuộc, × trong bảng 2–9 có thể vào sớm hơn + có nhớ hai chữ số. Cần một lượt playtest thật để xác nhận điều này."
+   },
+   {
+    "claim": "Hick–Hyman law: choice RT tăng tuyến tính theo lượng thông tin của tập lựa chọn, RT = a + b·log2(n), với n lựa chọn đồng xác suất. Bài review 2018 nêu các ngoại lệ: S-R compatibility cao, luyện tập nhiều, và set size rất lớn làm slope nhỏ đi hoặc phá vỡ quan hệ tuyến tính.",
+    "formula_or_number": "RT = a + b·H, H = log2(n). KHÔNG tìm được giá trị b đo thực có nguồn: con số 155 ms/bit chỉ thấy trên blog nên không dùng",
+    "source_title": "Hyman (1953), JEP 45(3):188–196, doi:10.1037/h0056940; Proctor & Schneider (2018), Hick's law for choice reaction time: A review, QJEP 71(6):1281–1299",
+    "source_url": "https://www.pubmed.gov/28434379/",
+    "licence": "Chỉ dùng công thức (ý tưởng, không có bản quyền)",
+    "verified_how": "Bản ghi PubMed của Proctor & Schneider và trang Wikipedia Hick's law xác nhận dạng công thức và các ngoại lệ. Wikipedia nói rõ b phải fit từ dữ liệu, không có số chuẩn. Slope ms/bit vì vậy CHƯA XÁC MINH.",
+    "apply_to": "train: mỗi lần tàu tới một switch là một lựa chọn trong số ga đích có thể (5 → 15 ga). Dùng H = log2(số ga khác màu/hình còn hoạt động) làm một trục khó, và ước lượng b, a cho bot bằng 2–3 người chơi thật trên chính game (log thời gian bấm switch, chỉ lưu localStorage). Vì switch có S-R compatibility cao (bấm trực tiếp lên đường ray), slope thực tế có thể thấp."
+   },
+   {
+    "claim": "Với thao tác một tay bằng ngón cái trên màn cảm ứng, kích thước target khuyến nghị là 9,2 mm cho tác vụ rời và 9,6 mm cho tác vụ chuỗi. Trên ngưỡng khoảng 9,6 mm (rời) hoặc 7,7 mm (chuỗi), error rate không còn khác biệt đáng kể.",
+    "formula_or_number": "target ≥ 9.2–9.6 mm (≈ 44–48 CSS px ở mật độ chuẩn; quy đổi px là suy luận của tôi)",
+    "source_title": "Parhi, Karlson & Bederson (2006), Target Size Study for One-Handed Thumb Use on Small Touchscreen Devices, MobileHCI 2006:203–210, doi:10.1145/1152215.1152260",
+    "source_url": "https://dx.doi.org/10.1145/1152215.1152260",
+    "licence": "Chỉ lấy con số",
+    "verified_how": "WebSearch ra bản ghi Microsoft Research, dblp và DOI, khớp số 9.2/9.6 mm và câu về error rate. Chưa đọc full paper.",
+    "apply_to": "Rule cứng cho mọi game: KHÔNG dùng kích thước target nhỏ dần làm trục khó, vì lỗi bấm trượt bị người chơi cảm nhận là lỗi game chứ không phải lỗi của mình. koi: fishLen co về 0,85× khi koi > 11; giữ vùng chạm của cá ≥ khoảng 44 px kể cả khi hình vẽ nhỏ hơn. mem: ở lưới 6×6 và level 30, ô phải ≥ 44 px trên viewport 320 px, tức lưới rộng tối đa khoảng 6–7 cột. Trong bot: dùng Fitts MT = a + b·log2(D/W + 1) chỉ để mô phỏng thời gian di ngón, hệ số lấy từ playtest."
+   },
+   {
+    "claim": "Với Wordle, độ khó của từng từ đoán trước được từ đặc trưng của từ: số chữ cái khác nhau (lặp chữ thì khó hơn), tần suất dùng của từ (từ thông dụng dễ hơn), số ô vàng trung bình lộ ra, và Subset Entropy. Một ngày minh hoạ (Wordle 1012) có trung bình 4,5 lượt và khoảng 8% không giải được, theo dữ liệu WordleBot của NYT.",
+    "formula_or_number": "Predictor Lasso: unique letters, word frequency, mean yellow tiles, subset entropy. Một mẫu: mean 4,5 lượt, ~8% thua (bình luận trên engaging-data, yếu)",
+    "source_title": "DiSilvio, Ozerov, Zhou (2023), How many Wordle words will Wordle guessers guess if Wordle's Wednesday Wordle word is 'Eerie'?, arXiv:2311.16777 (CC BY 4.0); engaging-data.com Wordle Stats",
+    "source_url": "https://arxiv.org/abs/2311.16777v1",
+    "licence": "Paper arXiv: CC BY 4.0 (đã kiểm trên trang abs). engaging-data: không rõ licence, chỉ trích số",
+    "verified_how": "WebFetch trang abs xác nhận licence CC BY 4.0. WebFetch bản ar5iv lấy danh sách 4 predictor. Con số 4,5 lượt / 8% chỉ đến từ một bình luận được tác giả engaging-data xác nhận cách đếm (thua tính là 7 lượt) nên là bằng chứng YẾU. Không có solve-rate cho bản tiếng Việt 2 từ có dấu.",
+    "apply_to": "word: chấm điểm khó cho mỗi cụm 2 từ: D = w1·(1 − rank tần suất) + w2·(số âm tiết hoặc ký tự lặp) + w3·(số dấu thanh khác 'ngang') + w4·(số cụm còn khớp sau 1 lượt đoán mẫu, tính bằng solver entropy chạy trong Node). Xếp level 1–30 theo D tăng dần và bỏ gợi ý (hint) dần. Hiệu chỉnh: bot entropy-solver có nhiễu (chọn ngẫu nhiên trong top-k) phải ra mean khoảng 3,5–4,5 lượt ở level giữa. Mốc này mượn từ Wordle tiếng Anh nên cần kiểm lại với người chơi Việt."
+   },
+   {
+    "claim": "Reaction time có phân phối lệch phải. Mô hình chuẩn để mô phỏng là ex-Gaussian(μ, σ, τ), trong đó mean = μ + τ và variance = σ² + τ². Lấy μ, σ bằng mean và SD quan sát được sẽ làm bot chậm hơn mức mong muốn.",
+    "formula_or_number": "mean = μ+τ; SD = √(σ²+τ²); skew → 2 khi τ ≫ σ",
+    "source_title": "ExGUtils: A python package for statistical analysis with the ex-gaussian probability density (arXiv:1707.05759) cùng các bài tổng hợp được search trả về",
+    "source_url": "https://arxiv.org/pdf/1707.05759",
+    "licence": "Chỉ dùng công thức toán (không có bản quyền)",
+    "verified_how": "WebSearch tổng hợp từ nhiều nguồn khớp nhau về các hệ thức moment. Không tìm được bộ tham số chuẩn cho người chơi trên điện thoại. Con số 'median simple RT 273 ms' của Human Benchmark KHÔNG có nguồn gốc gốc nên không dùng.",
+    "apply_to": "Bot Monte Carlo (Node, dùng chung cho mọi game): mỗi hành động lấy RT = ExGauss(μ, σ, τ) cộng chi phí theo game (Hick cho train, thời gian giải phép tính cho rain, thời gian di ngón theo Fitts). Chọn μ, σ, τ sao cho mean và SD khớp log thật từ 2–3 người playtest."
+   }
+  ]
+ },
+ {
+  "angle": "simulation",
+  "recommendation": "Khuyến nghị: dùng MỘT thuật toán chung \"target curve + Monte Carlo calibration\". Mỗi game chỉ phải viết riêng 2 thứ: một hàm map một scalar d thành các knob của game, và một bot mô phỏng.\n\n1) Target curve chung (đề xuất thiết kế, chưa có nguồn cho các hằng số):\np*(L) = 0.45 + 0.50·(1 − ((L−1)/29)^0.8), tức khoảng 95% ở L1 và 45% ở L30. Mỗi level thứ 5 (L5, 10, 15...) là relief level: p* cộng thêm 0,10. Level ngay sau relief giới thiệu cơ chế mới. Thêm 10 level nữa (L31..40) thì kéo dài curve với sàn khoảng 0,40, không bao giờ xuống dưới. Báo kèm E[attempts] = 1/p.\n\n2) Bot người dùng chung trong scripts/sim/human.mjs:\n- RT lấy mẫu ex-Gaussian (mu, sigma, tau).\n- Motor noise Normal(0, sigma_m) áp lên thời điểm và vị trí (theo Isaksen).\n- Decision time cộng thêm theo Hick; thời gian chạm theo Fitts.\n- Working-memory capacity K ~ N(4, 1), có chunking.\n- Lapse rate lambda: tỉ lệ lượt bot bấm ngẫu nhiên hoặc bỏ lỡ.\n- Arithmetic error tăng theo cỡ số (Rain).\n- Learning theo power law khi thử lại.\nChạy 3 persona (novice, median, skilled) theo kiểu quần thể của Roohi. Target đo trên median; sàn đo trên novice.\n\n3) Harness (Node, không dependency, chạy offline):\n- Bước 0: tách js/levels/<game>.js thành module thuần, rng tiêm vào.\n- Mỗi game có sim(spec, bot, rng) trả {pass, margin}, ví dụ Koi: đếm lần cho ăn trùng và nhầm decoy.\n- calibrate.mjs: với từng L, tìm d bằng stochastic bisection để p(L) khớp p*(L). Mỗi điểm chạy 1.200 seed mulberry32. Kiểm Wilson CI, kiểm tính đơn điệu (trừ relief level), rồi ghi ra levels.json.\n- Playwright chỉ dùng để smoke-test vài seed trên UI thật, không dùng để calibrate vì quá chậm.\n\n4) Viết rule để lần sau chỉ cần nhắn \"thêm 10 màn\": gates/DIFFICULTY-RULE.md ghi cho từng game knob nào, thứ tự tăng, trần vật lý của từng knob và mapping d → knobs. Lệnh đó khi ấy chỉ là chạy calibrate cho L(n+1)..L(n+10). Game mới thì chỉ cần viết thêm gen, sim và map d.\n\nRủi ro và phần CHƯA xác minh:\n- Tham số người (mu/sigma/tau, sigma_m, K) đang mượn từ task phòng thí nghiệm, chưa đo trên chính game này. Phải tự calibrate một lần: Duy (và 2–3 người quen) chơi 30 level, xuất stats từ localStorage bằng một nút \"export JSON\", không cần server, rồi chỉnh persona cho khớp.\n- Mem sẽ đảo ngược độ khó ở L30 nếu giữ công thức t = 2+L. Phải đổi trước khi mở rộng.\n- Word không có mô hình RT phù hợp. Bot Word nên là solver Wordle có vốn từ giới hạn theo tần suất, dùng danh sách cụm từ license-clear; phần này chưa research.\n- Review: cùng vendor, cùng priors; không có external verifier nào đã chạy.",
+  "missing": [
+   "Chưa có bước validate bot với người thật: Gudmundsson 2018 phải fit một hồi quy từ agent success rate sang player success rate. Brainy Bits không có telemetry (do ràng buộc no tracking), nên cần một playtest nhỏ có chủ đích (Duy và vài người chơi L1-L10, tự ghi tay pass/fail) để chỉnh persona median. Thiếu bước này, mọi target pass rate chỉ là số của bot.",
+   "Word (Wordle tiếng Việt) chưa có mô hình bot nào. Cần một solver dựa trên information gain/entropy, có giới hạn vốn từ theo persona (chỉ biết k% cụm từ theo tần suất) cộng xác suất bỏ sót dấu thanh. Chưa tìm nguồn cho mảng này.",
+   "Rain chưa có mô hình thời gian giải phép tính. Tài liệu cognitive arithmetic có 'problem-size effect' (phép tính có số lớn hơn thì RT tăng) và tỉ lệ lỗi theo phép toán. Chưa xác minh nguồn (ví dụ Ashcraft), phải research riêng trước khi dùng số.",
+   "Koi về bản chất là một task theo dõi và nhớ nhiều đối tượng cùng lúc (nhớ con nào đã cho ăn khi chúng bơi lẫn nhau). Nên xem tài liệu multiple object tracking (giới hạn khoảng 4 đối tượng, Pylyshyn & Storm 1988), CHƯA xác minh. Hick/Fitts không mô tả được lỗi cho ăn trùng.",
+   "Mâu thuẫn mô hình: E[attempts] = 1/p (p cố định) và power-law learning (p tăng theo số lần thử) phải được gộp thành một mô phỏng chuỗi lượt thử có learning, rồi mới báo expected attempts.",
+   "Attention lapse và mệt mỏi trong một màn dài (Train 90 giây) chưa được mô hình hoá ngoài đuôi tau. Nên có một tham số lapse rate riêng cho mỗi persona.",
+   "Tốc độ animation và thời gian tính theo frame: Node harness phải chạy game theo bước thời gian cố định (dt) với clock giả, nếu không pass rate đo trong Node sẽ khác trên điện thoại 60/120 Hz. Mảng này chưa đề cập.",
+   "Có 3 bản mulberry32 (core.js, koi.js, train-map.js). Bước 0 cần gom về một module levels/rng dùng chung, đồng thời giữ được seed của daily challenge (BB.dayKey) để không phá tiến độ người chơi đang có."
+  ],
+  "findings": [
+   {
+    "claim": "King (Candy Crush) đã dùng agent bắt chước người chơi (CNN học từ gameplay người thật) để chạy hàng loạt lượt chơi giả và ước lượng success rate của từng level trước khi phát hành. Đây là tiền lệ công nghiệp cho việc calibrate độ khó offline bằng bot thay cho playtest người.",
+    "source_title": "Human-Like Playtesting with Deep Learning (Gudmundsson, Eisen, Poromaa, Nodet et al., IEEE CIG 2018)",
+    "source_url": "https://doi.org/10.1109/CIG.2018.8490442",
+    "formula_or_number": "Metric = pass/success rate per level. Con số 'từ 7 ngày xuống dưới 1 phút' chỉ thấy ở nguồn thứ cấp, CHƯA xác minh với full text.",
+    "licence": "Bài báo IEEE (bản quyền thuộc nhà xuất bản): chỉ dùng ý tưởng, không chép code hay văn bản",
+    "verified_how": "Crossref API trả đúng title, tác giả, venue CIG 2018-08. Chưa đọc được full text.",
+    "apply_to": "Toàn bộ quy trình: pass rate của mỗi level đo bằng Monte Carlo bot, không đoán tay. Brainy Bits không có dữ liệu người nên dùng bot viết tay theo mô hình tâm lý (xem các finding sau), không dùng CNN."
+   },
+   {
+    "claim": "Rovio và Aalto ghép AI agent với một mô phỏng QUẦN THỂ người chơi qua các level (skill, persistence, boredom) để dự đoán pass rate và churn của từng level. Kết quả: người kỹ năng thấp, ít kiên nhẫn chịu ảnh hưởng nặng nhất khi độ khó cao và bỏ đi sớm. Bài tiếp theo (2021) cho thấy hiệu suất best-case của agent tương quan với dữ liệu người tốt hơn hiệu suất trung bình.",
+    "source_title": "Predicting Game Difficulty and Churn Without Players (Roohi et al., CHI PLAY 2020); Predicting Game Difficulty and Engagement Using AI Players (Roohi et al., PACM HCI 2021)",
+    "source_url": "https://arxiv.org/abs/2008.12937",
+    "formula_or_number": "Pass rate = tỉ lệ lượt thắng/lượt thử của level; churn = tỉ lệ người bỏ sau khi thử level. Bản 2021: DOI 10.1145/3474658, arXiv 2107.12061.",
+    "licence": "arXiv non-exclusive distribution licence 1.0: chỉ dùng ý tưởng, không chép văn bản",
+    "verified_how": "Đọc trang abstract arXiv 2008.12937 và 2107.12061 bằng WebFetch; Crossref xác nhận DOI 10.1145/3474658 (Roohi, Guckelsberger, Relas, Heiskanen, 2021).",
+    "apply_to": "Harness không chạy một bot mà chạy một population gồm 3 persona (novice, median, skilled) lấy mẫu từ phân phối tham số. Pass rate mục tiêu đo trên persona median; còn persona novice dùng làm sàn: level relief phải để novice qua được >= 60% (ngưỡng này là đề xuất thiết kế, chưa có nguồn)."
+   },
+   {
+    "claim": "Isaksen và Nealen mô phỏng người chơi game hành động đơn giản bằng một AI 'hoàn hảo' rồi lệch thời điểm bấm theo phân phối normal. Độ lệch chuẩn sigma đại diện cho skill: sigma lớn là người kém, sigma nhỏ là người giỏi. Hình trong bài quét sigma từ 20 đến 60 ms. Mỗi game variant được chạy Monte Carlo, rồi phân phối điểm được phân tích bằng survival analysis; hazard function h(x) chính là 'difficulty curve' của designer.",
+    "source_title": "Comparing Player Skill, Game Variants, and Learning Rates Using Survival Analysis (Isaksen & Nealen, AIIDE 2015 Player Modeling Workshop)",
+    "source_url": "https://ojs.aaai.org/index.php/AIIDE/article/view/12846",
+    "formula_or_number": "t_tap = t_ideal + N(0, sigma), sigma khoảng 20..60 ms (lấy từ chú thích hình, đọc qua pdftotext); hazard h(x) = f(x)/S(x)",
+    "licence": "Bài báo AAAI: chỉ dùng ý tưởng, tự viết code",
+    "verified_how": "Tải PDF từ cdn.aaai.org rồi pdftotext, đọc nguyên văn mục mô hình người chơi và phương trình (7).",
+    "apply_to": "Train (thời điểm bật switch trước khi tàu tới ngã rẽ), Koi (thời điểm chạm con cá đang bơi), Rain (gõ xong đáp án trước khi giọt chạm nước). Motor noise sigma là một tham số persona. Với Rain và Train, hazard theo thời gian trong màn còn cho biết màn khó ở đoạn nào."
+   },
+   {
+    "claim": "Trong cùng bài, Isaksen và Nealen mô hình learning bằng power law of practice: sau mỗi lượt chơi, sigma của bot giảm theo T = A + B(n+E)^-R. Họ mô phỏng 50.000 AI player, mỗi người chơi 10 lần. Dùng learning làm phân phối điểm lệch khỏi dạng exponential.",
+    "source_title": "Comparing Player Skill, Game Variants, and Learning Rates Using Survival Analysis (Isaksen & Nealen, AIIDE 2015)",
+    "source_url": "https://ojs.aaai.org/index.php/AIIDE/article/view/12846",
+    "formula_or_number": "T = A + B(n+E)^(-R); A = mức tốt nhất, B = mức lượt đầu, R > 0 = learning rate, E = kinh nghiệm trước (trích Lane 1987)",
+    "licence": "Ý tưởng trong bài báo; công thức toán không có bản quyền",
+    "verified_how": "Đọc nguyên văn đoạn phương trình (7) trong PDF đã trích bằng pdftotext.",
+    "apply_to": "Tính expected attempts có tính learning: bot thử lại một level thì sigma, tau và lapse giảm theo power law. Áp dụng cho persona khi chơi chuỗi L1→L30 liên tục, để L30 được đo trên một bot đã 'luyện' qua 29 level, không phải bot mới. Không có bước này thì level cao sẽ bị đo khó hơn thực tế."
+   },
+   {
+    "claim": "Reaction time của người lệch phải và mô tả tốt bằng ex-Gaussian: Z = X + Y, X ~ Normal(mu, sigma), Y ~ Exponential(mean tau). Mean = mu + tau, variance = sigma^2 + tau^2. Phần đuôi tau thường được gắn với chú ý lơ đãng (attention lapse). Matzke và Wagenmakers cảnh báo không nên gán từng tham số cho một quá trình nhận thức cụ thể, nên ở đây chỉ dùng nó làm mô hình mô tả để sinh mẫu.",
+    "source_title": "ExGUtils: A python package for statistical analysis with the ex-gaussian probability density (Moret-Tatay et al.); Psychological interpretation of the ex-Gaussian and shifted Wald parameters (Matzke & Wagenmakers, PBR 2009)",
+    "source_url": "https://arxiv.org/abs/1707.05759",
+    "formula_or_number": "Mẫu ví dụ trong ExGUtils (go/no-go, người trẻ): mu=451 ms, sigma=47 ms, tau=147 ms; người lớn tuổi: mu=526, sigma=93, tau=305. Cách sinh mẫu: x = mu + sigma*N(0,1); y = -tau*ln(U); rt = x + y. Đây là số của một task khác, KHÔNG phải số đo cho game của Brainy Bits.",
+    "licence": "Công thức toán: tự do dùng. Gói ExGUtils được ghi là 'open-source and free software' nhưng không nêu licence cụ thể, nên không chép code; tự viết khoảng 5 dòng JS.",
+    "verified_how": "WebFetch bản ar5iv của arXiv 1707.05759 (đọc tham số và định nghĩa Z = X + Y); Crossref xác nhận DOI 10.3758/PBR.16.5.798 của Matzke & Wagenmakers 2009.",
+    "apply_to": "Hàm rtSample(persona, rng) dùng chung cho mọi game. Gợi ý persona median: mu khoảng 450, sigma khoảng 50, tau khoảng 150 ms. Đây là default suy ra từ ví dụ go/no-go ở trên, CHƯA calibrate cho game. Novice: mu và tau nhân 1,3; skilled: nhân 0,8 (hệ số là đề xuất)."
+   },
+   {
+    "claim": "Choice RT tăng theo log của số lựa chọn (Hick 1952). Thời gian chạm một mục tiêu tăng theo log2(2D/W) (Fitts 1954). Hai định luật này cho phép phần mean của RT (mu) trong bot tự tăng khi level thêm lựa chọn (thêm station hoặc màu ở Train, thêm cá hoặc decoy ở Koi) hay thu nhỏ mục tiêu (cá nhỏ đi khi koi > 11).",
+    "source_title": "On the Rate of Gain of Information (Hick, QJEP 1952); The information capacity of the human motor system in controlling the amplitude of movement (Fitts, J Exp Psych 1954)",
+    "source_url": "https://doi.org/10.1080/17470215208416600",
+    "formula_or_number": "Hick: RT = a + b*log2(n+1). Fitts: MT = a + b*log2(2D/W). Hệ số a, b phải lấy theo thiết bị; chưa có số đo cho touch trên điện thoại ở đây, nên là CHƯA xác minh.",
+    "licence": "Định luật khoa học, dùng tự do",
+    "verified_how": "Crossref xác nhận cả hai DOI (Hick 1952 QJEP; Fitts 1954 DOI 10.1037/h0055392). Dạng công thức là kiến thức chuẩn, chưa đọc lại bản gốc.",
+    "apply_to": "Train: decision time = Hick(số switch hoặc ga đang hiển thị). Koi: lần chạm = rtSample + Fitts(khoảng cách, fishLen) cộng motor noise lên vị trí cá đang bơi. Rain: thời gian chọn hay gõ đáp án."
+   },
+   {
+    "claim": "Visual working memory chứa được khoảng 4 object (Luck & Vogel 1997). Cowan (2001) đề xuất giới hạn khoảng 4 chunk. Vì vậy một bot nhớ ô sáng phải có capacity K lấy mẫu quanh 4, cộng một cơ chế chunking (gom các ô liền kề hoặc thẳng hàng thành một chunk), nếu không thì bot sẽ trượt ngay từ 5 ô.",
+    "source_title": "The capacity of visual working memory for features and conjunctions (Luck & Vogel, Nature 1997); The magical number 4 in short-term memory (Cowan, BBS 2001)",
+    "source_url": "https://doi.org/10.1038/36846",
+    "formula_or_number": "K khoảng 4 (Cowan 4±1). Chuẩn Corsi span khoảng 6,2 (SD 1,3), lấy qua PsyToolkit trích Kessels 2000; con số này CHƯA đối chiếu với bản gốc và là task tuần tự, khác task pattern đồng thời của Mem. Chuẩn Visual Patterns Test (Della Sala 1999): KHÔNG tìm được.",
+    "licence": "Ý tưởng khoa học, tự viết code",
+    "verified_how": "Crossref xác nhận DOI 10.1038/36846 và 10.1017/S0140525X01003922. Số Corsi chỉ từ nguồn thứ cấp psytoolkit.org.",
+    "apply_to": "Bot cho Mem: P(nhớ đúng toàn bộ) = P(số chunk <= K), với K ~ Normal(4, 1) theo persona; thời gian show ngắn thì số chunk mã hoá được ít đi. Phát hiện từ code (js/mem.js spec): t = 2+L, lưới tối đa 6x6, nên L30 sẽ có 32/36 ô sáng. Khi đó người chơi chỉ cần nhớ 4 ô TỐI, tức độ khó đảo ngược. Phải đổi knob (ví dụ giữ t <= khoảng 50% số ô, rút ngắn thời gian show, thêm round) trước khi mở rộng lên 30 level."
+   },
+   {
+    "claim": "Độ chính xác của pass rate đo bằng Monte Carlo tính theo Wilson score interval. Số lần thử kỳ vọng tới khi qua level theo phân phối geometric. Cả hai là thống kê chuẩn, dùng để quyết định cần chạy bao nhiêu lượt cho mỗi level và mỗi level 'tốn' người chơi bao nhiêu lần thử.",
+    "source_title": "Probable Inference, the Law of Succession, and Statistical Inference (Wilson, JASA 1927)",
+    "source_url": "https://doi.org/10.1080/01621459.1927.10502953",
+    "formula_or_number": "Wilson 95% CI: (p + z²/2n ± z*sqrt(p(1-p)/n + z²/4n²)) / (1 + z²/n), z = 1,96. Muốn sai số ±3 điểm phần trăm ở p = 0,5 cần n ≈ 1,96²·0,25/0,03² ≈ 1.068 lượt cho mỗi persona và level. E[attempts] = 1/p: p = 0,95 cho 1,05 lần; p = 0,45 cho khoảng 2,2 lần.",
+    "licence": "Toán thống kê, dùng tự do",
+    "verified_how": "Crossref xác nhận DOI Wilson 1927. Công thức và phép tính n là toán chuẩn, tự tính lại.",
+    "apply_to": "scripts/sim/calibrate.mjs: mỗi level chạy n = 1200 seed (mulberry32 đã có trong js/core.js:192), báo p, Wilson CI và E[attempts]. Cổng chấp nhận: CI phải nằm trong ±5 điểm phần trăm của target."
+   },
+   {
+    "claim": "Nghiên cứu công nghiệp ở Tactile Games (Lily's Garden) mô hình độ khó level bằng phân phối số action trong level, không chỉ bằng xác suất thắng. Họ cho rằng chỉ đo success probability là chưa đủ để mô tả độ khó.",
+    "source_title": "Statistical Modelling of Level Difficulty in Puzzle Games (Kristensen, Valdivia, Burelli, IEEE CoG 2021)",
+    "source_url": "https://arxiv.org/abs/2107.03305",
+    "formula_or_number": "Mô hình parametric cho phân phối action trong level. Tên mô hình cụ thể CHƯA xác minh (chưa đọc full text).",
+    "licence": "arXiv: chỉ dùng ý tưởng",
+    "verified_how": "WebFetch trang abstract arXiv 2107.03305.",
+    "apply_to": "Ngoài pass rate, harness ghi thêm 'margin': số lỗi dư so với ngưỡng (Koi), mạng còn lại (Rain), số lượt dư (Word), phần trăm tàu dư trên 80% (Train). Margin dùng để chia stars, và để phân biệt hai level cùng p = 0,5 nhưng một level 'sát nút', một level 'ăn may'."
+   },
+   {
+    "claim": "Code hiện tại chưa sẵn sàng để Node chạy lại logic game. Spec của từng game nằm lẫn với DOM: koi.js params(d), rain.js spec(L) + makeEq(L), mem.js spec(L) đều nằm trong file gọi document.getElementById ngay ở top-level. koi.js tự định nghĩa lại mulberry32 và tạo seed bằng Math.random. makeEq trong rain.js dùng Math.random trực tiếp. Giới hạn level hard-code trong core.js: LV_MAX = { train: 11, koi: 10, mem: 13, rain: 10, word: 12 }.",
+    "source_title": "Mã nguồn Brainy Bits (repo local)",
+    "source_url": "js/core.js",
+    "formula_or_number": "34 lần gọi Math.random trong js/*.js; LV_MAX ở js/core.js:203; mulberry32 ở js/core.js:192 và js/koi.js:42",
+    "licence": "Code của chính dự án",
+    "verified_how": "grep và sed trực tiếp trên js/*.js trong repo.",
+    "apply_to": "Bước 0 của harness: tách js/levels/<game>.js thành module thuần, không DOM, gồm spec(L) và gen(L, rng), nhận rng làm tham số. Trang web và Node cùng import file đó: không build step, vẫn chạy được trên GitHub Pages. LV_MAX được tính từ độ dài bảng level thay vì hard-code."
+   }
+  ]
+ },
+ {
+  "angle": "oss",
+  "recommendation": "Tôi đề xuất một khung chung cho mọi game hiện tại và game mới sau này, gồm ba lớp, toàn bộ chạy client hoặc offline, không cần server.\n\n(1) Mỗi game khai một DIFF_SPEC: danh sách knob, mỗi knob có min/max, chiều tăng khó và hàm spec(L) giải ngược từ mức khó mục tiêu d(L). d(L) là một đường cong chung với nhịp sawtooth (tăng dần, cứ khoảng 5 level có một màn 'thở'). Knob nào là số nguyên (số ô, số cá, số trạm) thì chỉ tăng một knob mỗi bước để tránh nhảy cóc.\n\n(2) Một calibrator Node offline, đặt ở scripts/, dùng BB.mulberry32 có seed theo (game, level) để level tái lập được. Calibrator cho 3-5 bot persona chơi: RT ex-Gaussian, giới hạn working memory, tỉ lệ lỗi và learning. Staircase 1-up/3-down tự viết (khoảng 20 dòng, theo Levitt, không copy StaircaseJS vì repo đó không có licence) dùng để tìm ngưỡng của từng persona. Sau đó dùng Glicko-2 của mmai/glicko2js (MIT), coi level là 'player' theo mô hình Lichess-puzzle (chỉ mượn ý tưởng vì lila là AGPL), để gán rating cho từng level.\n\n(3) Một gate T0 kiểm tra ba điều: rating đơn điệu tăng theo L, mỗi bước tăng nằm trong một dải đã định, và pass-rate của persona 'người lớn trung bình' giảm dần từ khoảng 90% ở L1 xuống khoảng 40-50% ở L30. Khi Duy nói 'thêm 10 màn', quy trình là: kéo dài d(L) tới L40, giải ngược ra knob, chạy calibrator, gate xanh thì ship.\n\nỞ client chỉ thêm luật gợi ý lùi kiểu BrainWorkshop (thua 3 lần liên tiếp thì gợi ý quay lại L−1), không có DDA ẩn.\n\nLicence: chỉ copy code từ bryc (Public domain hoặc MIT), glicko2js (MIT), jsQUEST/jsQuestPlus (MIT, không bắt buộc) và simple-statistics (ISC, không bắt buộc). BrainWorkshop, PsychoPy và Lichess là GPL/AGPL nên chỉ dùng con số và ý tưởng. Cần ghi licences.json ngay, kể cả cho mulberry32 đang có trong core.js mà chưa ghi nguồn.\n\nChưa xác minh trong phiên này: các con số hội tụ 79,4% và 70,7% của Levitt 1971, nội dung bài báo jsQuestPlus (mới đọc tới DOI), và tham số ex-Gaussian cho người thật. Tôi cũng chưa đọc spec của train, koi, rain và word; chỉ đọc spec(L) của mem và LV_MAX trong core.js (train 11, koi 10, mem 13, rain 10, word 12).",
+  "missing": [
+   "Hash chuỗi để tạo seed: PRNGs.md và bryc/code có sẵn cyrb53 và các hàm seed (public domain), hợp với seed = hash(game, level). Mũi này chưa nêu và chưa kiểm licence riêng của file jshash.",
+   "Harness cho bot: Playwright (Apache-2.0) hoặc chạy Node thuần. Muốn chạy Monte Carlo trong Node thì logic game phải tách khỏi DOM thành một pure step(state, input, rng), nhưng các file js/*.js hiện tại chưa được kiểm xem có tách như vậy không. Đây là rủi ro kiến trúc lớn nhất và chưa ai nhắc tới.",
+   "Chưa có nguồn OSS permissive nào cho mô hình IRT/Rasch (1PL/2PL) để gán độ khó cho level. Đây là cách thay cho Glicko, đơn giản hơn khi kết quả là pass/fail.",
+   "Chưa kiểm repo permissive nào cho Wordle solver hay entropy scorer, cần cho game word (độ khó của đáp án = số lượt kỳ vọng). Game word không có knob liên tục nên staircase và QUEST không áp dụng được.",
+   "Chưa có nguồn nào cho tham số người chơi: phân phối reaction time ex-Gaussian, working memory span (Cowan ~4), Fitts' law cho thao tác chạm. Mũi oss để trống phần này, phải lấy từ mũi nghiên cứu khác.",
+   "Chưa kiểm nguồn gốc mulberry32 (Tommy Ettinger). Dòng ghi nguồn trong licences.json nên trỏ tới cả bryc/code lẫn tác giả gốc.",
+   "Chưa kiểm licence của Wordle-like corpus và word list tiếng Việt đang dùng cho game word, trong khi CLAUDE.md quy tắc 4 bắt buộc kiểm."
+  ],
+  "findings": [
+   {
+    "claim": "bryc/code là nguồn gốc của mulberry32 và sfc32. Tác giả tự đánh giá đây là hai PRNG JS tốt nhất về tốc độ và chất lượng thống kê: sfc32 có state 128-bit và qua PractRand, còn mulberry32 có state 32-bit và qua gjrand. Repo khai Public domain, và cho dùng MIT làm licence dự phòng. js/core.js:192 của Brainy Bits đã có sẵn mulberry32 nhưng chưa ghi nguồn.",
+    "source_title": "bryc/code — jshash/PRNGs.md + LICENSE.md",
+    "source_url": "https://github.com/bryc/code/blob/master/jshash/PRNGs.md",
+    "verified_how": "Chạy gh api repos/bryc/code (spdx=NOASSERTION, 345 sao, push 2026-01-31) và đọc nội dung LICENSE.md: 'Public domain... fallback license... MIT'. Đã grep PRNGs.md, dòng 26 (sfc32) và dòng 37 (mulberry32).",
+    "formula_or_number": "sfc32: 128-bit state, ~7.45M ops/s; mulberry32: 32-bit state, ~10.4M ops/s (số đo của tác giả trong PRNGs.md)",
+    "licence": "Public domain (fallback MIT)",
+    "apply_to": "Giữ BB.mulberry32 làm RNG cho mỗi level (seed = hash(game, level)), để level N lần nào sinh ra cũng giống nhau và bot Monte Carlo chạy lại được đúng level đó. Nên chuyển sang sfc32 cho Node simulator khi cần chạy hàng triệu lượt. Cần thêm một dòng vào licences.json, vì hiện chưa có file licences.json ở thư mục gốc brainy-bits."
+   },
+   {
+    "claim": "davidbau/seedrandom cho seeded Math.random thay thế được, nhận seed dạng chuỗi và lưu/khôi phục được state. README ghi rõ từ v2.3.4 thư viện chuyển sang MIT. Có điều GitHub API không nhận diện ra licence của repo.",
+    "source_title": "davidbau/seedrandom README",
+    "source_url": "https://github.com/davidbau/seedrandom",
+    "verified_how": "Chạy gh api repos/davidbau/seedrandom: license.spdx_id rỗng, 2130 sao, push lần cuối 2024-04-25. README có mục 'LICENSE (MIT) Copyright 2019 David Bau'.",
+    "licence": "MIT (theo README; GitHub không tự nhận diện)",
+    "apply_to": "Không cần thêm thư viện này vì mulberry32 đã đủ. Chỉ nên cân nhắc khi cần lưu state RNG giữa lúc pause và resume. Khuyến nghị: không thêm dependency."
+   },
+   {
+    "claim": "mmai/glicko2js là bản cài đặt Glicko-2 thuần JS, chạy được trong browser (script tag) và Node (npm 'glicko2'). Mặc định rating=1500, rd=350, vol=0.06, tau=0.5.",
+    "source_title": "mmai/glicko2js",
+    "source_url": "https://github.com/mmai/glicko2js",
+    "verified_how": "Chạy gh api repos/mmai/glicko2js: MIT, 160 sao, push 2026-10-29. Đã grep glicko2.js, các dòng 202-212 chứa các giá trị mặc định nói trên.",
+    "formula_or_number": "defaults: rating 1500, rd 350, vol 0.06, tau 0.5",
+    "licence": "MIT",
+    "apply_to": "Chỉ dùng OFFLINE trong bộ calibrate: coi mỗi level là một 'player', mỗi bot persona cũng là một 'player', mỗi lượt chơi là một 'match'. Sau N lượt Monte Carlo, mỗi level có một rating kèm RD. Rule '30 level tăng dần' trở thành ràng buộc kiểm được: rating(L+1) − rating(L) nằm trong một dải đã định và RD đủ nhỏ. Không chạy trong client, vì không có pool người chơi và không có server."
+   },
+   {
+    "claim": "Lichess xếp hạng puzzle bằng cách coi mỗi puzzle là một Glicko player 'đấu' với người giải, nên rating của puzzle tự cập nhật theo kết quả của người chơi thật. Đây là mô hình tham khảo cho việc gán độ khó cho level. Code của Lichess là AGPL-3.0, nên chỉ được mượn ý tưởng, không được copy code.",
+    "source_title": "lichess-org/lila — modules/puzzle/src/main/PuzzleFinisher.scala",
+    "source_url": "https://github.com/lichess-org/lila/blob/master/modules/puzzle/src/main/PuzzleFinisher.scala",
+    "verified_how": "Chạy gh api repos/lichess-org/lila (AGPL-3.0). Đã grep PuzzleFinisher.scala: dòng 89-97 tạo cặp (userGlicko, puzzleGlicko) bằng chess.rating.glicko.Player(puzzle.glicko...) rồi gọi GlickoCalculator với outcome thắng/thua.",
+    "licence": "AGPL-3.0 (chỉ mượn ý tưởng, không copy code)",
+    "apply_to": "Đây là cơ sở của finding Glicko ở trên: level đóng vai 'puzzle', bot đóng vai 'user'. Phần cài đặt dùng mmai/glicko2js (MIT), không dùng code của lila."
+   },
+   {
+    "claim": "BrainWorkshop (dual n-back) tự đổi level theo điểm phiên chơi: đạt ≥80% thì lên N, dưới 50% trong 3 phiên liên tiếp thì xuống N. Có một bậc giữa ở mức (80+50)/2 = 65% để khen 'great'. Đây là luật lên/xuống kiểu người tune, được kiểm nghiệm lâu năm trong một brain game thật.",
+    "source_title": "brain-workshop/brainworkshop — brainworkshop.py",
+    "source_url": "https://github.com/brain-workshop/brainworkshop/blob/master/brainworkshop.py",
+    "verified_how": "Chạy gh api repos/brain-workshop/brainworkshop (GPL-2.0, 359 sao), tải raw brainworkshop.py vào scratchpad rồi grep: dòng 474-476 là THRESHOLD_ADVANCE = 80, THRESHOLD_FALLBACK = 50, THRESHOLD_FALLBACK_SESSIONS = 3; dòng 1019-1023 là bậc trung gian.",
+    "formula_or_number": "advance ≥80%, fallback <50% × 3 phiên, mức giữa 65%",
+    "licence": "GPL-2.0 (chỉ dùng con số/ý tưởng, không copy code)",
+    "apply_to": "Ngưỡng qua màn hiện tại của train (≥80%) khớp với BrainWorkshop. Đề xuất thêm luật 'gợi ý lùi' ở client, chỉ là gợi ý chứ không ép: thua cùng một level 3 lần liên tiếp thì đề nghị chơi lại level L−1 hoặc bật trợ giúp. Luật này cần đúng một log có sẵn, bb_log trong core.js."
+   },
+   {
+    "claim": "PsychoPy StairHandler cài đặt staircase nUp/nDown với mặc định nUp=1, nDown=3, và ép nUp=nDown=1 cho đến lần đảo chiều (reversal) đầu tiên. Repo là GPL-3.0. Tỉ lệ đúng mà 1-up/3-down hội tụ về (≈79,4%), và 1-up/2-down (≈70,7%), là kết quả của Levitt (1971) mà tôi biết từ trước, CHƯA fetch lại nguồn gốc trong phiên này.",
+    "source_title": "psychopy/psychopy — psychopy/data/staircase.py",
+    "source_url": "https://github.com/psychopy/psychopy/blob/release/psychopy/data/staircase.py",
+    "verified_how": "Chạy gh api repos/psychopy/psychopy (GPL-3.0). Đã grep staircase.py: dòng 53 'nUp and nDown are always considered as 1 until the first reversal', dòng 64-65 nUp=1, nDown=3. Phần 79,4%/70,7%: CHƯA XÁC MINH trong phiên này.",
+    "formula_or_number": "1-up/3-down → ~79,4% (Levitt 1971, chưa xác minh lại); 1-up/2-down → ~70,7% (chưa xác minh lại)",
+    "licence": "GPL-3.0 (chỉ ý tưởng)",
+    "apply_to": "Dùng trong bot calibrator, không dùng trong UI: với mỗi game, cho bot persona chạy staircase 1-up/3-down trên một knob liên tục (ví dụ show time của mem, fall speed của rain) để tìm ngưỡng ~79% của persona đó. Lấy ngưỡng đó làm mốc cho level 'khó vừa'."
+   },
+   {
+    "claim": "hadrienj/StaircaseJS có staircase x-up/y-down bằng JS ('wait' mode, factor, limits). Tuy vậy repo KHÔNG có file licence (API /license trả 404, spdx rỗng), tức là mặc định giữ mọi quyền, nên không được copy code.",
+    "source_title": "hadrienj/StaircaseJS",
+    "source_url": "https://github.com/hadrienj/StaircaseJS",
+    "verified_how": "Chạy gh api repos/hadrienj/StaircaseJS/license, kết quả 404. Thư mục repo chỉ có Staircase.js, index.html và readme.md. Đã grep readme: dòng 6, 62 và 90 mô tả 1-up n-down.",
+    "licence": "Không có licence (all rights reserved) — KHÔNG dùng",
+    "apply_to": "Loại khỏi danh sách. Staircase chỉ khoảng 20 dòng, nên tự viết theo mô tả thuật toán (Levitt) là đủ."
+   },
+   {
+    "claim": "jsQUEST (MIT) và jsQuestPlus (MIT) là bản port JS của QUEST (Watson & Pelli 1983) và QUEST+ (Watson 2017), tức các phương pháp Bayesian adaptive để ước lượng ngưỡng. Kèm theo có bài báo Behavior Research Methods 2022 (doi 10.3758/s13428-022-01948-8).",
+    "source_title": "kurokida/jsQUEST, kurokida/jsQuestPlus",
+    "source_url": "https://github.com/kurokida/jsQUEST",
+    "verified_how": "Chạy gh api repos/kurokida/jsQUEST (MIT, 17 sao, push 2022-09-30) và repos/kurokida/jsQuestPlus (MIT, push 2025-07-07). Đã đọc LICENSE 'MIT License Copyright (c) 2021 Daiichiro Kuroki' và README. DOI lấy từ README, CHƯA mở bài báo.",
+    "licence": "MIT",
+    "apply_to": "Dùng cho bộ calibrate offline khi cần ước lượng ngưỡng nhanh hơn staircase với ít lượt hơn, ví dụ tìm số ô sáng t mà persona 'người lớn trung bình' đạt 50% ở game mem. Không cần đưa vào client."
+   },
+   {
+    "claim": "jspsych-contrib có plugin-corsi-blocks (MIT, v2.0.0). Đây là bản hiện thực Corsi block-tapping, một bài đo working memory không gian rất gần game mem: sequence, sequence_gap_duration, mode display/input. Repo jspsych gốc là MIT. Repo contrib không có LICENSE ở root, licence được khai theo từng package.json.",
+    "source_title": "jspsych/jspsych-contrib — packages/plugin-corsi-blocks",
+    "source_url": "https://github.com/jspsych/jspsych-contrib/tree/main/packages/plugin-corsi-blocks",
+    "verified_how": "Chạy gh api để đọc packages/plugin-corsi-blocks/package.json, có \"license\": \"MIT\". Đã grep src/index.ts thấy các tham số sequence và sequence_gap_duration. Repo jspsych/jsPsych là MIT. Không tìm thấy plugin staircase nào trong danh sách 58 package (đã liệt kê).",
+    "licence": "MIT",
+    "apply_to": "Game mem: dùng tham số Corsi làm khung đặt tên knob khi mở rộng tới L30 (span = số ô, nhịp hiển thị, thứ tự có hay không). jsPsych KHÔNG có plugin staircase, nên phải tự viết."
+   },
+   {
+    "claim": "robatron/sudoku.js là ví dụ generator có độ khó điều khiển bằng một knob duy nhất, số ô cho sẵn: easy 62, medium 53, hard 44, very-hard 35, insane 26, inhuman 17. Các bậc cách đều nhau 9 ô. Đây là mẫu 'một tham số → nhiều bậc tuyến tính'.",
+    "source_title": "robatron/sudoku.js",
+    "source_url": "https://github.com/robatron/sudoku.js",
+    "verified_how": "Chạy gh api repos/robatron/sudoku.js (MIT, 498 sao). Đã đọc sudoku.js dòng 27-34, bảng DIFFICULTY.",
+    "formula_or_number": "62→17, bước −9 mỗi bậc",
+    "licence": "MIT",
+    "apply_to": "Phản ví dụ hữu ích: bước tuyến tính đều trên một knob khó đi lên mượt tới L30. Spec hiện tại của mem (t = 2+L, show = 1,0+0,3t) cũng tuyến tính. Rule cho Brainy Bits nên ánh xạ L → mức khó mục tiêu d(L) trước (theo rating Glicko từ bot), rồi mới giải ngược ra giá trị knob."
+   },
+   {
+    "claim": "simple-statistics (ISC, 3530 sao) là thư viện thống kê JS thuần, dùng được trong Node simulator cho mean, quantile, standard deviation và phân phối chuẩn. Tôi KHÔNG tìm thấy repo JS nào có licence permissive cho phân phối ex-Gaussian của reaction time (gh search 'ex-gaussian reaction time' trả về rỗng), nghĩa là phương pháp tìm này không ra, không phải chắc chắn là không tồn tại.",
+    "source_title": "simple-statistics/simple-statistics",
+    "source_url": "https://github.com/simple-statistics/simple-statistics",
+    "verified_how": "Chạy gh api repos/simple-statistics/simple-statistics: ISC, push 2026-11-15. gh search repos 'ex-gaussian reaction time' trả về [].",
+    "licence": "ISC",
+    "apply_to": "Bot simulator: tự sinh RT ex-Gaussian bằng Normal(μ,σ) + Exponential(τ) dựa trên mulberry32 (vài dòng code). Dùng simple-statistics để tóm tắt kết quả Monte Carlo, ví dụ pass-rate theo level và quantile điểm. Các tham số μ, σ, τ phải lấy từ một mũi nghiên cứu khác; mũi này chưa xác minh chúng."
+   }
+  ]
+ }
+]
