@@ -91,52 +91,61 @@ function contrastHelperSrc() {
   `;
 }
 
-test('WCAG AA text contrast holds on hub, settings (including danger CTA) and all 5 menus', async ({ page }) => {
-  await seedAndOpen(page);
-  const checkSelectors = async sels => page.evaluate(([list, helper]) => {
-    eval(helper);
-    const bad = [];
-    for (const sel of list) {
-      const el = document.querySelector(sel);
-      if (!el || el.offsetParent === null && !el.closest('#settings')) continue;
-      const r = minTextContrast(el);
-      if (r && r.worst < r.need - 0.05) bad.push(`${sel}: ${r.worst.toFixed(2)}:1 < ${r.need}:1`);
-    }
-    return bad;
-  }, [sels => sels, contrastHelperSrc()].slice(1));
+test('WCAG AA text contrast holds on hub, settings, QR dialog (Light & Dark) and all 5 menus', async ({ page }) => {
+  for (const theme of ['light', 'dark']) {
+    await seedAndOpen(page, '', { ...PROGRESS_FIXTURE, bb_theme: theme });
 
-  // Hub checks
-  const hubBad = await page.evaluate(([sels, helper]) => {
-    eval(helper);
-    const bad = [];
-    for (const sel of sels) {
-      for (const el of document.querySelectorAll(sel)) {
-        const r = minTextContrast(el);
-        if (r && r.worst < r.need - 0.05) bad.push(`${sel}: ${r.worst.toFixed(2)}:1 < ${r.need}:1`);
+    // Hub checks
+    const hubBad = await page.evaluate(([sels, helper]) => {
+      eval(helper);
+      const bad = [];
+      for (const sel of sels) {
+        for (const el of document.querySelectorAll(sel)) {
+          if (el.offsetParent === null) continue;
+          const r = minTextContrast(el);
+          if (r && r.worst < r.need - 0.05) bad.push(`${sel}: ${r.worst.toFixed(2)}:1 < ${r.need}:1`);
+        }
       }
-    }
-    return bad;
-  }, [['.hubsub', '.hstat b', '.hstat small', '.dailycard .dk', '.dailycard b', '.dailycard .dgo', '.gamecard b', '.gamecard small', '.gamecard em', '#hubShare'], contrastHelperSrc()]);
-  expect(hubBad).toEqual([]);
+      return bad;
+    }, [['.hubsub', '.hstat b', '.hstat small', '.dailycard .dk', '.dailycard b', '.dailycard .dgo', '.gamecard b', '.gamecard small', '.gamecard em', '#hubShare', '#hubQrBtn', '.foot-note'], contrastHelperSrc()]);
+    expect(hubBad, `hub (${theme})`).toEqual([]);
 
-  // Settings + danger confirm contrast (including #setResetYes gradient top & bottom)
-  await page.click('#hubSettings');
-  await page.click('#setReset');
-  const setBad = await page.evaluate(([sels, helper]) => {
-    eval(helper);
-    const bad = [];
-    for (const sel of sels) {
-      for (const el of document.querySelectorAll(sel)) {
-        if (getComputedStyle(el).display === 'none') continue;
-        const r = minTextContrast(el);
-        if (r && r.worst < r.need - 0.05) bad.push(`${sel}: ${r.worst.toFixed(2)}:1 < ${r.need}:1`);
+    // Settings + danger confirm contrast
+    await page.click('#hubSettings');
+    await page.click('#setReset');
+    const setBad = await page.evaluate(([sels, helper]) => {
+      eval(helper);
+      const bad = [];
+      for (const sel of sels) {
+        for (const el of document.querySelectorAll(sel)) {
+          if (getComputedStyle(el).display === 'none') continue;
+          const r = minTextContrast(el);
+          if (r && r.worst < r.need - 0.05) bad.push(`${sel}: ${r.worst.toFixed(2)}:1 < ${r.need}:1`);
+        }
       }
-    }
-    return bad;
-  }, [['#settings h2', '#settings .setrow', '#settings .setsub', '#setConfirm .note', '#setResetNo', '#setResetYes', '#setClose'], contrastHelperSrc()]);
-  expect(setBad).toEqual([]);
+      return bad;
+    }, [['#settings h2', '#settings .setrow', '#settings .setsub', '#settings .seg button', '#setConfirm .note', '#setResetNo', '#setResetYes', '#setClose'], contrastHelperSrc()]);
+    expect(setBad, `settings (${theme})`).toEqual([]);
+    await page.click('#setClose');
 
-  // Each game menu
+    // QR dialog contrast
+    await page.click('#hubQrBtn');
+    const qrBad = await page.evaluate(([sels, helper]) => {
+      eval(helper);
+      const bad = [];
+      for (const sel of sels) {
+        for (const el of document.querySelectorAll(sel)) {
+          const r = minTextContrast(el);
+          if (r && r.worst < r.need - 0.05) bad.push(`${sel}: ${r.worst.toFixed(2)}:1 < ${r.need}:1`);
+        }
+      }
+      return bad;
+    }, [['#qrDialog h2', '#qrDialog p', '#qrTargetName', '#qrUrlText', '#qrTargets button', '#qrCopyBtn', '#qrSaveBtn', '#qrShareResultBtn'], contrastHelperSrc()]);
+    expect(qrBad, `qrDialog (${theme})`).toEqual([]);
+    await page.keyboard.press('Escape');
+  }
+
+  // Each game menu (constant dark arena aesthetic)
   for (const hash of ['#tau', '#koi', '#nho', '#mua', '#chu']) {
     await page.goto('/' + hash);
     const menuBad = await page.evaluate(([sels, helper]) => {
@@ -161,38 +170,41 @@ test('WCAG AA text contrast holds on hub, settings (including danger CTA) and al
   }
 });
 
-test('WCAG 1.4.11 non-text contrast: settings switch tracks >= 3:1 in both OFF and ON states', async ({ page }) => {
-  await page.goto('/');
-  await page.click('#hubSettings');
-  const res = await page.evaluate(helper => {
-    eval(helper);
-    const sw = document.getElementById('setSound');
-    const track = sw.querySelector('i');
-    const cardBg = bgStack(sw.parentElement)[0];
-    const measure = () => {
-      const cs = getComputedStyle(track);
-      const bd = parseCol(cs.borderTopColor);
-      const bg = parseCol(cs.backgroundColor);
-      const compBd = bd ? blend(bd, cardBg) : cardBg;
-      const compBg = bg ? blend(bg, cardBg) : cardBg;
-      return {
-        checked: sw.getAttribute('aria-checked'),
-        borderVsCard: ratio(compBd, cardBg),
-        fillVsCard: ratio(compBg, cardBg),
-        thumbVsFill: ratio([255, 255, 255, 1], compBg),
+test('WCAG 1.4.11 non-text contrast: settings switch tracks >= 3:1 in both OFF and ON states across Light & Dark', async ({ page }) => {
+  for (const theme of ['light', 'dark']) {
+    await page.addInitScript(t => { localStorage.setItem('bb_theme', t); localStorage.setItem('bb_sound', '1'); }, theme);
+    await page.goto('/');
+    await page.click('#hubSettings');
+    const res = await page.evaluate(helper => {
+      eval(helper);
+      const sw = document.getElementById('setSound');
+      const track = sw.querySelector('i');
+      const cardBg = bgStack(sw.parentElement)[0];
+      const measure = () => {
+        const cs = getComputedStyle(track);
+        const bd = parseCol(cs.borderTopColor);
+        const bg = parseCol(cs.backgroundColor);
+        const compBd = bd ? blend(bd, cardBg) : cardBg;
+        const compBg = bg ? blend(bg, cardBg) : cardBg;
+        return {
+          checked: sw.getAttribute('aria-checked'),
+          borderVsCard: ratio(compBd, cardBg),
+          fillVsCard: ratio(compBg, cardBg),
+          thumbVsFill: ratio([255, 255, 255, 1], compBg),
+        };
       };
-    };
-    const on = measure();
-    sw.click();
-    const off = measure();
-    return { on, off };
-  }, contrastHelperSrc());
+      const on = measure();
+      sw.click();
+      const off = measure();
+      return { on, off };
+    }, contrastHelperSrc());
 
-  expect(res.on.checked).toBe('true');
-  expect(Math.max(res.on.borderVsCard, res.on.fillVsCard)).toBeGreaterThanOrEqual(3.0);
-  expect(res.on.thumbVsFill).toBeGreaterThanOrEqual(3.0);
-  expect(res.off.checked).toBe('false');
-  expect(res.off.borderVsCard).toBeGreaterThanOrEqual(3.0);
+    expect(res.on.checked, theme).toBe('true');
+    expect(Math.max(res.on.borderVsCard, res.on.fillVsCard), theme).toBeGreaterThanOrEqual(3.0);
+    expect(res.on.thumbVsFill, theme).toBeGreaterThanOrEqual(3.0);
+    expect(res.off.checked, theme).toBe('false');
+    expect(res.off.borderVsCard, theme).toBeGreaterThanOrEqual(3.0);
+  }
 });
 
 test('Mem starred level tiles never overlap the level number', async ({ page }) => {
@@ -337,9 +349,82 @@ test('Zero horizontal overflow across 320, 390, 768 and 1440 on Hub, Settings an
     await page.click('#hubSettings');
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `settings ${w}x${h}`).toBeLessThanOrEqual(0);
     await page.keyboard.press('Escape');
+    await page.click('#hubQrBtn');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `qrDialog ${w}x${h}`).toBeLessThanOrEqual(0);
+    await page.keyboard.press('Escape');
     for (const hash of ['#tau', '#koi', '#nho', '#mua', '#chu']) {
       await page.goto('/' + hash);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${hash} ${w}x${h}`).toBeLessThanOrEqual(0);
+    }
+  }
+});
+
+test('Zero sibling overlap, section visGap >= 12px, and 4-edge hover border integrity across Hub viewports', async ({ page }) => {
+  const measureGeometry = () => {
+    const box = el => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, h: r.height };
+    };
+    const overlapsOf = list => {
+      const bad = [];
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const a = list[i].getBoundingClientRect(), b = list[j].getBoundingClientRect();
+          const ix = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+          const iy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          if (ix > 0.5 && iy > 0.5) bad.push(`${list[i].id || list[i].className} vs ${list[j].id || list[j].className} (${ix.toFixed(1)}x${iy.toFixed(1)})`);
+        }
+      }
+      return bad;
+    };
+    const hubKids = [...document.querySelectorAll('.hubwrap > *')].filter(el => el.offsetParent !== null);
+    const cards = [...document.querySelectorAll('.gamecard')];
+    const footKids = [...document.querySelectorAll('.hub-foot > *')].filter(el => el.offsetParent !== null);
+    const shelf = box(document.getElementById('hubShelf'));
+    const word = box(document.getElementById('openWord'));
+    const foot = box(document.querySelector('.hub-foot'));
+    const share = box(document.getElementById('hubShare'));
+    const note = box(document.querySelector('.foot-note'));
+    return {
+      overlaps: [...overlapsOf(hubKids), ...overlapsOf(cards), ...overlapsOf(footKids)],
+      shelfToFootGap: foot.top - shelf.bottom,
+      wordToFootGap: foot.top - word.bottom,
+      stackedFooter: note.top >= share.bottom - 1,
+      shareToNoteGap: note.top - share.bottom,
+    };
+  };
+
+  for (const [w, h] of [[320, 568], [362, 740], [390, 844], [600, 800], [667, 375], [768, 1024], [856, 900], [1024, 768], [1440, 900]]) {
+    await page.setViewportSize({ width: w, height: h });
+    await seedAndOpen(page, '', { bb_theme: 'light' });
+    await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));
+    const idle = await page.evaluate(measureGeometry);
+    expect(idle.overlaps, `idle overlaps at ${w}x${h}`).toEqual([]);
+    const minSectionGap = h >= 600 ? 20 : 12;
+    expect(idle.shelfToFootGap, `shelfToFootGap at ${w}x${h}`).toBeGreaterThanOrEqual(minSectionGap - 0.5);
+    expect(idle.wordToFootGap, `wordToFootGap at ${w}x${h}`).toBeGreaterThanOrEqual(minSectionGap - 0.5);
+    if (idle.stackedFooter) {
+      expect(idle.shareToNoteGap, `shareToNoteGap at ${w}x${h}`).toBeGreaterThanOrEqual(11.5);
+    }
+
+    if (w >= 600) {
+      for (const id of ['openTrain', 'openWord']) {
+        await page.hover('#' + id);
+        await expect.poll(async () => page.evaluate(cid => {
+          const cs = getComputedStyle(document.getElementById(cid));
+          return {
+            t: cs.borderTopColor,
+            r: cs.borderRightColor,
+            b: cs.borderBottomColor,
+            l: cs.borderLeftColor,
+            allMatch: cs.borderTopColor === cs.borderRightColor && cs.borderRightColor === cs.borderBottomColor && cs.borderBottomColor === cs.borderLeftColor,
+            widths: [cs.borderTopWidth, cs.borderRightWidth, cs.borderBottomWidth, cs.borderLeftWidth],
+          };
+        }, id), { timeout: 2000 }).toMatchObject({ allMatch: true, widths: ['1px', '1px', '1px', '1px'] });
+      }
+      const hoveredWord = await page.evaluate(measureGeometry);
+      expect(hoveredWord.overlaps, `hovered #openWord overlaps at ${w}x${h}`).toEqual([]);
+      expect(hoveredWord.wordToFootGap, `hovered wordToFootGap at ${w}x${h}`).toBeGreaterThanOrEqual(minSectionGap - 0.5);
     }
   }
 });
