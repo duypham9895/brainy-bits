@@ -1,13 +1,32 @@
 /* word: game-specific styles. Loaded after app.css, so rules here may override it. */
+#wordApp{--sub:#e4ccb8;--muted:#ccb09a;--note:#f0dfd0;--focus:#ffcf8a}
 /* Màu ô: chữ trên nền đạt >= 4.5:1 (trắng/#2e7d3a 5.1, #2a1300/#d4a72c 7.9, trắng/#2563eb 5.2). */
 #wordApp{--w-green:#2e7d3a;--w-yellow:#d4a72c;--w-yellow-ink:#2a1300;--w-blue:#2563eb;--w-gray:#3d3a37;--w-ease:cubic-bezier(0.22,1,0.36,1)}
+#wmenu .card{padding:20px 18px 18px}
+#wlvgrid{max-height:min(168px,23dvh);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  padding:6px;border-radius:16px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.09);
+  scroll-padding-block:8px;scrollbar-width:thin;scrollbar-color:rgba(255,207,138,.4) transparent}
+@media (min-height:880px) and (min-width:600px){
+  #wlvgrid{max-height:210px}
+}
+@media (max-width:359px){
+  #wlvgrid{padding:4px;gap:6px}
+}
+#wordApp .lv{min-height:52px}
+#wordApp .lv .wlvst{display:block;font-style:normal;font-size:10.5px;letter-spacing:1px;color:#ffd54a;line-height:1.15;margin-top:2px}
+
 .wboard{gap:var(--wg,5px)}
 .wrow{gap:var(--wg,5px)}
-.wcell{--bg:transparent;--bd:rgba(255,255,255,.14);--ink:#fff}
+.wcell{--bg:transparent;--bd:rgba(255,255,255,.22);--ink:#fff}
+.wcell.caret{border-color:#ffcf8a;box-shadow:0 0 0 1px rgba(255,207,138,.4),inset 0 0 10px rgba(255,207,138,.12)}
+@media (prefers-reduced-motion: no-preference){
+  .wcell.caret{animation:wCaret 1.6s ease-in-out infinite}
+  @keyframes wCaret{0%,100%{box-shadow:0 0 0 1px rgba(255,207,138,.35),inset 0 0 8px rgba(255,207,138,.1)}50%{box-shadow:0 0 0 2px rgba(255,207,138,.6),inset 0 0 12px rgba(255,207,138,.2)}}
+}
 .wcell.green{--bg:var(--w-green);--bd:var(--w-green);background:var(--w-green);border-color:var(--w-green)}
 .wcell.yellow{--bg:var(--w-yellow);--bd:var(--w-yellow);--ink:var(--w-yellow-ink);background:var(--w-yellow);border-color:var(--w-yellow);color:var(--w-yellow-ink)}
 .wcell.blue{--bg:var(--w-blue);--bd:var(--w-blue);background:var(--w-blue);border-color:var(--w-blue)}
-.wcell.gray{--bg:var(--w-gray);--bd:var(--w-gray);--ink:#cfc8c0}
+.wcell.gray{--bg:var(--w-gray);--bd:var(--w-gray);--ink:#dcd5cc}
 /* Lật ô lần lượt; màu chỉ hiện ở nửa sau vòng lật. */
 .wcell.flip{animation:wFlip .48s var(--w-ease) both;animation-delay:calc(var(--i,0) * 90ms)}
 @keyframes wFlip{
@@ -31,14 +50,14 @@
 #wKeys button.green{background:var(--w-green);color:#fff}
 #wKeys button.yellow{background:var(--w-yellow);color:var(--w-yellow-ink)}
 #wKeys button.blue{background:var(--w-blue);color:#fff}
-#wKeys button.gray{background:#26221f;color:#a39a92}
-#wKeys button:focus-visible,#wHint:focus-visible{outline:2px solid #ffcf8a;outline-offset:2px}
+#wKeys button.gray{background:#26221f;color:#b5aca3}
+#wKeys button:focus-visible,#wHint:focus-visible{outline:3px solid #ffcf8a;outline-offset:2px}
 #wHint{min-height:44px;padding:8px 16px}
 #wMenuBtn:disabled{opacity:.45}
-.wstars{display:flex;justify-content:center;gap:6px;font-size:34px;line-height:1;margin:6px 0 2px;color:rgba(255,255,255,.18)}
-.wstars span.on{color:#ffcf5a}
-.wrule{margin:2px 0 8px;font-size:12.5px;color:#cfc0b0}
-#wordApp .lv .wlvst{display:block;font-style:normal;font-size:11px;letter-spacing:1px;color:#ffcf5a;line-height:1.2}
+.wstars{display:flex;justify-content:center;gap:8px;font-size:44px;line-height:1;margin:6px 0 2px;color:rgba(255,255,255,.16)}
+.wstars span.on{color:#ffd54a;filter:drop-shadow(0 0 12px rgba(255,213,74,.5))}
+.wrule{margin:6px 0 2px;font-size:.8rem;color:var(--muted)}
+#wrBig{font-size:clamp(1.5rem,1rem + 3vw,2.25rem);letter-spacing:.04em;line-height:1.15;text-wrap:balance}
 #wToast{max-width:calc(100% - 24px);white-space:normal;text-align:center}
 /* Điện thoại dọc: chú giải một hàng nhãn ngắn, không đè lên phím */
 @media (max-width:480px){
@@ -93,7 +112,7 @@
   .wkrow:nth-child(5) button{max-width:none}
 }
 @media (prefers-reduced-motion: reduce){
-  .wcell.flip{animation:none}
+  .wcell.flip,.wcell.caret{animation:none}
   #wKeys button:active{transform:none}
 }
 /* vùng chỉ cho trình đọc màn hình */

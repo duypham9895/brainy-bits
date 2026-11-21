@@ -51,25 +51,35 @@ function starsOf(key) {
   return Object.values(BB.gameStats(key).stars).reduce((a, b) => a + (b || 0), 0);
 }
 
+const OPEN_CARD = { train: 'openTrain', koi: 'openKoi', mem: 'openMem', rain: 'openRain', word: 'openWord' };
+
 // ---------- hub render ----------
 let shownStars = 0, shownStreak = 0;
 function renderHub() {
+  let totalPassed = 0;
   Object.values(GAMES).forEach(g => {
     const max = BB.LV_MAX[g.key], best = bestOf(g.key), st = starsOf(g.key);
+    totalPassed += best;
     const star = st ? ` · ★ ${st}/${max * 3}` : '';
     $(g.hub).textContent = best >= max ? `Xong cả ${max} level${star}`
       : best ? `Đã qua ${best}/${max} level${star}` : `${max} level, chưa chơi`;
     $(g.hub).classList.toggle('fresh', !best);
+    const card = $(OPEN_CARD[g.key]);
+    if (card) card.style.setProperty('--pct', (max > 0 ? Math.min(1, best / max) : 0).toFixed(3));
   });
   const stars = BB.totalStars(), streak = BB.dayStreak();
   BB.countUp($('hubStars'), shownStars, stars);
   BB.countUp($('hubStreak'), shownStreak, streak);
+  $('hubStreak').closest('.hstat')?.classList.toggle('is-zero', streak === 0);
+  $('hubStars').closest('.hstat')?.classList.toggle('is-zero', stars === 0);
+  $('hubShare')?.classList.toggle('quiet', stars === 0 && totalPassed === 0);
   shownStars = stars; shownStreak = streak;
 
   const d = BB.daily();
   $('hubDailyNo').textContent = `#${d.idx}`;
   $('hubDailyGame').textContent = `${BB.GAME_NAME[d.game]} · Level ${d.level}`;
   $('hubDailyState').textContent = d.done ? '✓ Đã xong' : 'Chơi';
+  $('hubDaily').dataset.game = d.game;
   $('hubDaily').classList.toggle('done', d.done);
   $('hubDaily').setAttribute('aria-label',
     `Thử thách hôm nay: ${BB.GAME_NAME[d.game]}, Level ${d.level}. ${d.done ? 'Đã xong' : 'Chơi ngay'}`);

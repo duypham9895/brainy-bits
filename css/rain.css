@@ -1,4 +1,5 @@
 /* rain: game-specific styles. Loaded after app.css, so rules here may override it. */
+#rainApp{--sub:#b8daf7;--muted:#95c0e8;--note:#d7ebfc;--focus:#7cc7ff}
 /* .roundbtn đã 44px; ::before nới vùng chạm thêm 3px mỗi phía cho chắc tay. */
 #rPause{position:relative;flex:none}
 #rPause::before{content:"";position:absolute;inset:-3px;border-radius:50%}
@@ -6,26 +7,33 @@
 #rLives{display:inline-block}
 
 /* Bàn phím số: phản hồi khi gõ bằng bàn phím thật, viền focus rõ khi dùng Tab. */
-#rainApp .rpad button{min-height:48px;transition:transform .12s cubic-bezier(0.22,1,0.36,1),filter .12s cubic-bezier(0.22,1,0.36,1)}
+#rainApp .rpad button{min-height:48px;border:0;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),inset 0 1px 0 rgba(255,255,255,.12),inset 0 -3px 0 rgba(0,0,0,.35);
+  transition:transform .12s cubic-bezier(0.22,1,0.36,1),filter .12s cubic-bezier(0.22,1,0.36,1)}
+#rainApp .rpad .k-ok{border:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -3px 0 #b8481a}
 #rainApp .rpad button.on{transform:scale(.96);filter:brightness(1.25)}
 #rainApp .rpad button:focus-visible,
 #rainApp .lv:focus-visible,
-#rainApp .btn:focus-visible,
-#rPause:focus-visible{outline:2px solid #7cc7ff;outline-offset:2px}
-#rainApp .rdisp{font-variant-numeric:tabular-nums}
+#rainApp .btn.alt:focus-visible,
+#rPause:focus-visible{outline:3px solid #7cc7ff;outline-offset:2px}
+#rainApp .rdisp{min-height:44px;min-width:168px;padding:2px 16px;display:inline-flex;align-items:center;justify-content:center;
+  border:0;background:rgba(124,199,255,.09);
+  box-shadow:inset 0 0 0 1px rgba(124,199,255,.24),inset 0 2px 6px rgba(0,0,0,.25);font-variant-numeric:tabular-nums}
+#rainApp .rdisp.empty{color:var(--muted)}
+#rainApp .rdisp.empty::before{content:"Gõ đáp án…";font-size:.92rem;font-weight:600;letter-spacing:0;color:var(--muted)}
 
 /* Sao tốt nhất trên ô chọn level */
-#rainApp .lv{min-height:48px}
-#rainApp .lv .lvst{display:block;font-size:11px;line-height:1.1;letter-spacing:1px;color:#ffd54a;margin-top:1px}
+#rainApp .lv{min-height:52px}
+#rainApp .lv .lvst{display:block;font-size:10.5px;line-height:1.1;letter-spacing:1px;color:#ffd54a;margin-top:2px}
 #rainApp .lv.done::after{content:"✓";content:"✓" / ""}
 
 /* Màn kết quả: 3 sao + luật tính sao */
-.rstars{display:flex;justify-content:center;gap:10px;margin:4px 0 2px;font-size:34px;line-height:1}
-.rstars span{color:rgba(255,255,255,.18);display:inline-block}
-.rstars span.on{color:#ffd54a;text-shadow:0 2px 10px rgba(255,213,74,.45)}
+.rstars{display:flex;justify-content:center;gap:8px;margin:6px 0 2px;font-size:44px;line-height:1}
+.rstars span{color:rgba(255,255,255,.16);display:inline-block}
+.rstars span.on{color:#ffd54a;filter:drop-shadow(0 0 12px rgba(255,213,74,.5))}
 .rstars span.pop{animation:rStarIn .42s cubic-bezier(0.22,1,0.36,1) both}
 @keyframes rStarIn{0%{transform:scale(.3) rotate(-25deg);opacity:0}70%{transform:scale(1.18) rotate(4deg);opacity:1}100%{transform:none;opacity:1}}
-.rrule{margin:4px 0 0;font-size:13px;line-height:1.45}
+.rrule{margin:6px 0 2px;font-size:.8rem;line-height:1.45}
 #rainApp .big{font-variant-numeric:tabular-nums}
 
 @media (prefers-reduced-motion: reduce){
@@ -65,7 +73,8 @@
     margin-left:env(safe-area-inset-left, 0px);min-height:0}
   #rainApp .rbar{grid-column:2;grid-row:2;padding:6px 12px 4px;
     padding-right:max(12px, env(safe-area-inset-right))}
-  #rainApp .rdisp{font-size:26px;min-width:120px;padding:2px 14px}
+  #rainApp .rdisp{min-height:36px;font-size:24px;min-width:132px;padding:2px 14px}
+  #rainApp .rdisp.empty::before{font-size:.82rem}
   #rainApp .rpad{grid-column:2;grid-row:3;grid-auto-rows:minmax(44px,1fr);gap:6px;padding-top:4px;
     padding-bottom:max(8px, env(safe-area-inset-bottom))}
   #rainApp .rpad button{min-height:44px;padding:6px 0;font-size:22px}
