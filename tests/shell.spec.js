@@ -31,6 +31,7 @@ test('head has description, Open Graph, theme colour, icons and gstatic preconne
   }
   const m = await (await page.request.get('/manifest.webmanifest')).json();
   expect(m.display).toBe('standalone');
+  expect(m.orientation ?? 'any').toBe('any');            // landscape layouts exist; do not lock installed PWAs (review #8)
   expect(m.icons.some(i => i.purpose === 'maskable')).toBe(true);
   for (const i of m.icons) expect((await page.request.get('/' + i.src)).ok()).toBe(true);
 });
@@ -113,7 +114,7 @@ test('hub reads legacy keys, seeds BB stats once and shows level/LV_MAX and star
   await expect(page.locator('#hubMem')).toHaveText('Đã qua 4/13 level');
   await expect(page.locator('#hubKoi')).toHaveText('Xong cả 10 level');
   await expect(page.locator('#hubRain')).toHaveText('Đã qua 2/10 level · ★ 5/30');
-  await expect(page.locator('#hubWord')).toHaveText('12 level, chưa chơi');
+  await expect(page.locator('#hubWord')).toHaveText('49 level, chưa chơi');
   await expect(page.locator('#hubStars')).toHaveText('5');
   const s = await page.evaluate(() => BB.gameStats('mem').best);
   expect(s).toBe(4);
@@ -141,7 +142,7 @@ test('streak and total stars strip reflect BB data', async ({ page }) => {
   await page.addInitScript(t => {
     localStorage.setItem('bb_log', JSON.stringify([{ g: 'mem', lv: 1, won: true, stars: 3, score: 0, d: t, ms: 0 }]));
     localStorage.setItem('bb_stats', JSON.stringify({ mem: { best: 1, stars: { 1: 3 } } }));
-    localStorage.setItem('bb_seeded_v1', '1');
+    localStorage.setItem('bb_seeded_v2', '1');
   }, today());
   await page.goto('/');
   await expect(page.locator('#hubStreak')).toHaveText('1');
@@ -248,4 +249,74 @@ test.describe('hub layout uses the screen width', () => {
       }
     });
   }
+});
+
+// ---------- PR #2 cross-vendor review (Neon round 1) ----------
+
+test('re-seeds a word best clamped to 12 by an older build (review #1)', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
+    localStorage.clear();
+    localStorage.setItem('word_lv', '25');             // next level to play -> passed 24
+    localStorage.setItem('bb_stats', JSON.stringify({ word: { best: 12, stars: {} } }));
+    localStorage.setItem('bb_seeded_v1', '1');         // the old build already seeded (and clamped)
+  });
+  await page.goto('/');
+  await expect(page.locator('#hubWord')).toHaveText('Đã qua 24/49 level');
+  expect(await page.evaluate(() => [BB.gameStats('word').best, localStorage.getItem('bb_seeded_v2')])).toEqual([24, '1']);
+  // Seeding only raises: a stored best above legacy stays.
+  await page.evaluate(() => { localStorage.setItem('bb_stats', JSON.stringify({ word: { best: 30, stars: {} } })); localStorage.removeItem('bb_seeded_v2'); });
+  await page.reload();
+  await expect(page.locator('#hubWord')).toHaveText('Đã qua 30/49 level');
+});
+
+for (const [btn, menu] of [['openTrain', 'menu'], ['openKoi', 'kmenu'], ['openMem', 'mmenu'], ['openRain', 'rmenu'], ['openWord', 'wmenu']]) {
+  test(`opening a game moves focus into its menu (${menu}, review #6)`, async ({ page }) => {
+    await page.goto('/');
+    await page.click('#' + btn);
+    await expect(page.locator('#' + menu)).toBeVisible();
+    await expect.poll(() => page.evaluate(m => document.getElementById(m).contains(document.activeElement), menu)).toBe(true);
+  });
+}
+
+test('Tab and Shift+Tab stay inside an open dialog (review #6)', async ({ page }) => {
+  await page.goto('/');
+  await page.click('#hubSettings');
+  await expect(page.locator('#settings')).toBeVisible();
+  const inside = id => page.evaluate(i => document.getElementById(i).contains(document.activeElement), id);
+  for (let i = 0; i < 6; i++) { await page.keyboard.press('Tab'); expect(await inside('settings'), `Tab ${i + 1}`).toBe(true); }
+  for (let i = 0; i < 6; i++) { await page.keyboard.press('Shift+Tab'); expect(await inside('settings'), `Shift+Tab ${i + 1}`).toBe(true); }
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#settings')).toBeHidden();
+  // A game menu traps too, without blocking the game from starting.
+  await page.click('#openKoi');
+  await expect(page.locator('#kmenu')).toBeVisible();
+  for (let i = 0; i < 25; i++) await page.keyboard.press('Tab');
+  expect(await inside('kmenu')).toBe(true);
+  await page.click('#kStartBtn');                      // the trap must not get in the way of playing
+  await expect(page.locator('#kmenu')).toBeHidden();
+});
+
+test('settings sheet closes when Forward reopens a game (review #7)', async ({ page }) => {
+  await page.goto('/');
+  await page.click('#openTrain');
+  await expect(page.locator('#menu')).toBeVisible();
+  await page.goBack();
+  await expect(page.locator('#hub')).toBeVisible();
+  await page.click('#hubSettings');
+  await expect(page.locator('#settings')).toBeVisible();
+  await page.goForward();
+  await expect(page.locator('#menu')).toBeVisible();
+  await expect(page.locator('#settings')).toBeHidden();
+  await page.click('#startBtn', { timeout: 3000 });     // nothing intercepts the pointer
+});
+
+test('hub copy and stat cells read naturally (review #13, #14)', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#openTrain small')).toHaveText('Đổi ngã rẽ, đưa tàu về đúng ga cùng màu, cùng hình');
+  const cells = await page.evaluate(() => ['rCorrect', 'rStreak', 'kdAcc', 'kdLevel']
+    .map(id => document.getElementById(id).parentElement.textContent));
+  expect(cells).toEqual(['0/0 tàu về đúng ga', '0 chuỗi đúng dài nhất', '0% độ chính xác', '1 cấp độ đạt tới']);
+  const html = await (await page.request.get('/')).text();
+  expect(html).not.toContain('orchestrator');
 });

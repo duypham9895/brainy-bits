@@ -14,7 +14,9 @@ const HASH_OF = Object.fromEntries(Object.entries(GAMES).map(([h, g]) => [g.key,
 
 // ---------- legacy progress ----------
 // Old builds stored the highest level passed (train) or the next level to play (the other four).
-// Read them so nobody loses unlocked levels, and seed BB stats from them once.
+// Read them so nobody loses unlocked levels, and seed BB stats from them once per seed version.
+// v2: builds with word capped at 12 seeded bb_stats.word.best = 12; re-seeding lifts it back to the
+// real legacy value. Seeding only ever raises best, so running it again is safe.
 function legacyBest(key) {
   const s = BB.store, max = BB.LV_MAX[key];
   const next = k => Math.max(0, s.num(k, 1, 1, 9999) - 1);
@@ -27,8 +29,9 @@ function legacyBest(key) {
   }[key]();
   return Math.min(max, raw);
 }
+const SEED_FLAG = 'bb_seeded_v2';
 function seedFromLegacy() {
-  if (BB.store.get('bb_seeded_v1')) return;
+  if (BB.store.get(SEED_FLAG)) return;
   const all = BB.stats();
   BB.GAMES.forEach(k => {
     const old = legacyBest(k);
@@ -38,7 +41,7 @@ function seedFromLegacy() {
     if (old > (s.best || 0)) s.best = old;
   });
   BB.store.setJson('bb_stats', all);
-  BB.store.set('bb_seeded_v1', '1');
+  BB.store.set(SEED_FLAG, '1');
 }
 
 function bestOf(key) {
@@ -72,9 +75,46 @@ function renderHub() {
     `Thử thách hôm nay: ${BB.GAME_NAME[d.game]}, Level ${d.level}. ${d.done ? 'Đã xong' : 'Chơi ngay'}`);
 }
 
+// ---------- dialog focus ----------
+// Game menus are visible from page load, so core's overlay observer never sees them "open":
+// after the router shows a game, move focus into its open dialog. Tab / Shift+Tab then stay inside
+// the top open dialog (no inert on siblings: games keep their own key handlers untouched).
+const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+const isShown = el => !!el && !el.classList.contains('hidden') && el.getClientRects().length > 0;
+function openDialog() {
+  if (isShown(sheet)) return sheet;
+  const app = current && $(Object.values(GAMES).find(g => g.key === current).app);
+  if (!app) return null;
+  const ovs = [...app.querySelectorAll('.overlay[aria-modal="true"]')].filter(isShown);
+  return ovs[ovs.length - 1] || null;
+}
+const focusables = ov => [...ov.querySelectorAll(FOCUSABLE)].filter(el => !el.disabled && el.getClientRects().length > 0);
+function focusDialog() {
+  if (typeof BB.syncOverlays === 'function') { try { BB.syncOverlays(); } catch (e) {} }
+  // After core's own 30 ms focus move, and after enter() may have swapped the menu for a level.
+  setTimeout(() => {
+    const ov = openDialog();
+    if (!ov || ov.contains(document.activeElement)) return;
+    const first = focusables(ov)[0];
+    if (first) { try { first.focus({ preventScroll: true }); } catch (e) {} }
+  }, 40);
+}
+window.addEventListener('keydown', e => {
+  if (e.key !== 'Tab' || e.defaultPrevented) return;
+  const ov = openDialog(); if (!ov) return;
+  const els = focusables(ov); if (!els.length) return;
+  const first = els[0], last = els[els.length - 1], a = document.activeElement;
+  const inside = ov.contains(a);
+  if (!inside || (e.shiftKey && a === first) || (!e.shiftKey && a === last)) {
+    e.preventDefault();
+    (e.shiftKey ? last : first).focus();
+  }
+});
+
 // ---------- router ----------
 let current = null;                                  // game key on screen, or null for the hub
 function route() {
+  closeSettings();                                   // Forward / hash change must not leave the sheet over a game
   const h = location.hash.replace('#', '');
   const game = GAMES[h] || null;
   const next = game ? game.key : null;
@@ -82,7 +122,7 @@ function route() {
   current = next;
   Object.entries(GAMES).forEach(([name, g]) => { $(g.app).style.display = h === name ? 'block' : 'none'; });
   $('hub').classList.toggle('hidden', !!game);
-  if (game) { APP.active = game.key; game.enter(); return; }
+  if (game) { APP.active = game.key; game.enter(); focusDialog(); return; }
   APP.active = 'home';
   renderHub();
 }
@@ -152,7 +192,7 @@ $('setResetNo').onclick = () => {
 };
 $('setResetYes').onclick = () => {
   BB.resetAll();
-  BB.store.del('bb_seeded_v1');
+  BB.store.del('bb_seeded_v1'); BB.store.del(SEED_FLAG);
   // Games keep their level in memory, so a reload is the only way every screen starts clean.
   location.reload();
 };

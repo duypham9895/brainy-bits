@@ -72,8 +72,8 @@
     <div class="stars" id="rStars"><span class="s">★</span><span class="s">★</span><span class="s">★</span></div>
     <div class="big" id="rPct">0%</div>
     <div class="stats">
-      <div><b id="rCorrect">0/0</b>tàu về đúng ga</div>
-      <div><b id="rStreak">0</b>chuỗi đúng dài nhất</div>
+      <div><b id="rCorrect">0/0</b> tàu về đúng ga</div>
+      <div><b id="rStreak">0</b> chuỗi đúng dài nhất</div>
     </div>
     <p class="note" id="rDetail"></p>
     <button class="btn" id="rNext">Level tiếp theo</button>
@@ -111,7 +111,7 @@
     <p class="sub hubsub">Chọn một trò để chơi</p>
     <button class="gamecard" id="openTrain">
       <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M6 40h36" stroke="#a9c2b2" stroke-width="3" stroke-linecap="round"/><rect x="11" y="8" width="26" height="26" rx="8" fill="#ffb02e"/><rect x="16" y="13" width="16" height="9" rx="3" fill="#2a1300"/><circle cx="18" cy="28" r="2.4" fill="#2a1300"/><circle cx="30" cy="28" r="2.4" fill="#2a1300"/><path d="M15 34l-4 6M33 34l4 6" stroke="#ffb02e" stroke-width="3" stroke-linecap="round"/></svg></span>
-      <span class="gt"><b>Đường Ray Tư Duy</b><small>Đổi ngã rẽ, đưa tàu về đúng ga cùng màu</small><em id="hubTrain"></em></span>
+      <span class="gt"><b>Đường Ray Tư Duy</b><small>Đổi ngã rẽ, đưa tàu về đúng ga cùng màu, cùng hình</small><em id="hubTrain"></em></span>
     </button>
     <button class="gamecard koi" id="openKoi">
       <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M7 24c6-10 20-12 28-4l7-6v20l-7-6c-8 8-22 6-28-4z" fill="#ffb38a"/><path d="M16 17c3 2 3 6 0 8M24 15c3 3 3 9 0 12" stroke="#ff6b3d" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="12.5" cy="22.5" r="1.8" fill="#0d2c2e"/></svg></span>
@@ -197,8 +197,8 @@
       <div class="stars" id="kdStars"><span class="s">★</span><span class="s">★</span><span class="s">★</span></div>
       <div class="big" id="kdScore">0</div>
       <div class="stats">
-        <div><b id="kdAcc">0%</b>độ chính xác</div>
-        <div><b id="kdLevel">1</b>cấp độ đạt tới</div>
+        <div><b id="kdAcc">0%</b> độ chính xác</div>
+        <div><b id="kdLevel">1</b> cấp độ đạt tới</div>
       </div>
       <p class="note" id="kdNote"></p>
       <button class="btn" id="kdAgain">Chơi lại</button>
@@ -391,8 +391,6 @@
 <script src="js/mem.js"></script>
 <script src="js/rain.js"></script>
 <script src="js/word.js"></script>
-<!-- Game split files (js/<game>-<part>.js) go here, after their game's main file and before hub.js.
-     The orchestrator finalises these tags. -->
 <script src="js/hub.js"></script>
 <script>
 // Offline cache: only on https or localhost, where service workers are allowed.
