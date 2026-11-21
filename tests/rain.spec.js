@@ -445,3 +445,23 @@ test('neon #14: rAF stops while paused, restarts on resume, canvas redrawn on re
   await page.waitForFunction(p => window.__rainDebug().drops.some(d => d.ans === 55 && d.p > p), p0, { timeout: 3000 });
   expect(await page.evaluate(() => window.__raf)).toBeGreaterThan(0);
 });
+
+// Gemini Neon round 2: Pause -> Quit -> Start froze the round (loop stopped while paused, never restarted).
+test('pause, quit to the menu and start again: drops keep falling', async ({ page }) => {
+  await page.goto('/');
+  await page.click('#openRain');
+  await page.click('#rStart');
+  await page.waitForTimeout(900);
+  await page.click('#rPause');
+  await page.waitForTimeout(200);
+  await page.click('#rQuit');
+  await expect(page.locator('#rmenu')).toBeVisible();
+  await page.click('#rStart');
+  const frames = await page.evaluate(() => new Promise(res => {
+    let n = 0; const t0 = performance.now();
+    const orig = window.requestAnimationFrame;
+    window.requestAnimationFrame = cb => orig(ts => { n++; cb(ts); });
+    setTimeout(() => { window.requestAnimationFrame = orig; res(n); }, 1500);
+  }));
+  expect(frames, 'game loop runs after Pause -> Quit -> Start').toBeGreaterThan(20);
+});

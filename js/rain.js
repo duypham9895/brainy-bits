@@ -319,6 +319,8 @@ function startLevel(L){
   showOnly(null);
   resize(); hud();
   state = 'play';
+  // The loop stops itself while paused; a round started from the menu after a pause must restart it.
+  if (window.APP && window.APP.active === 'rain') startLoop();
 }
 
 function pause(){
@@ -418,6 +420,7 @@ function toMenu(){
   $('rBestTxt').textContent = done >= LV_MAX ? `Đã qua cả ${LV_MAX} level` : done ? `Đã qua tới Level ${done}` : '';
   showOnly('rmenu');
   resize(); level = chosen; misses = 0; solved = 0; target = spec(chosen).target; hud();
+  if (window.APP && window.APP.active === 'rain') startLoop();
 }
 
 // ---------- input ----------
