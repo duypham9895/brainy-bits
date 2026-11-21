@@ -47,7 +47,10 @@ function loadStep(i, done){
   if (ok()) { loadStep(i + 1, done); return; }
   let el = document.querySelector(`script[src$="${src}"]`), fired = false;
   const next = () => { if (!fired) { fired = true; loadStep(i + 1, done); } };
-  if (!el) { el = document.createElement('script'); el.src = src; document.head.appendChild(el); }
+  // Thẻ tĩnh trong index.html đã chạy xong (hoặc lỗi) trước file này: load/error đã bắn rồi, chờ nữa là treo 4 s.
+  // Chỉ thẻ chèn lúc chạy (data-bb-dyn) mới còn đang nạp.
+  if (el && !el.dataset.bbDyn) { next(); return; }
+  if (!el) { el = document.createElement('script'); el.src = src; el.dataset.bbDyn = '1'; document.head.appendChild(el); }
   el.addEventListener('load', next); el.addEventListener('error', next);
   setTimeout(next, 4000);
 }
@@ -440,6 +443,7 @@ function renderLevels(){
 }
 
 function toMenu(){
+  pendingStart = null;                                   // về menu là huỷ ván đang chờ bảng level
   clearStarTimers();
   state = 'menu'; drops = []; fx = []; parts = []; input = ''; pendT = 0; renderInput();
   chosen = Math.min(getLv(), lvMax());
@@ -497,7 +501,7 @@ $('rQuit').onclick = toMenu;
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && window.APP && window.APP.active === 'rain') pause();
 });
-BB.onLeave('rain', () => { pause(); clearStarTimers(); });
+BB.onLeave('rain', () => { pendingStart = null; pause(); clearStarTimers(); });
 
 window.rainEnter = () => {
   startLoop();

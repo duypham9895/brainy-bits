@@ -176,7 +176,7 @@ test('a second difficulty.js wipes the table: rain registers again instead of an
 test('difficulty.js fails to load: falls back to the 10 legacy levels, still playable', async ({ page }) => {
   await page.route(/\/js\/difficulty\.js$/, route => route.abort());
   await page.goto('/#mua');
-  await expect(page.locator('#rlvgrid .lv')).toHaveCount(10, { timeout: 8000 });
+  await expect(page.locator('#rlvgrid .lv')).toHaveCount(10, { timeout: 1500 });   // no 4 s hang on the dead static tag
   const r = await page.evaluate(() => window.__rainTest.spec(10));
   expect(r).toMatchObject({ ops: 10, fall: 8.05, every: 2.8, target: 20 });
   await startAt(page, 10);

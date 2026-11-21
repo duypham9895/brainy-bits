@@ -168,7 +168,9 @@ test('register() validates specs; UMD exports for CommonJS', () => {
   assert.equal(ctx.module.exports, ctx.BBD);
 });
 
-test('mem calibration passes its gates (N=400, seeded)', async () => {
+// Smoke only: N=400 is a fast wiring check, NOT the gate verdict. At full N=1200 (CI, report-only)
+// mem still misses G2 L7→L8 and G3 at L6, both in legacy levels, pending the E3 retune.
+test('mem calibration wiring smoke at N=400 (not the full-N gate verdict)', async () => {
   const r = await calibrate('mem', { n: 400, write: false, quiet: true });
   const failed = r.gates.filter(g => g.pass === false).map(g => `${g.id}: ${g.fails.join('; ')}`);
   assert.deepEqual(failed, []);

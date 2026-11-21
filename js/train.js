@@ -741,7 +741,10 @@ function ensure(i, done){
   if (ok() || (can && !can())) { ensure(i + 1, done); return; }
   let s = document.querySelector(`script[src="${src}"]`), fired = false;
   const next = () => { if (!fired) { fired = true; ensure(i + 1, done); } };
-  if (!s) { s = document.createElement('script'); s.src = src; document.head.appendChild(s); }
+  // A static tag in index.html ran (or failed) before this file: its load/error already fired, so
+  // waiting on it would hang 4 s. Only tags inserted at runtime (data-bb-dyn) are still in flight.
+  if (s && !s.dataset.bbDyn) { next(); return; }
+  if (!s) { s = document.createElement('script'); s.src = src; s.dataset.bbDyn = '1'; document.head.appendChild(s); }
   s.addEventListener('load', next); s.addEventListener('error', next);
   setTimeout(next, 4000);
 }

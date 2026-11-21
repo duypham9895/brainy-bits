@@ -102,8 +102,10 @@ test('stars saved under the old 11-level cap keep showing', async ({ page }) => 
 test('without the table (script blocked) the game still boots on the old 11 levels', async ({ page }) => {
   await page.route(/js\/(difficulty|levels\/train)\.js/, r => r.abort());
   const errors = await openTrain(page);
-  await expect(page.locator('#lvgrid .lv')).toHaveCount(11);
+  await expect(page.locator('#lvgrid .lv')).toHaveCount(11, { timeout: 1500 });   // no 4 s hang on the dead static tag
   expect(await page.evaluate(() => __rtd.usesTable)).toBe(false);
+  await page.click('#startBtn');
+  await expect(page.locator('#menu')).toBeHidden({ timeout: 1500 });
   expect(errors).toEqual([]);
 });
 

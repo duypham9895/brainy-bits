@@ -175,6 +175,10 @@ test('next-level flow: pass L10 → L11, pass L29 → L30, pass L30 → finished
   await expect(page.locator('#krNext')).toHaveText('Xem tổng kết →');
   await page.click('#krNext');
   await expect(page.locator('#kdone h2')).toHaveText('Xong cả 30 level! 🎉');
+  // tổng sao của cả game (30 level × 3), không phải sao riêng L30; ô độ chính xác là số thật
+  await expect(page.locator('#kdStars')).toHaveAttribute('aria-label', /^\d+ trên 90 sao$/);
+  await expect(page.locator('#kdAcc')).toHaveText(/^\d+$/);
+  expect(await page.locator('#kdAcc').evaluate(b => b.parentNode.textContent.slice(b.textContent.length))).toBe(' level đủ 3 sao');
   expect(await page.locator('#kdLevel').evaluate(b => b.parentNode.textContent)).toBe('30 level đã qua');
   expect(await page.evaluate(() => ({ lv: localStorage.getItem('koi_lv2'), best: BB.gameStats('koi').best })))
     .toEqual({ lv: '31', best: 30 });
