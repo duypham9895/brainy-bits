@@ -1,0 +1,36 @@
+/* mem: game-specific styles. Loaded after app.css, so rules here may override it. */
+/* 6x6 grid: smaller gap keeps every tile >= 44px at 320px wide. */
+.mgrid{perspective:700px}
+.mgrid.dense{gap:4px}
+.mtile{min-width:0;min-height:0;font:inherit;color:inherit}
+.mtile:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.mtile.miss:focus-visible{outline-color:#fff}
+/* Paused: the grid is hidden so nothing can be studied behind the pause card (MEM-2). */
+.mgrid.hush{visibility:hidden}
+/* Stars earned per level on the menu buttons. */
+#mlvgrid .lv.done[data-st]::after{content:attr(data-st);color:#ffd54a;font-size:10px;letter-spacing:-1px;top:3px;right:5px}
+#mrStars{margin:10px 0 2px}
+#mrStarRule{font-size:12.5px;line-height:1.4}
+
+@media (prefers-reduced-motion: no-preference){
+  .mtile.lit{animation:mFlip .34s cubic-bezier(0.22,1,0.36,1) var(--d,0ms) both}
+  .mtile.ok{animation:mPop .26s cubic-bezier(0.22,1,0.36,1)}
+  .mtile.ok.wave{animation:mWave .42s cubic-bezier(0.22,1,0.36,1) var(--d,0ms) both}
+  .mtile.bad{animation:mPop .22s cubic-bezier(0.22,1,0.36,1)}
+  .mtile.miss{animation:mFlip .3s cubic-bezier(0.22,1,0.36,1)}
+}
+@keyframes mFlip{from{transform:rotateY(90deg) scale(.9)}to{transform:none}}
+@keyframes mPop{0%{transform:scale(1)}45%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes mWave{0%{transform:scale(1)}40%{transform:scale(1.14);filter:brightness(1.15)}100%{transform:scale(1);filter:none}}
+
+/* Short landscape phones: hint beside the grid so the grid can use the full stage height.
+   The HUD drops to 4px vertical padding (44px pause button + 8px = 52px); with the 16px stage padding
+   the grid gets 100dvh - 68px: 6x6 tiles stay >= 44px at 740x360 and ~39px at 568x320. The 8px
+   stage padding stays: the 3D flip-in of a lit tile pokes a few px past the grid edge. */
+@media (orientation: landscape) and (max-height: 500px){
+  #memApp .ghud{padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:4px}
+  .mstage{flex-direction:row;gap:16px;padding:8px}
+  .mstage .mhint{max-width:28vw;font-size:17px}
+  .mgrid{width:min(62vw, calc(100vh - 68px), 520px);width:min(62vw, calc(100dvh - 68px), 520px)}
+  .mgrid.dense{gap:3px}
+}

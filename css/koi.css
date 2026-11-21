@@ -1,0 +1,11 @@
+/* koi: game-specific styles. Loaded after app.css, so rules here may override it. */
+/* Nút tạm dừng đủ 44px cho ngón tay (app.css .roundbtn là 38px). */
+#kPauseBtn{width:44px;height:44px}
+#klvgrid .lv{min-height:48px}
+/* Sao đã đạt của từng level trên lưới chọn level. */
+#klvgrid .kst{display:block;font-size:10.5px;letter-spacing:1px;color:#ffd54a;line-height:1;margin-top:2px}
+#krStars .s,#kdStars .s{display:inline-block;transition:color .3s cubic-bezier(0.22,1,0.36,1),text-shadow .3s cubic-bezier(0.22,1,0.36,1)}
+#krRule:empty{display:none}
+@media (prefers-reduced-motion: reduce){
+  #krStars .s,#kdStars .s{transition:none}
+}

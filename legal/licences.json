@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-20",
+  "updated": "2026-11-21",
   "assets": [
     {
       "name": "Game code, layout and Vietnamese text (index.html)",
@@ -12,14 +12,34 @@
       "source": "https://fonts.google.com/specimen/Baloo+2 (loaded at runtime from fonts.googleapis.com, not bundled)"
     },
     {
-      "name": "Sound effects",
-      "licence": "None needed: generated in code with the Web Audio API (oscillator beeps), no audio files",
+      "name": "In-game symbols (emoji)",
+      "licence": "None bundled: emoji characters rendered by the player's system font. The app icon files are a separate entry (icons/)",
       "source": "index.html"
     },
     {
-      "name": "Icons",
-      "licence": "None bundled: emoji characters rendered by the player's system font",
-      "source": "index.html"
+      "name": "ZzFXMicro v1.4.0 (vendor/zzfx-micro.js)",
+      "licence": "MIT, Copyright (c) 2019 Frank Force. Full licence text embedded verbatim in the file header",
+      "source": "https://github.com/KilledByAPixel/ZzFX/blob/ac5a4727a44e5506a12f7340087e0b889cfd69dc/ZzFXMicro.min.js"
+    },
+    {
+      "name": "canvas-confetti v1.9.4 (vendor/confetti.js)",
+      "licence": "ISC, Copyright (c) 2020, Kiril Vatev. Full licence text embedded verbatim in the file header",
+      "source": "https://registry.npmjs.org/canvas-confetti/-/canvas-confetti-1.9.4.tgz"
+    },
+    {
+      "name": "Sound effects",
+      "licence": "None needed: generated in code (Web Audio oscillators and ZzFX parameters), no audio files",
+      "source": "js/core.js"
+    },
+    {
+      "name": "Service worker offline pattern (sw.js)",
+      "licence": "Own code; pattern after mdn/pwa-examples (CC0-1.0), no code copied",
+      "source": "https://github.com/mdn/pwa-examples"
+    },
+    {
+      "name": "App icons and share image (icons/)",
+      "licence": "Original artwork made for this repo",
+      "source": "icons/"
     }
   ]
 }

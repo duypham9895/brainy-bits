@@ -1,0 +1,85 @@
+// Brainy Bits offline cache. Same-origin requests go to the network first, so stale files are
+// never served while online. Bump VERSION when the precache list changes; activate deletes old caches. Pattern after mdn/pwa-examples (CC0-1.0), own code.
+const VERSION = 'bb-v3';
+const FONT_CACHE = 'bb-fonts-v1';
+const PRECACHE = [
+  './', 'index.html', 'manifest.webmanifest',
+  'css/app.css', 'css/train.css', 'css/koi.css', 'css/mem.css', 'css/rain.css', 'css/word.css',
+  'vendor/zzfx-micro.js', 'vendor/confetti.js',
+  'js/core.js', 'js/train.js', 'js/train-map.js', 'js/koi.js', 'js/mem.js', 'js/rain.js', 'js/word.js', 'js/hub.js',
+  'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
+];
+
+self.addEventListener('install', e => {
+  // One missing file must not block the whole install, so each one is cached on its own.
+  e.waitUntil(caches.open(VERSION)
+    .then(c => Promise.all(PRECACHE.map(u => c.add(new Request(u, { cache: 'reload' })).catch(() => {}))))
+    .then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys()
+    .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== FONT_CACHE).map(k => caches.delete(k))))
+    .then(() => self.clients.claim()));
+});
+
+// Same-origin files: network first so a new deploy (or a local edit during preview) shows up on
+// the next load without anyone bumping VERSION; the cache is only the offline fallback.
+// cache: 'no-cache' makes every online fetch revalidate with the server (ETag -> 304 when unchanged),
+// so GitHub Pages' max-age=600 cannot hand back a stale file or pair new HTML with old JS.
+// Fetching by req.url (not the Request) avoids WebKit rejecting a mode:'navigate' request in init.
+async function sameOrigin(req) {
+  const c = await caches.open(VERSION);
+  try {
+    const res = await fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' });
+    if (res.ok && res.type === 'basic') c.put(req, res.clone());
+    if (res.type !== 'basic') return res;
+    const h = new Headers(res.headers); h.set('Cache-Control', 'no-cache');
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+  } catch (err) {
+    const hit = await c.match(req, { ignoreSearch: req.mode === 'navigate' });
+    if (hit) return hit;
+    throw err;
+  }
+}
+
+async function networkFirst(req, cacheName) {
+  const c = await caches.open(cacheName);
+  try {
+    const res = await fetch(req);
+    // The Google Fonts <link> has no crossorigin, so its response is opaque (ok === false).
+    if (res.ok || res.type === 'opaque') c.put(req, res.clone());
+    return res;
+  } catch (err) {
+    const hit = await c.match(req);
+    if (hit) return hit;
+    throw err;
+  }
+}
+
+async function fontFile(req) {
+  const c = await caches.open(FONT_CACHE);
+  const hit = await c.match(req);
+  if (hit) return hit;
+  const res = await fetch(req);
+  if (res.ok || res.type === 'opaque') c.put(req, res.clone());
+  return res;
+}
+
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin === location.origin) {
+    // The page itself: network first, falling back to the cached index for any in-scope navigation.
+    if (req.mode === 'navigate') {
+      e.respondWith(sameOrigin(req).catch(() => caches.match('index.html')));
+      return;
+    }
+    e.respondWith(sameOrigin(req));
+  } else if (url.hostname === 'fonts.googleapis.com') {
+    e.respondWith(networkFirst(req, FONT_CACHE));      // the CSS can change; use the last copy offline
+  } else if (url.hostname === 'fonts.gstatic.com') {
+    e.respondWith(fontFile(req));                      // font files are immutable by URL
+  }
+});

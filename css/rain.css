@@ -1,0 +1,72 @@
+/* rain: game-specific styles. Loaded after app.css, so rules here may override it. */
+/* .roundbtn đã 44px; ::before nới vùng chạm thêm 3px mỗi phía cho chắc tay. */
+#rPause{position:relative;flex:none}
+#rPause::before{content:"";position:absolute;inset:-3px;border-radius:50%}
+#rainApp .ghud .pill{flex:none}
+#rLives{display:inline-block}
+
+/* Bàn phím số: phản hồi khi gõ bằng bàn phím thật, viền focus rõ khi dùng Tab. */
+#rainApp .rpad button{min-height:48px;transition:transform .12s cubic-bezier(0.22,1,0.36,1),filter .12s cubic-bezier(0.22,1,0.36,1)}
+#rainApp .rpad button.on{transform:scale(.96);filter:brightness(1.25)}
+#rainApp .rpad button:focus-visible,
+#rainApp .lv:focus-visible,
+#rainApp .btn:focus-visible,
+#rPause:focus-visible{outline:2px solid #7cc7ff;outline-offset:2px}
+#rainApp .rdisp{font-variant-numeric:tabular-nums}
+
+/* Sao tốt nhất trên ô chọn level */
+#rainApp .lv{min-height:48px}
+#rainApp .lv .lvst{display:block;font-size:11px;line-height:1.1;letter-spacing:1px;color:#ffd54a;margin-top:1px}
+#rainApp .lv.done::after{content:"✓";content:"✓" / ""}
+
+/* Màn kết quả: 3 sao + luật tính sao */
+.rstars{display:flex;justify-content:center;gap:10px;margin:4px 0 2px;font-size:34px;line-height:1}
+.rstars span{color:rgba(255,255,255,.18);display:inline-block}
+.rstars span.on{color:#ffd54a;text-shadow:0 2px 10px rgba(255,213,74,.45)}
+.rstars span.pop{animation:rStarIn .42s cubic-bezier(0.22,1,0.36,1) both}
+@keyframes rStarIn{0%{transform:scale(.3) rotate(-25deg);opacity:0}70%{transform:scale(1.18) rotate(4deg);opacity:1}100%{transform:none;opacity:1}}
+.rrule{margin:4px 0 0;font-size:13px;line-height:1.45}
+#rainApp .big{font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion: reduce){
+  .rstars span.pop{animation:none}
+  #rainApp .rpad button{transition:filter .12s linear}
+  #rainApp .rpad button.on{transform:none}
+}
+
+/* ---- Bố cục theo màn hình ----
+   Mặc định (điện thoại dọc): cột dọc như cũ — HUD · canvas · ô hiển thị · bàn phím.
+   rain.js đọc kích thước canvas bằng getBoundingClientRect() trong resize(), nên giọt, mặt nước
+   và vị trí sinh giọt tự theo khung mới; ở đây chỉ cần CSS. */
+
+/* Tablet / laptop đủ cao: gom canvas + ô hiển thị + bàn phím vào một cột giữa, rộng tối đa 600px.
+   Giữ bãi mưa dạng đứng giống trên điện thoại (nơi độ khó đã được chỉnh), mắt không phải quét
+   ngang 1.900px, và ngón tay/chuột ở ngay dưới giọt đang rơi. Dải nền dưới vẫn kéo hết bề ngang. */
+@media (min-width: 680px) and (min-height: 561px){
+  #rainApp #rcv,
+  #rainApp .rbar,
+  #rainApp .rpad{align-self:center;width:100%;max-width:600px}
+  #rainApp #rcv{box-shadow:0 0 0 1px rgba(124,199,255,.06)}
+  #rainApp .rbar,
+  #rainApp .rpad{box-shadow:0 0 0 100vmax #0b1626;clip-path:inset(0 -100vmax)}
+  /* HUD: nền vẫn kéo hết bề ngang, nhưng pill và nút pause thẳng mép cột 600px */
+  #rainApp .ghud{padding-left:max(12px, env(safe-area-inset-left), calc(50% - 300px));
+    padding-right:max(12px, env(safe-area-inset-right), calc(50% - 300px))}
+}
+
+/* Điện thoại xoay ngang / cửa sổ thấp: chiều cao là thứ thiếu, nên đặt canvas bên trái, bàn phím
+   bên phải. Bàn phím lấy hết phần còn lại của cột phải (phím ≥ 44px), canvas lấy toàn bộ chiều cao dưới HUD. */
+@media (orientation: landscape) and (max-height: 560px){
+  #rainApp .gwrap{display:grid;grid-template-columns:minmax(0,1fr) clamp(228px,36vw,320px);
+    grid-template-rows:auto auto minmax(0,1fr)}
+  #rainApp .ghud{grid-column:1 / -1;grid-row:1}
+  #rainApp #rcv{grid-column:1;grid-row:2 / 4;align-self:stretch;
+    width:calc(100% - env(safe-area-inset-left, 0px));height:100%;
+    margin-left:env(safe-area-inset-left, 0px);min-height:0}
+  #rainApp .rbar{grid-column:2;grid-row:2;padding:6px 12px 4px;
+    padding-right:max(12px, env(safe-area-inset-right))}
+  #rainApp .rdisp{font-size:26px;min-width:120px;padding:2px 14px}
+  #rainApp .rpad{grid-column:2;grid-row:3;grid-auto-rows:minmax(44px,1fr);gap:6px;padding-top:4px;
+    padding-bottom:max(8px, env(safe-area-inset-bottom))}
+  #rainApp .rpad button{min-height:44px;padding:6px 0;font-size:22px}
+}
