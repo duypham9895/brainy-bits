@@ -545,3 +545,15 @@
     .switch i::after{transition:none}
     #bbToast,#bbToast.on{transform:translate(-50%,0);transition:opacity .25s linear}
   }
+
+/* 30-level grids (train, koi, mem, rain): scroll inside the menu like word's 49-level grid, so the
+   Start and back buttons stay above the fold on phones. Same look as #wlvgrid in css/word.css. */
+#lvgrid,#klvgrid,#mlvgrid,#rlvgrid{max-height:min(168px,23dvh);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  padding:6px;border-radius:16px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.09);
+  scroll-padding-block:8px;scrollbar-width:thin;scrollbar-color:rgba(255,207,138,.4) transparent}
+@media (min-height:880px) and (min-width:600px){
+  #lvgrid,#klvgrid,#mlvgrid,#rlvgrid{max-height:210px}
+}
+@media (max-width:359px){
+  #lvgrid,#klvgrid,#mlvgrid,#rlvgrid{padding:4px;gap:6px}
+}

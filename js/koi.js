@@ -5,11 +5,15 @@ const cv = $('kcv'), ctx = cv.getContext('2d');
 const bg = document.createElement('canvas');
 let W = 0, H = 0, dpr = 1;
 const BB = window.BB;
-const LV_MAX = BB.LV_MAX.koi;  // 10 level; qua level 10 là xong game, không có level 11
+// Tham số level lấy từ engine độ khó chung (js/difficulty.js + js/levels/koi.js): L1..10 giữ nguyên
+// giá trị cũ (E3), L11..30 do engine sinh và đã calibrate bằng bot. Trang chưa nạp BBD thì game
+// quay về đúng 10 level cũ, không bao giờ hỏng.
+const BBD = window.BBD && window.BBD.games().includes('koi') ? window.BBD : null;
+const LV_MAX = BBD ? BB.setLvMax('koi', BBD.maxLevel('koi')) : BB.LV_MAX.koi;   // 30 | 10; qua level cuối là xong game
 let state = 'menu';            // menu | play | pondEnd | result | done | paused
 let resumeTo = 'play';         // state trước khi tạm dừng (play hoặc pondEnd)
 let diff = 1, streak = 0;
-let fish = [], pellets = 0, pelletsMax = 0, cooldown = 0, cdMax = 1;
+let fish = [], pellets = 0, pelletsMax = 0, cooldown = 0, cdMax = 1, turnMul = 1;
 let pondCorrect = 0, pondMistakes = 0, pondKoi = 0, endTimer = 0;
 let lastFeedAt = 0;   // lúc khoá vòng gần nhất: chạm đúp vô tình trong 300ms không tính là chạm sớm
 let earlyTaps = 0, playMs = 0; // chạm cá khi vòng chưa đầy (mất sao thứ 3) · thời gian chơi thật
@@ -26,6 +30,11 @@ function setBest(v){ if (v > BB.store.num('koi_best', 0, 0, LV_MAX)) BB.store.se
 
 // Một lần lúc tải: kẹp key cũ đã vượt trần (11, 12...) và đồng bộ hai chiều với bb_stats.
 (function migrate(){
+  // Bản 10 level cũ từng ghi koi_lv2 = 12, 13... do lỗi (OPS-4). Từ khi có level 11+, mỗi lần qua level
+  // đều ghi bb_stats.best, nên key vượt 11 mà không có best tương ứng là key lỗi: kẹp như bản cũ.
+  const top = (BBD ? BBD.spec('koi').legacy.length : LV_MAX) + 1;   // 11
+  const stored = BB.store.num('koi_lv2', 1), best = BB.gameStats('koi').best;
+  if (stored > top && stored > best + 1) BB.store.set('koi_lv2', Math.max(top, Math.min(LV_MAX + 1, best + 1)));
   if (BB.store.num('koi_lv2', 1) > LV_MAX + 1) BB.store.set('koi_lv2', LV_MAX + 1);
   const legacy = getLv() - 1, s = BB.gameStats('koi');
   if (legacy > s.best) {
@@ -41,13 +50,20 @@ const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 const wrapAng = a => { while (a > Math.PI) a -= Math.PI*2; while (a < -Math.PI) a += Math.PI*2; return a; };
 
-// độ khó theo cấp
-function params(d){
+// độ khó theo cấp. Công thức cũ chỉ còn dùng khi trang không có BBD (bằng BBD.level ở L1..10).
+function legacyParams(d){
   return {
     koi: Math.min(5 + d, 15),            // cấp 1 = 6 con, cấp 10 = 15 con
     cd: Math.min(1.3 + 0.15*d, 3.2),     // thời gian chờ giữa 2 lần cho ăn
     decoys: d >= 3 ? Math.min(1 + ((d-3)/2|0), 4) : 0,
+    spdMul: 1, turnMul: 1, legacy: true,
   };
+}
+// spdMul nhân tốc độ bơi, turnMul làm cá đổi hướng thường hơn (chỉ có ở level mới).
+function params(d){
+  if (!BBD) return legacyParams(d);
+  const r = BBD.level('koi', Math.max(1, d | 0));
+  return { koi: r.koi, cd: r.cd, decoys: r.decoys, spdMul: r.spdMul || 1, turnMul: r.turnMul || 1, legacy: r.legacy };
 }
 
 // vùng cá bơi (chừa chỗ cho vòng hẹn giờ ở dưới)
@@ -64,13 +80,13 @@ function setupPond(){
     x: A.x0 + L + Math.random()*(A.x1 - A.x0 - 2*L),
     y: A.y0 + L + Math.random()*(A.y1 - A.y0 - 2*L),
     ang: Math.random()*Math.PI*2, turn: 0, turnTarget: 0, turnT: 0,
-    spd: (decoy ? 24 : 30) + Math.random()*12, boost: 0,
+    spd: ((decoy ? 24 : 30) + Math.random()*12) * p.spdMul, boost: 0,
     phase: Math.random()*10, decoy, fed: false, L: decoy ? L*1.05 : L,
   });
   for (let i=0;i<p.decoys;i++) fish.push(mk(true));
   for (let i=0;i<p.koi;i++) fish.push(mk(false));
   pondKoi = p.koi; pellets = pelletsMax = p.koi;
-  cdMax = p.cd; cooldown = 0;
+  cdMax = p.cd; cooldown = 0; turnMul = p.turnMul;
   pondCorrect = 0; pondMistakes = 0; endTimer = 0;
   earlyTaps = 0; playMs = 0; streak = 0; dialPulse = 0; shakeCam.reset();
   buildStatic();
@@ -224,7 +240,7 @@ function updateFish(dt){
   const A = area(), cx = (A.x0+A.x1)/2, cy = (A.y0+A.y1)/2;
   fish.forEach(f => {
     f.turnT -= dt;
-    if (f.turnT <= 0) { f.turnTarget = (Math.random()-0.5)*1.6; f.turnT = 1 + Math.random()*2; }
+    if (f.turnT <= 0) { f.turnTarget = (Math.random()-0.5)*1.6; f.turnT = (1 + Math.random()*2) / turnMul; }
     f.turn += (f.turnTarget - f.turn) * Math.min(1, dt*1.5);
     const m = f.L * 0.9;
     if (f.x < A.x0+m || f.x > A.x1-m || f.y < A.y0+m || f.y > A.y1-m) {
@@ -260,14 +276,15 @@ function update(dt){
 
 // ---------- chạm ----------
 // Vùng chạm bám theo thân cá (KOI-07): ellipse lệch về phía đầu, nhỏ hơn bản cũ (0.62L × 0.4L)
-// nhưng không dưới ~32px bề ngang cho ngón tay. Nhiều con chồng nhau thì con có tâm gần nhất thắng.
+// nhưng không dưới 48 × 44 px cho ngón tay (sàn a ≥ 24, b ≥ 22: cá co 0.85× ở màn 12+ cá vẫn chạm được
+// ở màn hình 320 px). Nhiều con chồng nhau thì con có tâm gần nhất thắng.
 function fishAt(x, y){
   let hit = null, best = Infinity;
   for (let i = fish.length-1; i >= 0; i--){
     const f = fish[i];
     const dx = x - f.x, dy = y - f.y;
     const lx = dx*Math.cos(-f.ang) - dy*Math.sin(-f.ang), ly = dx*Math.sin(-f.ang) + dy*Math.cos(-f.ang);
-    const a = Math.max(f.L*0.52, 20), b = Math.max(f.L*0.32, 16);
+    const a = Math.max(f.L*0.52, 24), b = Math.max(f.L*0.32, 22);
     const d = ((lx - f.L*0.04)/a)**2 + (ly/b)**2;
     if (d <= 1 && d < best) { best = d; hit = f; }
   }
@@ -443,7 +460,7 @@ function paintStars(box, n, animate){
   });
 }
 
-const KLV_COUNT = LV_MAX;      // level 1..10 = 6..15 cá
+const KLV_COUNT = LV_MAX;      // level 1..10 = 6..15 cá; level 11..30 có màn thở 12 cá, cá bơi nhanh dần
 let chosenK = 1, kPassed = false;
 function renderKLevels(){
   const b = getLv() - 1, grid = $('klvgrid');   // koi_lv2 lưu level kế tiếp chưa qua
@@ -460,8 +477,19 @@ function renderKLevels(){
     grid.appendChild(el);
   }
   const p = params(chosenK);
-  $('kLevelTxt').textContent = `${p.koi} cá koi${p.decoys ? ` + ${p.decoys} cá xám` : ''} · chờ ${p.cd.toFixed(1).replace('.', ',')} giây giữa 2 lần cho ăn`;
+  $('kLevelTxt').textContent = `${p.koi} cá koi${p.decoys ? ` + ${p.decoys} cá xám` : ''} · chờ ${cdTxt(p)} giây giữa 2 lần cho ăn${moveTxt(p)}`;
   $('kStartBtn').textContent = `Chơi Level ${chosenK} · ${p.koi} cá`;
+}
+
+// Level mới: nói cá bơi nhanh / đổi hướng thế nào, ngắn gọn. Level cũ (×1) không thêm chữ.
+const mulTxt = v => `×${String(+v.toFixed(2)).replace('.', ',')}`;
+// Level cũ giữ chữ cũ (1 chữ số). Level mới in đủ 2 chữ số để 2,95 / 3,05 không cùng hiện "3,0".
+const cdTxt = p => (!p.legacy ? String(+p.cd.toFixed(2)) : p.cd.toFixed(1)).replace('.', ',');
+function moveTxt(p){
+  const parts = [];
+  if (p.spdMul > 1) parts.push(`cá bơi nhanh ${mulTxt(p.spdMul)}`);
+  if (p.turnMul > 1) parts.push(`đổi hướng ${mulTxt(p.turnMul)}`);
+  return parts.length ? ' · ' + parts.join(', ') : '';
 }
 
 function startKoiLevel(lv){
@@ -589,6 +617,7 @@ window.koiBest = () => ({ best: getBest(), lv: getLv() });
 if (window.__BB_TEST__) window.__koi = {
   get state(){ return state; }, get fish(){ return fish; }, get pellets(){ return pellets; },
   get earlyTaps(){ return earlyTaps; }, set cooldown(v){ cooldown = v; }, get cooldown(){ return cooldown; },
+  get diff(){ return diff; }, get turnMul(){ return turnMul; }, params: d => params(d), LV_MAX, engine: !!BBD,
 };
 updateHud();
 })();

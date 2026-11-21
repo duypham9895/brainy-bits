@@ -1,0 +1,2314 @@
+{
+ "game": "word",
+ "n": 400,
+ "from": 1,
+ "to": 49,
+ "simVersion": 1,
+ "generatedOn": "2026-11-21",
+ "config": {
+  "E1": "A",
+  "E3": true,
+  "E5": true,
+  "l30Peak": 0.69,
+  "floor": 0.65,
+  "skilledL30": 0.5
+ },
+ "seed": "mulberry32(cyrb53(\"camp|game|L|profile|i\"))",
+ "note": "bL = logit(1 − p_median) with θ_median = 0, a = 1; 2PL fit not run yet",
+ "adapterOpts": {},
+ "ok": false,
+ "gates": [
+  {
+   "id": "B",
+   "name": "generated levels: |p_median − p*| ≤ 0.05 (legacy: measured only, E3)",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  },
+  {
+   "id": "G1",
+   "name": "weak ≥ 85% on L1–5",
+   "pass": false,
+   "fails": [
+    "L1 weak 0.6525",
+    "L2 weak 0.7025",
+    "L3 weak 0.7625",
+    "L4 weak 0.77",
+    "L5 weak 0.71"
+   ],
+   "note": ""
+  },
+  {
+   "id": "G2",
+   "name": "median pass rate does not rise between consecutive step levels (tolerance = 2·SE)",
+   "pass": false,
+   "fails": [
+    "L11→L12: 0.7675 → 0.9825",
+    "L16→L17: 0.9425 → 0.9775",
+    "L27→L28: 0.9225 → 0.9775",
+    "L29→L30: 0.83 → 0.935",
+    "L31→L32: 0.9475 → 0.9875",
+    "L33→L34: 0.82 → 0.96",
+    "L34→L35: 0.96 → 0.9875",
+    "L37→L38: 0.935 → 0.9725",
+    "L39→L40: 0.8925 → 0.9775"
+   ],
+   "note": ""
+  },
+  {
+   "id": "G3",
+   "name": "breather easier than the peak before it and harder than L−4",
+   "pass": false,
+   "fails": [
+    "L11 0.7675 harder than peak L10 0.8925",
+    "L36 0.8975 harder than peak L35 0.9875",
+    "L41 0.98 easier than L37 0.935"
+   ],
+   "note": ""
+  },
+  {
+   "id": "G4",
+   "name": "weak ≥ 60% on every breather",
+   "pass": false,
+   "fails": [
+    "L11 weak 0.59"
+   ],
+   "note": ""
+  },
+  {
+   "id": "G5",
+   "name": "skilled ≥ 50% at L30 (E1 = A)",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  },
+  {
+   "id": "G6",
+   "name": "knobs within hardCap; targets ≥ 44 px at 320 and 390 px",
+   "pass": true,
+   "fails": [],
+   "note": "adapter has no geometry(): px part not checked"
+  },
+  {
+   "id": "G7",
+   "name": "Playwright parity, 3 seeds at L1/L15/L30",
+   "pass": null,
+   "fails": [],
+   "note": "SKIPPED: needs the game to read BBD.level() (per-game integration step)"
+  },
+  {
+   "id": "G8",
+   "name": "first-attempt and ≤3-attempt pass reported; ≤3 never below first attempt",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  }
+ ],
+ "levels": [
+  {
+   "L": 1,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.92,
+   "D": 0,
+   "bL": -2.197,
+   "knobs": {
+    "phrase": 0,
+    "letters": 5,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6525,
+     "ci": [
+      0.6046,
+      0.6975
+     ],
+     "acc": 0.733,
+     "msMedian": 28632,
+     "p3": 0.9825
+    },
+    "median": {
+     "p": 0.9,
+     "ci": [
+      0.8667,
+      0.9257
+     ],
+     "acc": 0.9275,
+     "msMedian": 20754,
+     "p3": 0.9975
+    },
+    "skilled": {
+     "p": 0.9675,
+     "ci": [
+      0.9452,
+      0.9809
+     ],
+     "acc": 0.977,
+     "msMedian": 18391,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 2,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8884,
+   "D": 0.1857,
+   "bL": -2.512,
+   "knobs": {
+    "phrase": 1,
+    "letters": 5,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7025,
+     "ci": [
+      0.6559,
+      0.7452
+     ],
+     "acc": 0.765,
+     "msMedian": 27280,
+     "p3": 0.97
+    },
+    "median": {
+     "p": 0.925,
+     "ci": [
+      0.895,
+      0.947
+     ],
+     "acc": 0.9415,
+     "msMedian": 20312,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9675,
+     "ci": [
+      0.9452,
+      0.9809
+     ],
+     "acc": 0.974,
+     "msMedian": 17840,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 3,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8754,
+   "D": 0.2626,
+   "bL": -2.893,
+   "knobs": {
+    "phrase": 2,
+    "letters": 5,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7625,
+     "ci": [
+      0.7184,
+      0.8016
+     ],
+     "acc": 0.8345,
+     "msMedian": 24721,
+     "p3": 0.9825
+    },
+    "median": {
+     "p": 0.9475,
+     "ci": [
+      0.9211,
+      0.9654
+     ],
+     "acc": 0.9725,
+     "msMedian": 18029,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.995,
+     "ci": [
+      0.982,
+      0.9986
+     ],
+     "acc": 0.999,
+     "msMedian": 15311,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 4,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8653,
+   "D": 0.3216,
+   "bL": -2.944,
+   "knobs": {
+    "phrase": 3,
+    "letters": 5,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.77,
+     "ci": [
+      0.7263,
+      0.8086
+     ],
+     "acc": 0.8285,
+     "msMedian": 25758,
+     "p3": 0.9925
+    },
+    "median": {
+     "p": 0.95,
+     "ci": [
+      0.924,
+      0.9674
+     ],
+     "acc": 0.96,
+     "msMedian": 18565,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.99,
+     "ci": [
+      0.9746,
+      0.9961
+     ],
+     "acc": 0.9935,
+     "msMedian": 15795,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 5,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.7969,
+   "D": 0.3714,
+   "bL": -2.376,
+   "knobs": {
+    "phrase": 4,
+    "letters": 5,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.71,
+     "ci": [
+      0.6637,
+      0.7523
+     ],
+     "acc": 0.7805,
+     "msMedian": 26873,
+     "p3": 0.9725
+    },
+    "median": {
+     "p": 0.915,
+     "ci": [
+      0.8836,
+      0.9385
+     ],
+     "acc": 0.937,
+     "msMedian": 19693,
+     "p3": 0.9975
+    },
+    "skilled": {
+     "p": 0.965,
+     "ci": [
+      0.9421,
+      0.979
+     ],
+     "acc": 0.976,
+     "msMedian": 16041,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 6,
+   "kind": "breather",
+   "legacy": true,
+   "pStar": 0.8494,
+   "D": 0.4152,
+   "bL": -2.944,
+   "knobs": {
+    "phrase": 5,
+    "letters": 5,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8075,
+     "ci": [
+      0.766,
+      0.8431
+     ],
+     "acc": 0.868,
+     "msMedian": 23868,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.95,
+     "ci": [
+      0.924,
+      0.9674
+     ],
+     "acc": 0.9755,
+     "msMedian": 17479,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9875,
+     "ci": [
+      0.9711,
+      0.9946
+     ],
+     "acc": 0.992,
+     "msMedian": 14822,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 7,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8427,
+   "D": 0.4549,
+   "bL": -2.998,
+   "knobs": {
+    "phrase": 6,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.78,
+     "ci": [
+      0.7368,
+      0.8178
+     ],
+     "acc": 0.8575,
+     "msMedian": 26981,
+     "p3": 0.9925
+    },
+    "median": {
+     "p": 0.9525,
+     "ci": [
+      0.927,
+      0.9694
+     ],
+     "acc": 0.9796,
+     "msMedian": 19441,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9875,
+     "ci": [
+      0.9711,
+      0.9946
+     ],
+     "acc": 0.9954,
+     "msMedian": 16559,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 8,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8365,
+   "D": 0.4913,
+   "bL": -2.477,
+   "knobs": {
+    "phrase": 7,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.73,
+     "ci": [
+      0.6845,
+      0.7712
+     ],
+     "acc": 0.7921,
+     "msMedian": 30076,
+     "p3": 0.9725
+    },
+    "median": {
+     "p": 0.9225,
+     "ci": [
+      0.8921,
+      0.9449
+     ],
+     "acc": 0.9517,
+     "msMedian": 23072,
+     "p3": 0.9975
+    },
+    "skilled": {
+     "p": 0.98,
+     "ci": [
+      0.961,
+      0.9898
+     ],
+     "acc": 0.9896,
+     "msMedian": 20606,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 9,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8307,
+   "D": 0.5252,
+   "bL": -2.477,
+   "knobs": {
+    "phrase": 8,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7175,
+     "ci": [
+      0.6715,
+      0.7594
+     ],
+     "acc": 0.765,
+     "msMedian": 30874,
+     "p3": 0.9725
+    },
+    "median": {
+     "p": 0.9225,
+     "ci": [
+      0.8921,
+      0.9449
+     ],
+     "acc": 0.9375,
+     "msMedian": 22752,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9675,
+     "ci": [
+      0.9452,
+      0.9809
+     ],
+     "acc": 0.9712,
+     "msMedian": 20686,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 10,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.7653,
+   "D": 0.5571,
+   "bL": -2.117,
+   "knobs": {
+    "phrase": 9,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.71,
+     "ci": [
+      0.6637,
+      0.7523
+     ],
+     "acc": 0.7662,
+     "msMedian": 30713,
+     "p3": 0.97
+    },
+    "median": {
+     "p": 0.8925,
+     "ci": [
+      0.8583,
+      0.9192
+     ],
+     "acc": 0.9142,
+     "msMedian": 23472,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9575,
+     "ci": [
+      0.933,
+      0.9733
+     ],
+     "acc": 0.9667,
+     "msMedian": 20935,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 11,
+   "kind": "breather",
+   "legacy": true,
+   "pStar": 0.8202,
+   "D": 0.5872,
+   "bL": -1.194,
+   "knobs": {
+    "phrase": 10,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.59,
+     "ci": [
+      0.5412,
+      0.6371
+     ],
+     "acc": 0.6796,
+     "msMedian": 31643,
+     "p3": 0.965
+    },
+    "median": {
+     "p": 0.7675,
+     "ci": [
+      0.7237,
+      0.8062
+     ],
+     "acc": 0.8263,
+     "msMedian": 25656,
+     "p3": 0.99
+    },
+    "skilled": {
+     "p": 0.89,
+     "ci": [
+      0.8555,
+      0.917
+     ],
+     "acc": 0.9096,
+     "msMedian": 21320,
+     "p3": 0.995
+    }
+   }
+  },
+  {
+   "L": 12,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8153,
+   "D": 0.6159,
+   "bL": -4.028,
+   "knobs": {
+    "phrase": 11,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.85,
+     "ci": [
+      0.8117,
+      0.8817
+     ],
+     "acc": 0.9,
+     "msMedian": 25171,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9825,
+     "ci": [
+      0.9643,
+      0.9915
+     ],
+     "acc": 0.9879,
+     "msMedian": 18692,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9875,
+     "ci": [
+      0.9711,
+      0.9946
+     ],
+     "acc": 0.9904,
+     "msMedian": 16919,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 13,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8106,
+   "D": 0.6433,
+   "bL": -2.17,
+   "knobs": {
+    "phrase": 12,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.66,
+     "ci": [
+      0.6123,
+      0.7047
+     ],
+     "acc": 0.7575,
+     "msMedian": 30701,
+     "p3": 0.97
+    },
+    "median": {
+     "p": 0.8975,
+     "ci": [
+      0.8639,
+      0.9235
+     ],
+     "acc": 0.9258,
+     "msMedian": 23283,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.96,
+     "ci": [
+      0.936,
+      0.9752
+     ],
+     "acc": 0.9633,
+     "msMedian": 20571,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 14,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8062,
+   "D": 0.6695,
+   "bL": -2.283,
+   "knobs": {
+    "phrase": 13,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7,
+     "ci": [
+      0.6534,
+      0.7428
+     ],
+     "acc": 0.7746,
+     "msMedian": 29011,
+     "p3": 0.975
+    },
+    "median": {
+     "p": 0.9075,
+     "ci": [
+      0.8751,
+      0.9321
+     ],
+     "acc": 0.9363,
+     "msMedian": 21914,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.98,
+     "ci": [
+      0.961,
+      0.9898
+     ],
+     "acc": 0.9837,
+     "msMedian": 16850,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 15,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.7419,
+   "D": 0.6948,
+   "bL": -2.752,
+   "knobs": {
+    "phrase": 14,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7275,
+     "ci": [
+      0.6819,
+      0.7688
+     ],
+     "acc": 0.8212,
+     "msMedian": 28587,
+     "p3": 0.98
+    },
+    "median": {
+     "p": 0.94,
+     "ci": [
+      0.9123,
+      0.9594
+     ],
+     "acc": 0.9667,
+     "msMedian": 20140,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9825,
+     "ci": [
+      0.9643,
+      0.9915
+     ],
+     "acc": 0.9925,
+     "msMedian": 17182,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 16,
+   "kind": "breather",
+   "legacy": true,
+   "pStar": 0.7977,
+   "D": 0.7192,
+   "bL": -2.797,
+   "knobs": {
+    "phrase": 15,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.705,
+     "ci": [
+      0.6585,
+      0.7476
+     ],
+     "acc": 0.8262,
+     "msMedian": 27954,
+     "p3": 0.965
+    },
+    "median": {
+     "p": 0.9425,
+     "ci": [
+      0.9152,
+      0.9614
+     ],
+     "acc": 0.9687,
+     "msMedian": 21899,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.98,
+     "ci": [
+      0.961,
+      0.9898
+     ],
+     "acc": 0.9908,
+     "msMedian": 17308,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 17,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7937,
+   "D": 0.7428,
+   "bL": -3.771,
+   "knobs": {
+    "phrase": 16,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.845,
+     "ci": [
+      0.8063,
+      0.8772
+     ],
+     "acc": 0.8908,
+     "msMedian": 24771,
+     "p3": 0.995
+    },
+    "median": {
+     "p": 0.9775,
+     "ci": [
+      0.9578,
+      0.9881
+     ],
+     "acc": 0.9862,
+     "msMedian": 18336,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.995,
+     "ci": [
+      0.982,
+      0.9986
+     ],
+     "acc": 0.9962,
+     "msMedian": 16333,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 18,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7898,
+   "D": 0.7656,
+   "bL": -3.566,
+   "knobs": {
+    "phrase": 17,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8425,
+     "ci": [
+      0.8036,
+      0.8749
+     ],
+     "acc": 0.8846,
+     "msMedian": 24489,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9725,
+     "ci": [
+      0.9514,
+      0.9846
+     ],
+     "acc": 0.9825,
+     "msMedian": 18136,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9925,
+     "ci": [
+      0.9782,
+      0.9974
+     ],
+     "acc": 0.9954,
+     "msMedian": 16276,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 19,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7861,
+   "D": 0.7878,
+   "bL": -4.885,
+   "knobs": {
+    "phrase": 18,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.915,
+     "ci": [
+      0.8836,
+      0.9385
+     ],
+     "acc": 0.9389,
+     "msMedian": 20086,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9925,
+     "ci": [
+      0.9782,
+      0.9974
+     ],
+     "acc": 0.9943,
+     "msMedian": 14965,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 1,
+     "ci": [
+      0.9905,
+      1
+     ],
+     "acc": 1,
+     "msMedian": 13661,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 20,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.7224,
+   "D": 0.8094,
+   "bL": -2.376,
+   "knobs": {
+    "phrase": 19,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7525,
+     "ci": [
+      0.7079,
+      0.7923
+     ],
+     "acc": 0.8236,
+     "msMedian": 30521,
+     "p3": 0.9825
+    },
+    "median": {
+     "p": 0.915,
+     "ci": [
+      0.8836,
+      0.9385
+     ],
+     "acc": 0.9396,
+     "msMedian": 24579,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9925,
+     "ci": [
+      0.9782,
+      0.9974
+     ],
+     "acc": 0.995,
+     "msMedian": 19279,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 21,
+   "kind": "breather",
+   "legacy": true,
+   "pStar": 0.7788,
+   "D": 0.8305,
+   "bL": -3.566,
+   "knobs": {
+    "phrase": 20,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.885,
+     "ci": [
+      0.85,
+      0.9127
+     ],
+     "acc": 0.9268,
+     "msMedian": 25897,
+     "p3": 0.9975
+    },
+    "median": {
+     "p": 0.9725,
+     "ci": [
+      0.9514,
+      0.9846
+     ],
+     "acc": 0.9868,
+     "msMedian": 19881,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.995,
+     "ci": [
+      0.982,
+      0.9986
+     ],
+     "acc": 0.9982,
+     "msMedian": 18265,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 22,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7753,
+   "D": 0.851,
+   "bL": -3.245,
+   "knobs": {
+    "phrase": 21,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.775,
+     "ci": [
+      0.7316,
+      0.8132
+     ],
+     "acc": 0.8732,
+     "msMedian": 29889,
+     "p3": 0.995
+    },
+    "median": {
+     "p": 0.9625,
+     "ci": [
+      0.9391,
+      0.9771
+     ],
+     "acc": 0.9793,
+     "msMedian": 21473,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.99,
+     "ci": [
+      0.9746,
+      0.9961
+     ],
+     "acc": 0.9964,
+     "msMedian": 18655,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 23,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7719,
+   "D": 0.871,
+   "bL": -2.587,
+   "knobs": {
+    "phrase": 22,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7775,
+     "ci": [
+      0.7342,
+      0.8155
+     ],
+     "acc": 0.8361,
+     "msMedian": 30413,
+     "p3": 0.99
+    },
+    "median": {
+     "p": 0.93,
+     "ci": [
+      0.9007,
+      0.9511
+     ],
+     "acc": 0.955,
+     "msMedian": 23829,
+     "p3": 0.9975
+    },
+    "skilled": {
+     "p": 0.9925,
+     "ci": [
+      0.9782,
+      0.9974
+     ],
+     "acc": 0.9939,
+     "msMedian": 18961,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 24,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7686,
+   "D": 0.8906,
+   "bL": -2.283,
+   "knobs": {
+    "phrase": 23,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.685,
+     "ci": [
+      0.6379,
+      0.7286
+     ],
+     "acc": 0.7586,
+     "msMedian": 32522,
+     "p3": 0.9725
+    },
+    "median": {
+     "p": 0.9075,
+     "ci": [
+      0.8751,
+      0.9321
+     ],
+     "acc": 0.9446,
+     "msMedian": 24513,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.965,
+     "ci": [
+      0.9421,
+      0.979
+     ],
+     "acc": 0.9743,
+     "msMedian": 19764,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 25,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.7053,
+   "D": 0.9097,
+   "bL": -2.708,
+   "knobs": {
+    "phrase": 24,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.765,
+     "ci": [
+      0.721,
+      0.8039
+     ],
+     "acc": 0.8282,
+     "msMedian": 30353,
+     "p3": 0.995
+    },
+    "median": {
+     "p": 0.9375,
+     "ci": [
+      0.9094,
+      0.9573
+     ],
+     "acc": 0.9682,
+     "msMedian": 24272,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9775,
+     "ci": [
+      0.9578,
+      0.9881
+     ],
+     "acc": 0.9846,
+     "msMedian": 19368,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 26,
+   "kind": "breather",
+   "legacy": true,
+   "pStar": 0.7622,
+   "D": 0.9285,
+   "bL": -2.314,
+   "knobs": {
+    "phrase": 25,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7425,
+     "ci": [
+      0.6975,
+      0.7829
+     ],
+     "acc": 0.8307,
+     "msMedian": 31497,
+     "p3": 0.9875
+    },
+    "median": {
+     "p": 0.91,
+     "ci": [
+      0.8779,
+      0.9343
+     ],
+     "acc": 0.9489,
+     "msMedian": 24763,
+     "p3": 0.9975
+    },
+    "skilled": {
+     "p": 0.98,
+     "ci": [
+      0.961,
+      0.9898
+     ],
+     "acc": 0.9889,
+     "msMedian": 21297,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 27,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.759,
+   "D": 0.9469,
+   "bL": -2.477,
+   "knobs": {
+    "phrase": 26,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.73,
+     "ci": [
+      0.6845,
+      0.7712
+     ],
+     "acc": 0.7939,
+     "msMedian": 31323,
+     "p3": 0.9875
+    },
+    "median": {
+     "p": 0.9225,
+     "ci": [
+      0.8921,
+      0.9449
+     ],
+     "acc": 0.9429,
+     "msMedian": 25122,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9625,
+     "ci": [
+      0.9391,
+      0.9771
+     ],
+     "acc": 0.9686,
+     "msMedian": 22522,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 28,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.756,
+   "D": 0.9649,
+   "bL": -3.771,
+   "knobs": {
+    "phrase": 27,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8725,
+     "ci": [
+      0.8362,
+      0.9017
+     ],
+     "acc": 0.9221,
+     "msMedian": 26217,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9775,
+     "ci": [
+      0.9578,
+      0.9881
+     ],
+     "acc": 0.9893,
+     "msMedian": 20266,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9925,
+     "ci": [
+      0.9782,
+      0.9974
+     ],
+     "acc": 0.9943,
+     "msMedian": 18597,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 29,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.753,
+   "D": 0.9826,
+   "bL": -1.586,
+   "knobs": {
+    "phrase": 29,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.5575,
+     "ci": [
+      0.5085,
+      0.6054
+     ],
+     "acc": 0.6632,
+     "msMedian": 34777,
+     "p3": 0.9325
+    },
+    "median": {
+     "p": 0.83,
+     "ci": [
+      0.7901,
+      0.8636
+     ],
+     "acc": 0.8693,
+     "msMedian": 26271,
+     "p3": 0.995
+    },
+    "skilled": {
+     "p": 0.92,
+     "ci": [
+      0.8892,
+      0.9428
+     ],
+     "acc": 0.9404,
+     "msMedian": 23477,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 30,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.69,
+   "D": 1,
+   "bL": -2.666,
+   "knobs": {
+    "phrase": 30,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7225,
+     "ci": [
+      0.6767,
+      0.7641
+     ],
+     "acc": 0.8064,
+     "msMedian": 32075,
+     "p3": 0.9775
+    },
+    "median": {
+     "p": 0.935,
+     "ci": [
+      0.9065,
+      0.9553
+     ],
+     "acc": 0.9554,
+     "msMedian": 24362,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9675,
+     "ci": [
+      0.9452,
+      0.9809
+     ],
+     "acc": 0.9754,
+     "msMedian": 19941,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 31,
+   "kind": "breather",
+   "legacy": true,
+   "pStar": 0.7471,
+   "D": 1.0171,
+   "bL": -2.893,
+   "knobs": {
+    "phrase": 31,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.785,
+     "ci": [
+      0.7421,
+      0.8224
+     ],
+     "acc": 0.8618,
+     "msMedian": 30709,
+     "p3": 0.9925
+    },
+    "median": {
+     "p": 0.9475,
+     "ci": [
+      0.9211,
+      0.9654
+     ],
+     "acc": 0.9704,
+     "msMedian": 22641,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.995,
+     "ci": [
+      0.982,
+      0.9986
+     ],
+     "acc": 0.9971,
+     "msMedian": 19038,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 32,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7442,
+   "D": 1.0339,
+   "bL": -4.369,
+   "knobs": {
+    "phrase": 32,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.875,
+     "ci": [
+      0.839,
+      0.9039
+     ],
+     "acc": 0.9204,
+     "msMedian": 25155,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9875,
+     "ci": [
+      0.9711,
+      0.9946
+     ],
+     "acc": 0.9918,
+     "msMedian": 19696,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 1,
+     "ci": [
+      0.9905,
+      1
+     ],
+     "acc": 1,
+     "msMedian": 17600,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 33,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7414,
+   "D": 1.0505,
+   "bL": -1.516,
+   "knobs": {
+    "phrase": 33,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.67,
+     "ci": [
+      0.6225,
+      0.7143
+     ],
+     "acc": 0.7471,
+     "msMedian": 33965,
+     "p3": 0.9775
+    },
+    "median": {
+     "p": 0.82,
+     "ci": [
+      0.7794,
+      0.8546
+     ],
+     "acc": 0.8639,
+     "msMedian": 25641,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.935,
+     "ci": [
+      0.9065,
+      0.9553
+     ],
+     "acc": 0.9561,
+     "msMedian": 23116,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 34,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7387,
+   "D": 1.0667,
+   "bL": -3.178,
+   "knobs": {
+    "phrase": 34,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8,
+     "ci": [
+      0.758,
+      0.8363
+     ],
+     "acc": 0.8843,
+     "msMedian": 28779,
+     "p3": 0.9925
+    },
+    "median": {
+     "p": 0.96,
+     "ci": [
+      0.936,
+      0.9752
+     ],
+     "acc": 0.9825,
+     "msMedian": 20612,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9925,
+     "ci": [
+      0.9782,
+      0.9974
+     ],
+     "acc": 0.9989,
+     "msMedian": 18492,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 35,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.6759,
+   "D": 1.0828,
+   "bL": -4.369,
+   "knobs": {
+    "phrase": 36,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8925,
+     "ci": [
+      0.8583,
+      0.9192
+     ],
+     "acc": 0.9286,
+     "msMedian": 24599,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9875,
+     "ci": [
+      0.9711,
+      0.9946
+     ],
+     "acc": 0.9907,
+     "msMedian": 19746,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9975,
+     "ci": [
+      0.986,
+      0.9996
+     ],
+     "acc": 0.9986,
+     "msMedian": 18022,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 36,
+   "kind": "breather",
+   "legacy": true,
+   "pStar": 0.7332,
+   "D": 1.0986,
+   "bL": -2.17,
+   "knobs": {
+    "phrase": 28,
+    "letters": 8,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6975,
+     "ci": [
+      0.6508,
+      0.7405
+     ],
+     "acc": 0.8022,
+     "msMedian": 33323,
+     "p3": 0.98
+    },
+    "median": {
+     "p": 0.8975,
+     "ci": [
+      0.8639,
+      0.9235
+     ],
+     "acc": 0.9466,
+     "msMedian": 26467,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.97,
+     "ci": [
+      0.9483,
+      0.9828
+     ],
+     "acc": 0.9797,
+     "msMedian": 20627,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 37,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7306,
+   "D": 1.1142,
+   "bL": -2.666,
+   "knobs": {
+    "phrase": 35,
+    "letters": 8,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7575,
+     "ci": [
+      0.7132,
+      0.7969
+     ],
+     "acc": 0.8594,
+     "msMedian": 31078,
+     "p3": 0.9925
+    },
+    "median": {
+     "p": 0.935,
+     "ci": [
+      0.9065,
+      0.9553
+     ],
+     "acc": 0.9641,
+     "msMedian": 22792,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.985,
+     "ci": [
+      0.9677,
+      0.9931
+     ],
+     "acc": 0.99,
+     "msMedian": 20538,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 38,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.728,
+   "D": 1.1295,
+   "bL": -3.566,
+   "knobs": {
+    "phrase": 37,
+    "letters": 8,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8875,
+     "ci": [
+      0.8528,
+      0.9149
+     ],
+     "acc": 0.93,
+     "msMedian": 28634,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9725,
+     "ci": [
+      0.9514,
+      0.9846
+     ],
+     "acc": 0.9844,
+     "msMedian": 21825,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9975,
+     "ci": [
+      0.986,
+      0.9996
+     ],
+     "acc": 0.9981,
+     "msMedian": 19736,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 39,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7254,
+   "D": 1.1447,
+   "bL": -2.117,
+   "knobs": {
+    "phrase": 38,
+    "letters": 8,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7025,
+     "ci": [
+      0.6559,
+      0.7452
+     ],
+     "acc": 0.8084,
+     "msMedian": 33450,
+     "p3": 0.9825
+    },
+    "median": {
+     "p": 0.8925,
+     "ci": [
+      0.8583,
+      0.9192
+     ],
+     "acc": 0.9291,
+     "msMedian": 27268,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9675,
+     "ci": [
+      0.9452,
+      0.9809
+     ],
+     "acc": 0.9794,
+     "msMedian": 22975,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 40,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.6629,
+   "D": 1.1597,
+   "bL": -3.771,
+   "knobs": {
+    "phrase": 39,
+    "letters": 8,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.835,
+     "ci": [
+      0.7955,
+      0.8682
+     ],
+     "acc": 0.9187,
+     "msMedian": 29944,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9775,
+     "ci": [
+      0.9578,
+      0.9881
+     ],
+     "acc": 0.9831,
+     "msMedian": 22334,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 1,
+     "ci": [
+      0.9905,
+      1
+     ],
+     "acc": 1,
+     "msMedian": 20647,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 41,
+   "kind": "breather",
+   "legacy": true,
+   "pStar": 0.7203,
+   "D": 1.1744,
+   "bL": -3.892,
+   "knobs": {
+    "phrase": 40,
+    "letters": 8,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.89,
+     "ci": [
+      0.8555,
+      0.917
+     ],
+     "acc": 0.9319,
+     "msMedian": 27406,
+     "p3": 0.9975
+    },
+    "median": {
+     "p": 0.98,
+     "ci": [
+      0.961,
+      0.9898
+     ],
+     "acc": 0.9869,
+     "msMedian": 21341,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 1,
+     "ci": [
+      0.9905,
+      1
+     ],
+     "acc": 1,
+     "msMedian": 19849,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 42,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7179,
+   "D": 1.189,
+   "bL": -3.771,
+   "knobs": {
+    "phrase": 42,
+    "letters": 8,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.905,
+     "ci": [
+      0.8723,
+      0.93
+     ],
+     "acc": 0.9344,
+     "msMedian": 27241,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9775,
+     "ci": [
+      0.9578,
+      0.9881
+     ],
+     "acc": 0.9862,
+     "msMedian": 21620,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 1,
+     "ci": [
+      0.9905,
+      1
+     ],
+     "acc": 1,
+     "msMedian": 19779,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 43,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7154,
+   "D": 1.2034,
+   "bL": -3.566,
+   "knobs": {
+    "phrase": 41,
+    "letters": 9,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8425,
+     "ci": [
+      0.8036,
+      0.8749
+     ],
+     "acc": 0.9133,
+     "msMedian": 29400,
+     "p3": 0.9975
+    },
+    "median": {
+     "p": 0.9725,
+     "ci": [
+      0.9514,
+      0.9846
+     ],
+     "acc": 0.9842,
+     "msMedian": 18493,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 1,
+     "ci": [
+      0.9905,
+      1
+     ],
+     "acc": 1,
+     "msMedian": 16651,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 44,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.713,
+   "D": 1.2177,
+   "bL": -3.476,
+   "knobs": {
+    "phrase": 43,
+    "letters": 9,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.835,
+     "ci": [
+      0.7955,
+      0.8682
+     ],
+     "acc": 0.915,
+     "msMedian": 29719,
+     "p3": 0.9975
+    },
+    "median": {
+     "p": 0.97,
+     "ci": [
+      0.9483,
+      0.9828
+     ],
+     "acc": 0.9792,
+     "msMedian": 22914,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9975,
+     "ci": [
+      0.986,
+      0.9996
+     ],
+     "acc": 0.9983,
+     "msMedian": 17839,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 45,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.6506,
+   "D": 1.2318,
+   "bL": -3.892,
+   "knobs": {
+    "phrase": 44,
+    "letters": 9,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.855,
+     "ci": [
+      0.8171,
+      0.8861
+     ],
+     "acc": 0.9183,
+     "msMedian": 30503,
+     "p3": 0.9975
+    },
+    "median": {
+     "p": 0.98,
+     "ci": [
+      0.961,
+      0.9898
+     ],
+     "acc": 0.9931,
+     "msMedian": 23740,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9875,
+     "ci": [
+      0.9711,
+      0.9946
+     ],
+     "acc": 0.9958,
+     "msMedian": 21882,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 46,
+   "kind": "breather",
+   "legacy": true,
+   "pStar": 0.7082,
+   "D": 1.2457,
+   "bL": -3.771,
+   "knobs": {
+    "phrase": 45,
+    "letters": 9,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.9375,
+     "ci": [
+      0.9094,
+      0.9573
+     ],
+     "acc": 0.9636,
+     "msMedian": 25996,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9775,
+     "ci": [
+      0.9578,
+      0.9881
+     ],
+     "acc": 0.9867,
+     "msMedian": 18687,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9975,
+     "ci": [
+      0.986,
+      0.9996
+     ],
+     "acc": 0.9983,
+     "msMedian": 16784,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 47,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7059,
+   "D": 1.2594,
+   "bL": -4.885,
+   "knobs": {
+    "phrase": 46,
+    "letters": 9,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.95,
+     "ci": [
+      0.924,
+      0.9674
+     ],
+     "acc": 0.9678,
+     "msMedian": 24378,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9925,
+     "ci": [
+      0.9782,
+      0.9974
+     ],
+     "acc": 0.9961,
+     "msMedian": 18211,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9975,
+     "ci": [
+      0.986,
+      0.9996
+     ],
+     "acc": 0.9986,
+     "msMedian": 16557,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 48,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7036,
+   "D": 1.2731,
+   "bL": -4.028,
+   "knobs": {
+    "phrase": 47,
+    "letters": 9,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8625,
+     "ci": [
+      0.8253,
+      0.8928
+     ],
+     "acc": 0.9042,
+     "msMedian": 30796,
+     "p3": 0.9975
+    },
+    "median": {
+     "p": 0.9825,
+     "ci": [
+      0.9643,
+      0.9915
+     ],
+     "acc": 0.9858,
+     "msMedian": 23825,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9975,
+     "ci": [
+      0.986,
+      0.9996
+     ],
+     "acc": 0.9981,
+     "msMedian": 21828,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 49,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.7013,
+   "D": 1.2865,
+   "bL": -5.293,
+   "knobs": {
+    "phrase": 48,
+    "letters": 11,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.9525,
+     "ci": [
+      0.927,
+      0.9694
+     ],
+     "acc": 0.9745,
+     "msMedian": 26162,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.995,
+     "ci": [
+      0.982,
+      0.9986
+     ],
+     "acc": 0.9982,
+     "msMedian": 20045,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 1,
+     "ci": [
+      0.9905,
+      1
+     ],
+     "acc": 1,
+     "msMedian": 18838,
+     "p3": 1
+    }
+   }
+  }
+ ]
+}

@@ -124,24 +124,14 @@ test('tapping during cooldown costs the third star, not a mistake', async ({ pag
   await expect(page.locator('#krRule')).toHaveText('Chờ vòng đầy rồi mới chạm là được 3 sao.');
 });
 
-test('OPS-6/KOI-04: passing level 10 shows the finished screen, never Level 11', async ({ page }) => {
+test('OPS-6/KOI-04: passing level 10 (old last level) now leads on to Level 11; L30 end is covered in koi-levels.spec', async ({ page }) => {
   const errors = await openKoi(page, { koi_lv2: '10' });
   await start(page, 10);
   for (let i = 0; i < 15; i++) { await skipCooldown(page); expect(await tapFish(page, 'fresh')).toBe(true); }
   await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
-  await expect(page.locator('#krNext')).toHaveText('Xem tổng kết →');
-  await page.click('#krNext');
-  await expect(page.locator('#kdone')).toBeVisible();
-  await expect(page.locator('#kdone h2')).toHaveText('Xong cả 10 level! 🎉');
-  // tổng sao của cả game, không phải sao riêng level 10; nhãn ô thống kê được gán theo id
-  await expect(page.locator('#kdStars')).toHaveAttribute('aria-label', /^\d+ trên 30 sao$/);
-  await expect(page.locator('#kdAcc')).toHaveText(/^\d+$/);
-  expect(await page.locator('#kdAcc').evaluate(b => b.parentNode.textContent.slice(b.textContent.length))).toBe(' level đủ 3 sao');
-  expect(await page.locator('#kdLevel').evaluate(b => b.parentNode.textContent)).toBe('10 level đã qua');   // neon-13: không dính "10level"
+  await expect(page.locator('#krNext')).toHaveText(/^Level 11 · \d+ cá →$/);
   expect(await page.evaluate(() => localStorage.getItem('koi_lv2'))).toBe('11');
-  await page.click('#kdAgain');
-  await expect(page.locator('#kmenu')).toBeVisible();
-  await expect(page.locator('#kBestTxt')).toHaveText('Đã qua cả 10 level');
+  expect(await page.evaluate(() => BB.gameStats('koi').best)).toBe(10);
   expect(errors).toEqual([]);
 });
 
@@ -149,10 +139,10 @@ test('legacy progress: over-cap key is clamped, BB stats seeded, daily hand-off 
   await openKoi(page, { koi_lv2: '14' });
   const r = await page.evaluate(() => ({ lv: localStorage.getItem('koi_lv2'), best: BB.gameStats('koi').best, kb: koiBest() }));
   expect(r).toEqual({ lv: '11', best: 10, kb: { best: 10, lv: 11 } });
-  await expect(page.locator('#klvgrid .lv')).toHaveCount(10);
+  await expect(page.locator('#klvgrid .lv')).toHaveCount(30);
   await page.evaluate(() => { BB.request('koi', 99); window.koiEnter(); });
   await expect(page.locator('#kmenu')).toBeHidden();
-  await expect(page.locator('#kPond')).toHaveText(/^Level 10 · 15 cá$/);
+  await expect(page.locator('#kPond')).toHaveText(/^Level 30 · \d+ cá$/);
 });
 
 test('HUD and pause button meet size and copy rules', async ({ page }) => {

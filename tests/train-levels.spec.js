@@ -1,0 +1,129 @@
+// Đường Ray Tư Duy: 30 levels from the shared difficulty table (js/difficulty.js + js/levels/train.js).
+// Legacy L1..11 must play exactly as before (E3) and old progress keys must still count.
+import { test, expect } from '@playwright/test';
+
+async function openTrain(page, init) {
+  const errors = [];
+  page.on('pageerror', e => errors.push(String(e)));
+  if (init) await page.addInitScript(init);
+  await page.goto('/');
+  await page.click('#openTrain');
+  await expect(page.locator('#menu')).toBeVisible();
+  await page.waitForFunction(() => window.__rtd && window.__rtd.map);
+  return errors;
+}
+
+test('the level grid shows 30 levels and the hub/daily cap agrees', async ({ page }) => {
+  const errors = await openTrain(page);
+  await expect(page.locator('#lvgrid .lv')).toHaveCount(30);
+  await expect(page.locator('#lvgrid .lv').nth(29)).toHaveAttribute('aria-label', 'Level 30, 15 ga');
+  const r = await page.evaluate(() => ({ usesTable: __rtd.usesTable, max: __rtd.LV_MAX, bb: BB.LV_MAX.train, bbd: BBD.maxLevel('train') }));
+  expect(r).toEqual({ usesTable: true, max: 30, bb: 30, bbd: 30 });
+  expect(errors).toEqual([]);
+});
+
+test('legacy L1..11 in the browser equal the old formulas exactly', async ({ page }) => {
+  await openTrain(page);
+  const rows = await page.evaluate(() => {
+    const out = [];
+    for (let L = 1; L <= 11; L++) {
+      const s = __rtd.specFor(L);
+      out.push([s.stations === Math.min(4 + L, 15), s.base === Math.max(1.8, 2.6 - 0.075 * (L - 1)) * (0.75 / 0.45),
+        s.speedF === 0.45, s.burstP === 0.15]);
+    }
+    return out;
+  });
+  rows.forEach((r, i) => expect(r, `L${i + 1}`).toEqual([true, true, true, true]));
+});
+
+test('level 30 can be picked and started, with its table parameters', async ({ page }) => {
+  const errors = await openTrain(page);
+  await page.locator('#lvgrid .lv').nth(29).click();
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 30 · 15 ga');
+  await expect(page.locator('#hLevel')).toHaveText('Level 30 · 15 ga');
+  await page.click('#startBtn');
+  const s = await page.evaluate(() => ({ state: __rtd.state, level: __rtd.level, spec: { ...__rtd.spec },
+    want: { ...BBD.level('train', 30) }, ga: __rtd.map.stations.length }));
+  expect(s.state).toBe('countdown');
+  expect(s.level).toBe(30);
+  expect(s.spec).toEqual(s.want);
+  expect(s.ga).toBe(15);
+  expect(errors).toEqual([]);
+});
+
+test('next-level flow: L11 leads on to L12, a peak announces the breather', async ({ page }) => {
+  await openTrain(page);
+  await page.click('#startBtn');
+  await page.evaluate(() => __rtd.endWith(11, 20, 20));
+  await expect(page.locator('#rTitle')).toHaveText('Qua Level 11! 🎉');
+  await expect(page.locator('#rNext')).toHaveText('Level 12 →');
+  await expect(page.locator('#rDetail')).toHaveText('Level 12: tàu ra dày hơn.');
+  await page.click('#rNext');
+  expect(await page.evaluate(() => [__rtd.state, __rtd.level, __rtd.spec.base === BBD.level('train', 12).base])).toEqual(['countdown', 12, true]);
+  await page.evaluate(() => __rtd.endWith(15, 19, 20));
+  await expect(page.locator('#rDetail')).toHaveText('Level 16 là màn nghỉ: tàu ra thưa hơn.');
+  await page.click('#rNext');
+  expect(await page.evaluate(() => __rtd.level)).toBe(16);
+});
+
+test('passing level 30 shows the finished state, never Level 31', async ({ page }) => {
+  await openTrain(page);
+  await page.click('#startBtn');
+  await page.evaluate(() => __rtd.endWith(30, 20, 20));
+  await expect(page.locator('#rTitle')).toContainText('Xong cả 30 level');
+  await expect(page.locator('#rNext')).toHaveText('Chọn level khác');
+  await page.click('#rNext');
+  await expect(page.locator('#menu')).toBeVisible();
+  expect(await page.evaluate(() => [trainBest(), BB.gameStats('train').best, +localStorage.getItem('rtd_best3')])).toEqual([30, 30, 30]);
+  await expect(page.locator('#bestTxt')).toHaveText('Đã qua cả 30 level');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 30 · 15 ga');
+});
+
+test('old progress keys still count: rtd_best3 only, and bb_stats stars', async ({ page }) => {
+  await openTrain(page, () => { try { if (!sessionStorage.getItem('seeded')) {
+    localStorage.clear(); localStorage.setItem('rtd_best3', '11'); sessionStorage.setItem('seeded', '1'); } } catch (e) {} });
+  await expect(page.locator('#lvgrid .lv.done')).toHaveCount(11);
+  await expect(page.locator('#bestTxt')).toHaveText('Đã qua tới Level 11');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 12 · 15 ga');   // a finished 11-level player moves on
+  await expect(page.locator('#lvgrid .lv').nth(11)).not.toHaveClass(/done/);
+});
+
+test('stars saved under the old 11-level cap keep showing', async ({ page }) => {
+  await openTrain(page, () => { try { if (!sessionStorage.getItem('seeded')) {
+    localStorage.clear();
+    localStorage.setItem('bb_stats', JSON.stringify({ train: { best: 9, stars: { 3: 2, 9: 3 } } }));
+    sessionStorage.setItem('seeded', '1'); } } catch (e) {} });
+  const tiles = page.locator('#lvgrid .lv');
+  await expect(tiles.nth(8).locator('.lvst')).toHaveText('★★★');
+  await expect(tiles.nth(2).locator('.lvst')).toHaveText('★★☆');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 10 · 14 ga');
+});
+
+test('without the table (script blocked) the game still boots on the old 11 levels', async ({ page }) => {
+  await page.route(/js\/(difficulty|levels\/train)\.js/, r => r.abort());
+  const errors = await openTrain(page);
+  await expect(page.locator('#lvgrid .lv')).toHaveCount(11, { timeout: 1500 });   // no 4 s hang on the dead static tag
+  expect(await page.evaluate(() => __rtd.usesTable)).toBe(false);
+  await page.click('#startBtn');
+  await expect(page.locator('#menu')).toBeHidden({ timeout: 1500 });
+  expect(errors).toEqual([]);
+});
+
+test('320 px phone: 30 tiles fit without sideways scroll; switch tap targets stay ≥ 44 px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await openTrain(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.locator('#lvgrid .lv').nth(29).click();
+  await page.click('#startBtn');
+  const t = await page.evaluate(() => {
+    const cell = __rtd.cell, TR = cell * 0.48;
+    const sw = __rtd.map.switches.map(s => s.g);
+    let minG = Infinity;                    // Euclid: two switches can sit diagonally (Manhattan 2 = √2 cells)
+    for (let a = 0; a < sw.length; a++) for (let b = a + 1; b < sw.length; b++)
+      minG = Math.min(minG, Math.hypot(sw[a].c - sw[b].c, sw[a].r - sw[b].r));
+    return { hit: 2 * Math.max(32, TR + 16), spacing: minG * cell, disc: 2 * __rtd.discR() };
+  });
+  expect(t.hit).toBeGreaterThanOrEqual(44);
+  expect(t.spacing).toBeGreaterThanOrEqual(44);
+  expect(t.disc).toBeGreaterThanOrEqual(44);   // MERGED-SPEC A-5: the drawn switch disc, not only the hit area
+});
