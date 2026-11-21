@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Độ khó 30 màn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;650;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/doc.css">
+<style>
+/* Chart only; everything else comes from doc.css. */
+.ch{margin:0}
+.ch figcaption{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ch svg{display:block;width:100%;height:auto;margin-top:8px}
+.ch .gl{stroke:var(--line);stroke-width:1}
+.ch .lg{fill:var(--raised)}
+.ch .ax{fill:var(--faint);font-size:12.5px;font-family:var(--mono)}
+.ch .pt{fill:none;stroke:var(--dim);stroke-width:1.5;stroke-dasharray:4 3}
+.ch .md{fill:none;stroke:var(--a);stroke-width:2.2;stroke-linejoin:round}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<nav><div class="in">
+  <span class="slug">brainy<i>-bits</i></span>
+  <a href="../index.html">Đề xuất</a>
+  <a href="index.html">Độ khó</a>
+  <button id="t" type="button">sáng</button>
+</div></nav>
+
+<main>
+<section>
+  <div class="meta r"><span class="words">—</span><span>S3 · 2026-11-21</span></div>
+  <h1 class="r">30 màn đã chạy.<br>Bot qua hết gate ở 2/5 game.</h1>
+  <div class="tldr r"><p><strong>Đường Ray, Cá Koi, Ô Sáng, Mưa lên 30 màn; Đoán Cụm Từ giữ 49.</strong>
+  Màn cũ, sao cũ và tiến độ cũ giữ nguyên. Bot qua mọi gate ở <strong>Ô Sáng và Cá Koi</strong>.
+  Ba game còn lại trượt gate, và mỗi chỗ trượt chờ một câu trả lời của anh.
+  Mọi con số dưới đây là của bot. Chưa có người thật chơi.</p></div>
+</section>
+
+<section>
+  <div class="g three r">
+    <div class="k"><div class="n" data-to="4">4</div><div class="cap">game lên 30 màn</div></div>
+    <div class="k"><div class="n">2/5</div><div class="cap">game qua mọi gate bot</div></div>
+    <div class="k"><div class="n" data-to="0">0</div><div class="cap">lượt playtest người thật</div></div>
+  </div>
+</section>
+
+<section>
+  <h2 class="r">Đường cong: bot median so với mục tiêu</h2>
+  <p class="r">Cam: bot median qua ngay lần đầu (%). Nét đứt: mục tiêu p*. Nền xám: màn cũ, không sửa (E3).</p>
+  <div class="g two r">
+<figure class="k d ch r"><figcaption><strong>Đường Ray</strong> <span class="cap">L30: 68%</span></figcaption>
+<svg viewBox="0 0 300 150" role="img" aria-label="Đường Ray: bot median 68% ở L30, mục tiêu 69%"><rect class="lg" x="26" y="10" width="91.7" height="118"/><line class="gl" x1="26" x2="292" y1="128" y2="128"/><text class="ax" x="22" y="132" text-anchor="end">50</text><line class="gl" x1="26" x2="292" y1="69" y2="69"/><text class="ax" x="22" y="73" text-anchor="end">75</text><line class="gl" x1="26" x2="292" y1="10" y2="10"/><text class="ax" x="22" y="14" text-anchor="end">100</text><text class="ax" x="26" y="144" text-anchor="middle">1</text><text class="ax" x="108.55172413793103" y="144" text-anchor="middle">10</text><text class="ax" x="200.27586206896552" y="144" text-anchor="middle">20</text><text class="ax" x="292" y="144" text-anchor="middle">30</text><path class="pt" d="M26.0 28.9 L35.2 36.0 L44.3 38.3 L53.5 40.7 L62.7 57.2 L71.9 45.4 L81.0 47.8 L90.2 47.8 L99.4 50.1 L108.6 64.3 L117.7 52.5 L126.9 52.5 L136.1 54.8 L145.2 54.8 L154.4 71.4 L163.6 57.2 L172.8 59.6 L181.9 59.6 L191.1 59.6 L200.3 76.1 L209.4 61.9 L218.6 61.9 L227.8 64.3 L237.0 64.3 L246.1 78.4 L255.3 66.6 L264.5 66.6 L273.7 66.6 L282.8 69.0 L292.0 83.2"/><path class="md" d="M26.0 12.4 L35.2 12.4 L44.3 12.4 L53.5 14.7 L62.7 14.7 L71.9 14.7 L81.0 14.7 L90.2 19.4 L99.4 17.1 L108.6 21.8 L117.7 31.2 L126.9 43.0 L136.1 50.1 L145.2 59.6 L154.4 73.7 L163.6 47.8 L172.8 57.2 L181.9 54.8 L191.1 59.6 L200.3 80.8 L209.4 52.5 L218.6 52.5 L227.8 59.6 L237.0 61.9 L246.1 85.5 L255.3 50.1 L264.5 61.9 L273.7 71.4 L282.8 76.1 L292.0 85.5"/></svg></figure>
+<figure class="k b ch r"><figcaption><strong>Cá Koi</strong> <span class="cap">L30: 66%</span></figcaption>
+<svg viewBox="0 0 300 150" role="img" aria-label="Cá Koi: bot median 66% ở L30, mục tiêu 69%"><rect class="lg" x="26" y="10" width="82.6" height="118"/><line class="gl" x1="26" x2="292" y1="128" y2="128"/><text class="ax" x="22" y="132" text-anchor="end">50</text><line class="gl" x1="26" x2="292" y1="69" y2="69"/><text class="ax" x="22" y="73" text-anchor="end">75</text><line class="gl" x1="26" x2="292" y1="10" y2="10"/><text class="ax" x="22" y="14" text-anchor="end">100</text><text class="ax" x="26" y="144" text-anchor="middle">1</text><text class="ax" x="108.55172413793103" y="144" text-anchor="middle">10</text><text class="ax" x="200.27586206896552" y="144" text-anchor="middle">20</text><text class="ax" x="292" y="144" text-anchor="middle">30</text><path class="pt" d="M26.0 28.9 L35.2 36.0 L44.3 38.3 L53.5 40.7 L62.7 57.2 L71.9 45.4 L81.0 47.8 L90.2 47.8 L99.4 50.1 L108.6 64.3 L117.7 52.5 L126.9 52.5 L136.1 54.8 L145.2 54.8 L154.4 71.4 L163.6 57.2 L172.8 59.6 L181.9 59.6 L191.1 59.6 L200.3 76.1 L209.4 61.9 L218.6 61.9 L227.8 64.3 L237.0 64.3 L246.1 78.4 L255.3 66.6 L264.5 66.6 L273.7 66.6 L282.8 69.0 L292.0 83.2"/><path class="md" d="M26.0 10.0 L35.2 12.4 L44.3 14.7 L53.5 19.4 L62.7 26.5 L71.9 28.9 L81.0 38.3 L90.2 47.8 L99.4 59.6 L108.6 66.6 L117.7 43.0 L126.9 50.1 L136.1 52.5 L145.2 57.2 L154.4 71.4 L163.6 52.5 L172.8 57.2 L181.9 61.9 L191.1 64.3 L200.3 80.8 L209.4 59.6 L218.6 61.9 L227.8 64.3 L237.0 71.4 L246.1 78.4 L255.3 66.6 L264.5 69.0 L273.7 71.4 L282.8 76.1 L292.0 90.2"/></svg></figure>
+<figure class="k b ch r"><figcaption><strong>Ô Sáng</strong> <span class="cap">L30: 66%</span></figcaption>
+<svg viewBox="0 0 300 150" role="img" aria-label="Ô Sáng: bot median 66% ở L30, mục tiêu 69%"><rect class="lg" x="26" y="10" width="110.1" height="118"/><line class="gl" x1="26" x2="292" y1="128" y2="128"/><text class="ax" x="22" y="132" text-anchor="end">50</text><line class="gl" x1="26" x2="292" y1="69" y2="69"/><text class="ax" x="22" y="73" text-anchor="end">75</text><line class="gl" x1="26" x2="292" y1="10" y2="10"/><text class="ax" x="22" y="14" text-anchor="end">100</text><text class="ax" x="26" y="144" text-anchor="middle">1</text><text class="ax" x="108.55172413793103" y="144" text-anchor="middle">10</text><text class="ax" x="200.27586206896552" y="144" text-anchor="middle">20</text><text class="ax" x="292" y="144" text-anchor="middle">30</text><path class="pt" d="M26.0 28.9 L35.2 36.0 L44.3 38.3 L53.5 40.7 L62.7 57.2 L71.9 45.4 L81.0 47.8 L90.2 47.8 L99.4 50.1 L108.6 64.3 L117.7 52.5 L126.9 52.5 L136.1 54.8 L145.2 54.8 L154.4 71.4 L163.6 57.2 L172.8 59.6 L181.9 59.6 L191.1 59.6 L200.3 76.1 L209.4 61.9 L218.6 61.9 L227.8 64.3 L237.0 64.3 L246.1 78.4 L255.3 66.6 L264.5 66.6 L273.7 66.6 L282.8 69.0 L292.0 83.2"/><path class="md" d="M26.0 12.4 L35.2 10.0 L44.3 17.1 L53.5 14.7 L62.7 14.7 L71.9 19.4 L81.0 26.5 L90.2 21.8 L99.4 17.1 L108.6 50.1 L117.7 40.7 L126.9 38.3 L136.1 43.0 L145.2 45.4 L154.4 66.6 L163.6 52.5 L172.8 59.6 L181.9 59.6 L191.1 59.6 L200.3 76.1 L209.4 50.1 L218.6 64.3 L227.8 59.6 L237.0 61.9 L246.1 78.4 L255.3 61.9 L264.5 61.9 L273.7 61.9 L282.8 71.4 L292.0 90.2"/></svg></figure>
+<figure class="k d ch r"><figcaption><strong>Mưa Phép Tính</strong> <span class="cap">L30: 71%</span></figcaption>
+<svg viewBox="0 0 300 150" role="img" aria-label="Mưa Phép Tính: bot median 71% ở L30, mục tiêu 69%"><rect class="lg" x="26" y="10" width="82.6" height="118"/><line class="gl" x1="26" x2="292" y1="128" y2="128"/><text class="ax" x="22" y="132" text-anchor="end">50</text><line class="gl" x1="26" x2="292" y1="69" y2="69"/><text class="ax" x="22" y="73" text-anchor="end">75</text><line class="gl" x1="26" x2="292" y1="10" y2="10"/><text class="ax" x="22" y="14" text-anchor="end">100</text><text class="ax" x="26" y="144" text-anchor="middle">1</text><text class="ax" x="108.55172413793103" y="144" text-anchor="middle">10</text><text class="ax" x="200.27586206896552" y="144" text-anchor="middle">20</text><text class="ax" x="292" y="144" text-anchor="middle">30</text><path class="pt" d="M26.0 28.9 L35.2 36.0 L44.3 38.3 L53.5 40.7 L62.7 57.2 L71.9 45.4 L81.0 47.8 L90.2 47.8 L99.4 50.1 L108.6 64.3 L117.7 52.5 L126.9 52.5 L136.1 54.8 L145.2 54.8 L154.4 71.4 L163.6 57.2 L172.8 59.6 L181.9 59.6 L191.1 59.6 L200.3 76.1 L209.4 61.9 L218.6 61.9 L227.8 64.3 L237.0 64.3 L246.1 78.4 L255.3 66.6 L264.5 66.6 L273.7 66.6 L282.8 69.0 L292.0 83.2"/><path class="md" d="M26.0 10.0 L35.2 10.0 L44.3 10.0 L53.5 10.0 L62.7 10.0 L71.9 10.0 L81.0 10.0 L90.2 10.0 L99.4 10.0 L108.6 31.2 L117.7 40.7 L126.9 54.8 L136.1 54.8 L145.2 64.3 L154.4 71.4 L163.6 54.8 L172.8 59.6 L181.9 59.6 L191.1 71.4 L200.3 78.4 L209.4 61.9 L218.6 64.3 L227.8 69.0 L237.0 73.7 L246.1 78.4 L255.3 61.9 L264.5 71.4 L273.7 78.4 L282.8 73.7 L292.0 78.4"/></svg></figure>
+<figure class="k d ch r"><figcaption><strong>Đoán Cụm Từ</strong> <span class="cap">L30: 94%</span></figcaption>
+<svg viewBox="0 0 300 150" role="img" aria-label="Đoán Cụm Từ: bot median 94% ở L30, mục tiêu 69%"><rect class="lg" x="26" y="10" width="266.0" height="118"/><line class="gl" x1="26" x2="292" y1="128" y2="128"/><text class="ax" x="22" y="132" text-anchor="end">50</text><line class="gl" x1="26" x2="292" y1="69" y2="69"/><text class="ax" x="22" y="73" text-anchor="end">75</text><line class="gl" x1="26" x2="292" y1="10" y2="10"/><text class="ax" x="22" y="14" text-anchor="end">100</text><text class="ax" x="26" y="144" text-anchor="middle">1</text><text class="ax" x="108.55172413793103" y="144" text-anchor="middle">10</text><text class="ax" x="200.27586206896552" y="144" text-anchor="middle">20</text><text class="ax" x="292" y="144" text-anchor="middle">30</text><path class="pt" d="M26.0 28.9 L35.2 36.0 L44.3 38.3 L53.5 40.7 L62.7 57.2 L71.9 45.4 L81.0 47.8 L90.2 47.8 L99.4 50.1 L108.6 64.3 L117.7 52.5 L126.9 52.5 L136.1 54.8 L145.2 54.8 L154.4 71.4 L163.6 57.2 L172.8 59.6 L181.9 59.6 L191.1 59.6 L200.3 76.1 L209.4 61.9 L218.6 61.9 L227.8 64.3 L237.0 64.3 L246.1 78.4 L255.3 66.6 L264.5 66.6 L273.7 66.6 L282.8 69.0 L292.0 83.2"/><path class="md" d="M26.0 33.6 L35.2 26.5 L44.3 21.8 L53.5 21.8 L62.7 28.9 L71.9 21.8 L81.0 21.8 L90.2 28.9 L99.4 28.9 L108.6 36.0 L117.7 64.3 L126.9 14.7 L136.1 33.6 L145.2 31.2 L154.4 24.2 L163.6 24.2 L172.8 14.7 L181.9 17.1 L191.1 12.4 L200.3 28.9 L209.4 17.1 L218.6 19.4 L227.8 26.5 L237.0 31.2 L246.1 24.2 L255.3 31.2 L264.5 28.9 L273.7 14.7 L282.8 50.1 L292.0 24.2"/></svg></figure>
+  </div>
+</section>
+
+<section>
+  <h2 class="r">Gate</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>Game</th><th>Trượt</th><th>Cần gì</th></tr></thead>
+    <tbody>
+      <tr><td>Ô Sáng</td><td>không</td><td>—</td></tr>
+      <tr><td>Cá Koi</td><td>không (N=2000)</td><td>—</td></tr>
+      <tr><td>Đường Ray</td><td>L26 median 83%, mục tiêu 76%</td><td><strong>Giữ L26 dễ cho người yếu, hay kéo về mục tiêu?</strong></td></tr>
+      <tr><td>Mưa</td><td>màn thở: người yếu qua 11–24%</td><td><strong>Nới màn thở nhiều hơn, hay chờ lưới đỡ E4?</strong></td></tr>
+      <tr><td>Đoán Cụm Từ</td><td>4 gate, toàn ở màn cũ</td><td>E3 cấm đổi thứ tự; cần người thật đo trước</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2 class="r">5 câu chờ anh, đang chạy mặc định</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>Câu</th><th>Mặc định</th><th>Đổi lại</th></tr></thead>
+    <tbody>
+      <tr><td>E2 Đoán Cụm Từ cắt 30?</td><td>Giữ 49</td><td>một dòng cấu hình</td></tr>
+      <tr><td>E3 Sửa màn cũ lệch đường cong?</td><td>Không sửa</td><td>một cờ; sao đã lưu sẽ lệch</td></tr>
+      <tr><td>E1 L30 khó tới đâu?</td><td>A: median ~69%</td><td>B: ~58%, chạy lại bot</td></tr>
+      <tr><td>E4 Thắng bản nhẹ?</td><td>tối đa 1 sao, mở màn kế</td><td>sửa từng trường</td></tr>
+      <tr><td>E5 Thêm luật chơi mới?</td><td>Chỉ chỉnh knob</td><td>cần mockup duyệt</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2 class="r">Cần người thật chơi</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>Chỗ</th><th>Vì sao bot không trả lời được</th></tr></thead>
+    <tbody>
+      <tr><td>Đoán Cụm Từ L1–5</td><td>Bot yếu chỉ qua 65–77% vì giả định không biết cả từ dễ như "bà nội"</td></tr>
+      <tr><td>Ô Sáng L17–19</td><td>Mỗi màn bớt 0,07 s nhìn; bot không thấy khác, người có thấy không?</td></tr>
+      <tr><td>Ô Sáng giảm chuyển động</td><td>Người bật giảm chuyển động được nhìn ít hơn ~0,4 s, median bot tụt 10–15 điểm</td></tr>
+      <tr><td>Mưa màn thở, Đường Ray L26</td><td>Như bảng Gate</td></tr>
+      <tr><td>Cả 5 game</td><td>Chưa so bot với người (G7). Hằng số người chơi là đoán, chưa đo</td></tr>
+    </tbody></table></div>
+  <div class="k c r"><p>Trước khi merge: thêm 6 thẻ script vào <code>index.html</code> (<code>docs/difficulty/INDEX-TAGS.md</code>) và sửa 3 test cũ còn ghi trần cũ.</p></div>
+</section>
+</main>
+
+<footer>
+  <p>brainy-bits · nhánh <code>feat/difficulty-30</code> · chưa merge.</p>
+  <div class="v"><strong>Same vendor, same priors — no external verifier ran.</strong></div>
+</footer>
+<script src="../assets/doc.js"></script>
+</body>
+</html>

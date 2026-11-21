@@ -3,7 +3,7 @@
 const $ = id => document.getElementById(id);
 const BB = window.BB;
 const cv = $('rcv'), ctx = cv.getContext('2d');
-const LV_MAX = BB.LV_MAX.rain, LIVES = 3;
+const LIVES = 3;
 const AUTO_WAIT = 0.6;         // giây chờ khi đáp án đã gõ còn là đầu của một đáp án dài hơn
 let W = 0, H = 0, dpr = 1, landscape = null, cvLand = null;
 let state = 'menu';            // menu | play | paused | result
@@ -12,48 +12,73 @@ let drops = [], fx = [], parts = [], solved = 0, target = 10, misses = 0, spawnT
 let combo = 0, playMs = 0, lastT = 0;
 const cam = BB.trauma(7);
 
+// Thông số level đọc từ engine chung: BBD.level('rain', L) (js/difficulty.js + js/levels/rain.js).
+// L1..10 giữ đúng công thức cũ (E3); phép tính sinh bằng BBRain.makeEq, chung với bộ mô phỏng.
+// table(): BBD có bảng rain thì trả BBD. Nếu levels/rain.js chạy trước difficulty.js, hoặc một bản
+// difficulty.js nạp sau đã thay window.BBD và mất bảng, thì đăng ký lại (BBRain.register không trùng).
+function table(){
+  const D = window.BBD, R = window.BBRain;
+  if (!D || typeof D.games !== 'function') return null;
+  if (!D.games().includes('rain') && R && R.register) R.register(D);
+  return D.games().includes('rain') ? D : null;
+}
+// loadDone: đã thử nạp xong (được hay lỗi). Không có bảng thì chơi 10 level cũ: thông số theo công thức
+// cũ, phép tính vẫn từ BBRain. Thiếu cả BBRain (levels/rain.js không tải được) thì chưa chơi được.
+let loadDone = false;
+const ready = () => !!window.BBRain && (loadDone || !!table());
+const legacySpec = L => ({ ops: L, fall: Math.max(8, 13 - 0.55*(L - 1)), every: Math.max(2.7, 4.6 - 0.2*(L - 1)), target: 10 + L, legacy: true });
+// Số level: theo BBD.maxLevel, báo cho core để hub và thử thách ngày cùng một con số.
+let maxSynced = 0, pendingStart = null;
+function lvMax(){
+  const D = table();
+  if (!D) return BB.LV_MAX.rain;
+  const n = D.maxLevel('rain');
+  if (n !== maxSynced) { BB.setLvMax('rain', n); maxSynced = n; }
+  return n;
+}
+// index.html nạp hai file kia trước file này. Bản index.html chưa có thẻ script: tự nạp theo thứ tự,
+// chờ thẻ đã có (file khác có thể đang nạp difficulty.js) chứ không chèn thêm, vì nạp lại difficulty.js
+// sẽ xoá bảng của game khác. levels/rain.js chỉ nạp sau khi difficulty.js xong. Lỗi hay chậm quá 4 s
+// thì đi tiếp, rồi vẽ lại menu.
+const NEED = [['js/difficulty.js', () => !!window.BBD], ['js/levels/rain.js', () => !!window.BBRain]];
+function loadStep(i, done){
+  if (i >= NEED.length) { done(); return; }
+  const [src, ok] = NEED[i];
+  if (ok()) { loadStep(i + 1, done); return; }
+  let el = document.querySelector(`script[src$="${src}"]`), fired = false;
+  const next = () => { if (!fired) { fired = true; loadStep(i + 1, done); } };
+  if (!el) { el = document.createElement('script'); el.src = src; document.head.appendChild(el); }
+  el.addEventListener('load', next); el.addEventListener('error', next);
+  setTimeout(next, 4000);
+}
+function ensureLevels(){
+  if (table() && window.BBRain) { loadDone = true; lvMax(); return; }
+  loadStep(0, () => {
+    loadDone = true; lvMax();
+    if (!(window.APP && window.APP.active === 'rain')) return;
+    if (pendingStart != null && ready()) { const L = pendingStart; pendingStart = null; startLevel(L); }
+    else if (state === 'menu') toMenu();
+  });
+}
+
 // Tiến độ cũ: rain_lv = level kế tiếp chưa qua. Giữ nguyên key để không ai mất level đã mở.
 // Đọc cả bb_stats: hub và thử thách ngày ghi tiến độ vào đó, nên hai nguồn phải cùng một con số.
 // Việc gieo bb_stats từ rain_lv cũ do hub.js seedFromLegacy() lo, ở đây không gieo lại.
-const getLv = () => Math.min(LV_MAX + 1, Math.max(BB.store.num('rain_lv', 1, 1, LV_MAX + 1), BB.gameStats('rain').best + 1));
-const setLv = v => BB.store.set('rain_lv', Math.min(LV_MAX + 1, v));
-const ri = (a, b) => a + (Math.random()*(b - a + 1)|0);
+const getLv = () => Math.min(lvMax() + 1, Math.max(BB.store.num('rain_lv', 1, 1, lvMax() + 1), BB.gameStats('rain').best + 1));
+const setLv = v => BB.store.set('rain_lv', Math.min(lvMax() + 1, v));
 
-// Mỗi level hoặc mở rộng phạm vi số, hoặc thêm một phép tính mới. Không level nào lùi lại.
-const LVINFO = [
-  null,
-  { name: 'Cộng trong phạm vi 10' },
-  { name: 'Cộng, trừ trong phạm vi 10' },
-  { name: 'Cộng, trừ trong phạm vi 20' },
-  { name: 'Cộng, trừ trong phạm vi 50' },
-  { name: 'Cộng, trừ trong phạm vi 100' },
-  { name: 'Bảng nhân 2–5' },
-  { name: 'Bảng nhân 2–9' },
-  { name: 'Nhân, chia (bảng 2–9)' },
-  { name: 'Đủ 4 phép tính' },
-  { name: 'Đủ 4 phép tính, số lớn hơn' },
-];
-function spec(L){
-  return { fall: Math.max(8, 13 - 0.55*(L-1)), every: Math.max(2.7, 4.6 - 0.2*(L-1)), target: 10 + L };
-}
-function makeEq(L){
-  const add = m => { const a = ri(1, m-1), b = ri(1, m - a); return [`${a} + ${b}`, a + b]; };
-  const sub = m => { const a = ri(2, m), b = ri(1, a); return [`${a} − ${b}`, a - b]; };
-  const mul = (x0, x1, y1) => { const a = ri(x0, x1), b = ri(1, y1); return Math.random()<0.5 ? [`${a} × ${b}`, a*b] : [`${b} × ${a}`, a*b]; };
-  const div = (x1, c0, c1) => { const b = ri(2, x1), c = ri(c0, c1); return [`${b*c} ÷ ${b}`, c]; };
-  const pick = arr => arr[Math.random()*arr.length|0]();
-  switch (L) {
-    case 1: return add(10);
-    case 2: return pick([() => add(10), () => sub(10)]);
-    case 3: return pick([() => add(20), () => sub(20)]);
-    case 4: return pick([() => add(50), () => sub(50)]);
-    case 5: return pick([() => add(100), () => sub(100)]);
-    case 6: return mul(2, 5, 10);
-    case 7: return mul(2, 9, 9);
-    case 8: return pick([() => mul(2, 9, 9), () => div(9, 1, 9)]);
-    case 9: return pick([() => add(100), () => sub(100), () => mul(2, 9, 9), () => div(9, 1, 9)]);
-    default: return pick([() => add(200), () => sub(200), () => mul(2, 12, 12), () => div(12, 2, 12)]);
-  }
+const spec = L => { const D = table(); return D ? D.level('rain', L) : legacySpec(L); };
+// Mỗi tầng phép tính có một tên; L1..10 là đúng tên cũ.
+const levelName = L => window.BBRain.TIER_NAME[spec(L).ops];
+const makeEq = L => window.BBRain.makeEq(spec(L).ops, Math.random);
+// Dòng "level kế tiếp" ở màn kết quả: tên tầng khi đổi phép tính, không thì nói cái gì khó lên.
+function nextInfo(L){
+  const a = spec(L), b = spec(L + 1);
+  if (b.ops !== a.ops || L + 1 <= 10) return levelName(L + 1).toLowerCase();
+  const out = [];
+  if (b.every < a.every || b.fall < a.fall) out.push('mưa nhanh hơn');
+  if (b.target > a.target) out.push(`giải ${b.target} phép`);
+  return out.length ? out.join(', ') : `giải ${b.target} phép`;
 }
 // Sao: không để giọt nào rơi = 3, rơi 1 giọt = 2, rơi 2 giọt = 1, thua = 0.
 const starsFor = (win, m) => win ? Math.max(1, LIVES - m) : 0;
@@ -67,6 +92,7 @@ const dropY = d => -30 + d.p*(waterY() + 30);
 
 function spawn(){
   if (drops.length >= 5) { spawnT = 0.5; return; }
+  if (!ready()) { spawnT = 0.1; return; }
   const [eq, ans] = makeEq(level);
   // không cho 2 giọt cùng đáp án rơi cùng lúc
   if (drops.some(d => d.ans === ans)) { spawnT = 0.1; return; }
@@ -312,7 +338,8 @@ function clearStarTimers(){ starTimers.forEach(clearTimeout); starTimers = []; }
 
 function startLevel(L){
   clearStarTimers();
-  level = Math.max(1, Math.min(LV_MAX, L|0 || 1));
+  if (!ready()) { pendingStart = L; return; }      // bảng level chưa nạp xong (xem ensureLevels)
+  level = Math.max(1, Math.min(lvMax(), L|0 || 1));
   drops = []; fx = []; parts = []; solved = 0; misses = 0; combo = 0; playMs = 0;
   input = ''; pendT = 0; renderInput(); cam.reset();
   target = spec(level).target; spawnT = 0.6;
@@ -366,16 +393,16 @@ function showStars(n, win){
 function finish(win){
   state = 'result'; passed = win;
   const stars = starsFor(win, misses);
-  const last = win && level >= LV_MAX;
+  const last = win && level >= lvMax();
   if (win && level + 1 > getLv()) setLv(level + 1);
   const rec = BB.record({ game: 'rain', level, won: win, stars, score: solved, ms: playMs });
 
   ensureResultExtras();
-  $('rrTitle').textContent = last ? `Xong cả ${LV_MAX} level! 🎉` : win ? `Qua Level ${level}! 🎉` : `Chưa qua Level ${level} 😅`;
+  $('rrTitle').textContent = last ? `Xong cả ${lvMax()} level! 🎉` : win ? `Qua Level ${level}! 🎉` : `Chưa qua Level ${level} 😅`;
   BB.countUp($('rrBig'), 0, solved, { fmt: v => `${v}/${target}` });
   $('rrDetail').textContent = last
     ? (stars < 3 ? 'Bạn đã qua level khó nhất. Chơi lại để lấy đủ 3 sao nhé.' : 'Bạn đã qua level khó nhất với đủ 3 sao.')
-    : win ? `Level ${level+1}: ${LVINFO[level+1].name.toLowerCase()}.`
+    : win ? `Level ${level+1}: ${nextInfo(level)}.`
     : `Để rơi xuống nước ${misses} giọt. Giải đủ ${target} phép trước khi mất hết 3 giọt nước nhé.`;
   $('rrNext').textContent = win && !last ? `Level ${level+1} →` : `Chơi lại Level ${level}`;
   showOnly('rresult');
@@ -396,7 +423,8 @@ function finish(win){
 function renderLevels(){
   const done = getLv() - 1, grid = $('rlvgrid'), stars = BB.gameStats('rain').stars;
   grid.innerHTML = '';
-  for (let L=1; L<=LV_MAX; L++){
+  if (!ready()) { if (loadDone) $('rLvTxt').textContent = 'Chưa tải được level. Kiểm tra mạng rồi mở lại.'; return; }
+  for (let L=1; L<=lvMax(); L++){
     const el = document.createElement('button');
     const st = stars[L] || 0, isDone = L <= done;
     el.className = 'lv' + (isDone ? ' done' : '') + (L === chosen ? ' on' : '');
@@ -407,19 +435,19 @@ function renderLevels(){
     el.onclick = () => { chosen = L; renderLevels(); BB.sfx('tap'); grid.children[L-1].focus({ preventScroll: true }); };
     grid.appendChild(el);
   }
-  $('rLvTxt').textContent = `${LVINFO[chosen].name} · giải ${spec(chosen).target} phép`;
+  $('rLvTxt').textContent = `${levelName(chosen)} · giải ${spec(chosen).target} phép`;
   $('rStart').textContent = `Chơi Level ${chosen}`;
 }
 
 function toMenu(){
   clearStarTimers();
   state = 'menu'; drops = []; fx = []; parts = []; input = ''; pendT = 0; renderInput();
-  chosen = Math.min(getLv(), LV_MAX);
+  chosen = Math.min(getLv(), lvMax());
   renderLevels();
   const done = getLv() - 1;
-  $('rBestTxt').textContent = done >= LV_MAX ? `Đã qua cả ${LV_MAX} level` : done ? `Đã qua tới Level ${done}` : '';
+  $('rBestTxt').textContent = done >= lvMax() ? `Đã qua cả ${lvMax()} level` : done ? `Đã qua tới Level ${done}` : '';
   showOnly('rmenu');
-  resize(); level = chosen; misses = 0; solved = 0; target = spec(chosen).target; hud();
+  resize(); level = chosen; misses = 0; solved = 0; target = ready() ? spec(chosen).target : 0; hud();
   if (window.APP && window.APP.active === 'rain') startLoop();
 }
 
@@ -461,7 +489,7 @@ document.addEventListener('keydown', e => {
   flashKey(k); press(k);
 });
 $('rStart').onclick = () => startLevel(chosen);
-$('rrNext').onclick = () => startLevel(passed && level < LV_MAX ? level + 1 : level);
+$('rrNext').onclick = () => startLevel(passed && level < lvMax() ? level + 1 : level);
 $('rrMenu').onclick = toMenu;
 $('rPause').onclick = pause;
 $('rResume').onclick = resume;
@@ -485,8 +513,11 @@ window.rainBest = () => getLv() - 1;
 if (navigator.webdriver || /[?&]test\b/.test(location.search)) {
 window.__rainDebug = () => ({ state, level, misses, solved, target, input, combo, pendT, W, H,
   drops: drops.map(d => ({ ans: d.ans, eq: d.eq, x: d.x, y: dropY(d), p: d.p, w: d.w })) });
-window.__rainTest = { makeEq, LVINFO, spec, starsFor, spawnDrop: (ans, p = 0.5, eq = `? = ${ans}`, w = 78) => {
+window.__rainTest = { makeEq: L => makeEq(L).slice(0, 2), spec, nextInfo, starsFor, lvMax,
+  get LVINFO(){ return Array.from({ length: lvMax() + 1 }, (_, L) => (L ? { name: levelName(L) } : null)); },
+  spawnDrop: (ans, p = 0.5, eq = `? = ${ans}`, w = 78) => {
   drops.push({ x: W/2, p, fall: spec(level).fall, eq, ans, w }); }, starTimers: () => starTimers.length };
 }
+ensureLevels();
 if (window.APP && window.APP.active === 'rain') startLoop();
 })();

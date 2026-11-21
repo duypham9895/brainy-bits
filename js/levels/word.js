@@ -10,7 +10,7 @@
     26, 27, 29, 30, 31, 32, 33, 34, 36, 28, 35, 37, 38, 39, 40, 42, 41, 43, 44, 45, 46, 47, 48];
   const LETTERS = [5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
     7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 11];
-  BBD.register('word', {
+  if (BBD && BBD.register) BBD.register('word', {
     legacyLevels: ORDER.map((src, i) => ({ phrase: src, letters: LETTERS[i], maxTries: 6 })),
     knobs: [],
     maxLevel: cfg => Math.min(cfg.E2_WORD_LEVELS, ORDER.length),

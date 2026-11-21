@@ -12,6 +12,7 @@
 //      margin: how far past the pass line (Kristensen 2021, B) — optional, reported only
 //   export function geometry(levelSpec, viewportW) -> { minTargetPx }   (gate G6: ≥ 44 px at 320 and 390)
 import { samplePlayer, holdsPattern, lapses, exGauss } from '../human.mjs';
+import { loadBBD } from '../load-bbd.mjs';
 
 export const game = 'mem';
 export const ROUNDS = 3, NEED = 2, STAGGER_S = 0.025;
@@ -20,26 +21,13 @@ export const ROUNDS = 3, NEED = 2, STAGGER_S = 0.025;
 // 0.1 was picked so the shipped L1–13 curve stays near p* (an anchoring assumption, see DIFFICULTY-RULES).
 export const GAMMA = 0.1;
 
-const adjacent = (a, b, size) =>
-  a !== b && Math.abs(((a / size) | 0) - ((b / size) | 0)) <= 1 && Math.abs((a % size) - (b % size)) <= 1;
+// Tile picker = the game's own code: js/levels/mem.js exports it (meta.gen) and js/mem.js calls it with
+// Math.random. disp = 0 is the legacy partial Fisher–Yates; disp > 0 draws a tile from cells touching no
+// lit tile yet with chance disp (B). Loaded through node:vm exactly like the browser runs it.
+const GEN = loadBBD({ games: ['mem'] }).spec('mem').meta.gen;
+export const pickTargets = (size, t, disp, rng) => GEN.pickTargets(size, t, disp, rng);
+export const adjacent = GEN.adjacent;
 
-// Same partial Fisher–Yates as mem.js pickTargets, plus `disp`: with probability disp a tile is drawn
-// only from cells that touch no lit tile yet (when any exist), which breaks clusters (B).
-export function pickTargets(size, t, disp, rng) {
-  const chosen = [];
-  const free = Array.from({ length: size * size }, (_, i) => i);
-  for (let k = 0; k < t; k++) {
-    let pool = free;
-    if (disp > 0 && rng() < disp) {
-      const apart = free.filter(c => !chosen.some(x => adjacent(c, x, size)));
-      if (apart.length) pool = apart;
-    }
-    const c = pool[(rng() * pool.length) | 0];
-    chosen.push(c);
-    free.splice(free.indexOf(c), 1);
-  }
-  return chosen;
-}
 // Chunking (R:simulation: "gom các ô liền kề hoặc thẳng hàng thành một chunk"):
 //  1. tiles that touch (8-neighbour) form a cluster;
 //  2. clusters merge when some tile of one lies in the same row or column as a tile of the other with
@@ -70,7 +58,8 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
   let perfect = 0, round = 0, tapsOk = 0, tapsAll = 0, ms = 800;              // 0.8 s "Chuẩn bị…"
   while (round < ROUNDS) {
     const cells = pickTargets(size, t, disp, rng);
-    const showSec = show + t * STAGGER_S;
+    // mem.js nextRound: step = RM() ? 0 : 25 ms, so reduced-motion players get no stagger bonus.
+    const showSec = show + t * (opts.reducedMotion ? 0 : STAGGER_S);
     ms += showSec * 1000;
     const held = !lapses(player, rng) && holdsPattern(player, rng, { load: chunkLoad(cells, size, opts.gamma), tiles: t, showSec });
     // Taps: a held pattern can still fail on a mis-touch; a lost one fails at a uniformly random tap.

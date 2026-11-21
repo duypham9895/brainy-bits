@@ -1,0 +1,1517 @@
+{
+ "game": "koi",
+ "n": 2000,
+ "from": 1,
+ "to": 30,
+ "simVersion": 1,
+ "generatedOn": "2026-11-21",
+ "config": {
+  "E1": "A",
+  "E3": true,
+  "E5": true,
+  "l30Peak": 0.69,
+  "floor": 0.65,
+  "skilledL30": 0.5
+ },
+ "seed": "mulberry32(cyrb53(\"camp|game|L|profile|i\"))",
+ "note": "bL = logit(1 − p_median) with θ_median = 0, a = 1; 2PL fit not run yet",
+ "adapterOpts": {},
+ "ok": true,
+ "gates": [
+  {
+   "id": "B",
+   "name": "generated levels: |p_median − p*| ≤ 0.05 (legacy: measured only, E3)",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  },
+  {
+   "id": "G1",
+   "name": "weak ≥ 85% on L1–5",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  },
+  {
+   "id": "G2",
+   "name": "median pass rate does not rise between consecutive step levels (tolerance = 2·SE)",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  },
+  {
+   "id": "G3",
+   "name": "breather easier than the peak before it and harder than L−4",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  },
+  {
+   "id": "G4",
+   "name": "weak ≥ 60% on every breather",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  },
+  {
+   "id": "G5",
+   "name": "skilled ≥ 50% at L30 (E1 = A)",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  },
+  {
+   "id": "G6",
+   "name": "knobs within hardCap; targets ≥ 44 px at 320 and 390 px",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  },
+  {
+   "id": "G7",
+   "name": "Playwright parity, 3 seeds at L1/L15/L30",
+   "pass": null,
+   "fails": [],
+   "note": "SKIPPED: needs the game to read BBD.level() (per-game integration step)"
+  },
+  {
+   "id": "G8",
+   "name": "first-attempt and ≤3-attempt pass reported; ≤3 never below first attempt",
+   "pass": true,
+   "fails": [],
+   "note": ""
+  }
+ ],
+ "levels": [
+  {
+   "L": 1,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.92,
+   "D": 0,
+   "bL": -5.806,
+   "knobs": {
+    "koi": 6,
+    "cd": 1.45,
+    "decoys": 0,
+    "spdMul": 1,
+    "turnMul": 1
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.9985,
+     "ci": [
+      0.9956,
+      0.9995
+     ],
+     "acc": 0.979,
+     "msMedian": 13062,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.997,
+     "ci": [
+      0.9935,
+      0.9986
+     ],
+     "acc": 0.9818,
+     "msMedian": 11716,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 1,
+     "ci": [
+      0.9981,
+      1
+     ],
+     "acc": 0.9886,
+     "msMedian": 11003,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 2,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8884,
+   "D": 0.1857,
+   "bL": -5.029,
+   "knobs": {
+    "koi": 7,
+    "cd": 1.6,
+    "decoys": 0,
+    "spdMul": 1,
+    "turnMul": 1
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.991,
+     "ci": [
+      0.9858,
+      0.9943
+     ],
+     "acc": 0.9697,
+     "msMedian": 16208,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.9935,
+     "ci": [
+      0.9889,
+      0.9962
+     ],
+     "acc": 0.9772,
+     "msMedian": 14649,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.999,
+     "ci": [
+      0.9964,
+      0.9997
+     ],
+     "acc": 0.9824,
+     "msMedian": 13811,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 3,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8754,
+   "D": 0.2626,
+   "bL": -3.892,
+   "knobs": {
+    "koi": 8,
+    "cd": 1.75,
+    "decoys": 1,
+    "spdMul": 1,
+    "turnMul": 1
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.9675,
+     "ci": [
+      0.9588,
+      0.9744
+     ],
+     "acc": 0.9579,
+     "msMedian": 19765,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.98,
+     "ci": [
+      0.9729,
+      0.9853
+     ],
+     "acc": 0.9683,
+     "msMedian": 17902,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9905,
+     "ci": [
+      0.9852,
+      0.9939
+     ],
+     "acc": 0.9761,
+     "msMedian": 16971,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 4,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8653,
+   "D": 0.3216,
+   "bL": -3.178,
+   "knobs": {
+    "koi": 9,
+    "cd": 1.9,
+    "decoys": 1,
+    "spdMul": 1,
+    "turnMul": 1
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.9575,
+     "ci": [
+      0.9477,
+      0.9655
+     ],
+     "acc": 0.9575,
+     "msMedian": 23490,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.96,
+     "ci": [
+      0.9505,
+      0.9677
+     ],
+     "acc": 0.9635,
+     "msMedian": 21460,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.977,
+     "ci": [
+      0.9695,
+      0.9827
+     ],
+     "acc": 0.9712,
+     "msMedian": 20401,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 5,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.7969,
+   "D": 0.3714,
+   "bL": -2.658,
+   "knobs": {
+    "koi": 10,
+    "cd": 2.05,
+    "decoys": 2,
+    "spdMul": 1,
+    "turnMul": 1
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.9055,
+     "ci": [
+      0.8919,
+      0.9176
+     ],
+     "acc": 0.9463,
+     "msMedian": 27671,
+     "p3": 0.9995
+    },
+    "median": {
+     "p": 0.9345,
+     "ci": [
+      0.9228,
+      0.9445
+     ],
+     "acc": 0.9549,
+     "msMedian": 25280,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.962,
+     "ci": [
+      0.9527,
+      0.9695
+     ],
+     "acc": 0.9658,
+     "msMedian": 24138,
+     "p3": 0.9995
+    }
+   }
+  },
+  {
+   "L": 6,
+   "kind": "breather",
+   "legacy": true,
+   "pStar": 0.8494,
+   "D": 0.4152,
+   "bL": -2.477,
+   "knobs": {
+    "koi": 11,
+    "cd": 2.2,
+    "decoys": 2,
+    "spdMul": 1,
+    "turnMul": 1
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.893,
+     "ci": [
+      0.8787,
+      0.9058
+     ],
+     "acc": 0.9457,
+     "msMedian": 32024,
+     "p3": 0.999
+    },
+    "median": {
+     "p": 0.9225,
+     "ci": [
+      0.91,
+      0.9334
+     ],
+     "acc": 0.9557,
+     "msMedian": 29448,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9385,
+     "ci": [
+      0.9271,
+      0.9482
+     ],
+     "acc": 0.9601,
+     "msMedian": 28153,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 7,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8427,
+   "D": 0.4549,
+   "bL": -1.96,
+   "knobs": {
+    "koi": 12,
+    "cd": 2.35,
+    "decoys": 3,
+    "spdMul": 1,
+    "turnMul": 1
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8215,
+     "ci": [
+      0.8041,
+      0.8377
+     ],
+     "acc": 0.93,
+     "msMedian": 36651,
+     "p3": 0.9955
+    },
+    "median": {
+     "p": 0.8765,
+     "ci": [
+      0.8614,
+      0.8902
+     ],
+     "acc": 0.9441,
+     "msMedian": 33912,
+     "p3": 0.9975
+    },
+    "skilled": {
+     "p": 0.91,
+     "ci": [
+      0.8967,
+      0.9218
+     ],
+     "acc": 0.9555,
+     "msMedian": 32479,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 8,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8365,
+   "D": 0.4913,
+   "bL": -1.681,
+   "knobs": {
+    "koi": 13,
+    "cd": 2.5,
+    "decoys": 3,
+    "spdMul": 1,
+    "turnMul": 1
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8025,
+     "ci": [
+      0.7845,
+      0.8194
+     ],
+     "acc": 0.9316,
+     "msMedian": 41618,
+     "p3": 0.9925
+    },
+    "median": {
+     "p": 0.843,
+     "ci": [
+      0.8264,
+      0.8583
+     ],
+     "acc": 0.943,
+     "msMedian": 38641,
+     "p3": 0.9965
+    },
+    "skilled": {
+     "p": 0.905,
+     "ci": [
+      0.8914,
+      0.9171
+     ],
+     "acc": 0.9563,
+     "msMedian": 37094,
+     "p3": 0.999
+    }
+   }
+  },
+  {
+   "L": 9,
+   "kind": "step",
+   "legacy": true,
+   "pStar": 0.8307,
+   "D": 0.5252,
+   "bL": -1.334,
+   "knobs": {
+    "koi": 14,
+    "cd": 2.65,
+    "decoys": 4,
+    "spdMul": 1,
+    "turnMul": 1
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.733,
+     "ci": [
+      0.7132,
+      0.7519
+     ],
+     "acc": 0.9185,
+     "msMedian": 46795,
+     "p3": 0.9855
+    },
+    "median": {
+     "p": 0.7915,
+     "ci": [
+      0.7731,
+      0.8087
+     ],
+     "acc": 0.9348,
+     "msMedian": 43635,
+     "p3": 0.991
+    },
+    "skilled": {
+     "p": 0.8545,
+     "ci": [
+      0.8384,
+      0.8693
+     ],
+     "acc": 0.9478,
+     "msMedian": 42007,
+     "p3": 0.995
+    }
+   }
+  },
+  {
+   "L": 10,
+   "kind": "peak",
+   "legacy": true,
+   "pStar": 0.7653,
+   "D": 0.5571,
+   "bL": -1.131,
+   "knobs": {
+    "koi": 15,
+    "cd": 2.8,
+    "decoys": 4,
+    "spdMul": 1,
+    "turnMul": 1
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.68,
+     "ci": [
+      0.6592,
+      0.7001
+     ],
+     "acc": 0.9117,
+     "msMedian": 52215,
+     "p3": 0.962
+    },
+    "median": {
+     "p": 0.756,
+     "ci": [
+      0.7367,
+      0.7743
+     ],
+     "acc": 0.9299,
+     "msMedian": 48939,
+     "p3": 0.989
+    },
+    "skilled": {
+     "p": 0.8315,
+     "ci": [
+      0.8145,
+      0.8473
+     ],
+     "acc": 0.9475,
+     "msMedian": 47237,
+     "p3": 0.9935
+    }
+   }
+  },
+  {
+   "L": 11,
+   "kind": "breather",
+   "legacy": false,
+   "pStar": 0.8202,
+   "D": 0.5872,
+   "bL": -1.791,
+   "knobs": {
+    "koi": 12,
+    "cd": 2.9,
+    "decoys": 4,
+    "spdMul": 1,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.788,
+     "ci": [
+      0.7695,
+      0.8054
+     ],
+     "acc": 0.9227,
+     "msMedian": 42727,
+     "p3": 0.994
+    },
+    "median": {
+     "p": 0.857,
+     "ci": [
+      0.841,
+      0.8717
+     ],
+     "acc": 0.9378,
+     "msMedian": 39976,
+     "p3": 0.9975
+    },
+    "skilled": {
+     "p": 0.8955,
+     "ci": [
+      0.8813,
+      0.9082
+     ],
+     "acc": 0.9488,
+     "msMedian": 38542,
+     "p3": 0.9995
+    }
+   }
+  },
+  {
+   "L": 12,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.8153,
+   "D": 0.6159,
+   "bL": -1.618,
+   "knobs": {
+    "koi": 12,
+    "cd": 2.95,
+    "decoys": 4,
+    "spdMul": 1.05,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.787,
+     "ci": [
+      0.7685,
+      0.8044
+     ],
+     "acc": 0.9213,
+     "msMedian": 43295,
+     "p3": 0.99
+    },
+    "median": {
+     "p": 0.8345,
+     "ci": [
+      0.8176,
+      0.8501
+     ],
+     "acc": 0.9369,
+     "msMedian": 40479,
+     "p3": 0.995
+    },
+    "skilled": {
+     "p": 0.892,
+     "ci": [
+      0.8776,
+      0.9049
+     ],
+     "acc": 0.9484,
+     "msMedian": 39075,
+     "p3": 0.9995
+    }
+   }
+  },
+  {
+   "L": 13,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.8106,
+   "D": 0.6433,
+   "bL": -1.54,
+   "knobs": {
+    "koi": 13,
+    "cd": 3,
+    "decoys": 4,
+    "spdMul": 1.05,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7345,
+     "ci": [
+      0.7147,
+      0.7534
+     ],
+     "acc": 0.9144,
+     "msMedian": 47478,
+     "p3": 0.9825
+    },
+    "median": {
+     "p": 0.8235,
+     "ci": [
+      0.8062,
+      0.8396
+     ],
+     "acc": 0.9357,
+     "msMedian": 44649,
+     "p3": 0.997
+    },
+    "skilled": {
+     "p": 0.8925,
+     "ci": [
+      0.8782,
+      0.9053
+     ],
+     "acc": 0.9517,
+     "msMedian": 43145,
+     "p3": 0.9975
+    }
+   }
+  },
+  {
+   "L": 14,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.8062,
+   "D": 0.6695,
+   "bL": -1.383,
+   "knobs": {
+    "koi": 13,
+    "cd": 3,
+    "decoys": 4,
+    "spdMul": 1.1,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.723,
+     "ci": [
+      0.703,
+      0.7422
+     ],
+     "acc": 0.9144,
+     "msMedian": 47605,
+     "p3": 0.9825
+    },
+    "median": {
+     "p": 0.7995,
+     "ci": [
+      0.7814,
+      0.8165
+     ],
+     "acc": 0.93,
+     "msMedian": 44627,
+     "p3": 0.994
+    },
+    "skilled": {
+     "p": 0.8605,
+     "ci": [
+      0.8446,
+      0.875
+     ],
+     "acc": 0.9464,
+     "msMedian": 43123,
+     "p3": 0.999
+    }
+   }
+  },
+  {
+   "L": 15,
+   "kind": "peak",
+   "legacy": false,
+   "pStar": 0.7419,
+   "D": 0.6948,
+   "bL": -1.038,
+   "knobs": {
+    "koi": 15,
+    "cd": 3,
+    "decoys": 4,
+    "spdMul": 1.1,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6455,
+     "ci": [
+      0.6243,
+      0.6662
+     ],
+     "acc": 0.9082,
+     "msMedian": 54894,
+     "p3": 0.9635
+    },
+    "median": {
+     "p": 0.7385,
+     "ci": [
+      0.7188,
+      0.7573
+     ],
+     "acc": 0.9268,
+     "msMedian": 51744,
+     "p3": 0.9855
+    },
+    "skilled": {
+     "p": 0.813,
+     "ci": [
+      0.7953,
+      0.8295
+     ],
+     "acc": 0.9432,
+     "msMedian": 50009,
+     "p3": 0.9935
+    }
+   }
+  },
+  {
+   "L": 16,
+   "kind": "breather",
+   "legacy": false,
+   "pStar": 0.7977,
+   "D": 0.7192,
+   "bL": -1.496,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.05,
+    "decoys": 4,
+    "spdMul": 1.15,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.744,
+     "ci": [
+      0.7244,
+      0.7626
+     ],
+     "acc": 0.9121,
+     "msMedian": 44284,
+     "p3": 0.988
+    },
+    "median": {
+     "p": 0.817,
+     "ci": [
+      0.7995,
+      0.8333
+     ],
+     "acc": 0.9293,
+     "msMedian": 41593,
+     "p3": 0.9935
+    },
+    "skilled": {
+     "p": 0.8845,
+     "ci": [
+      0.8697,
+      0.8978
+     ],
+     "acc": 0.9473,
+     "msMedian": 40184,
+     "p3": 0.9995
+    }
+   }
+  },
+  {
+   "L": 17,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7937,
+   "D": 0.7428,
+   "bL": -1.365,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.05,
+    "decoys": 4,
+    "spdMul": 1.2,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.742,
+     "ci": [
+      0.7224,
+      0.7607
+     ],
+     "acc": 0.9107,
+     "msMedian": 44360,
+     "p3": 0.9845
+    },
+    "median": {
+     "p": 0.7965,
+     "ci": [
+      0.7783,
+      0.8136
+     ],
+     "acc": 0.9272,
+     "msMedian": 41626,
+     "p3": 0.9925
+    },
+    "skilled": {
+     "p": 0.873,
+     "ci": [
+      0.8577,
+      0.8869
+     ],
+     "acc": 0.9438,
+     "msMedian": 40189,
+     "p3": 0.999
+    }
+   }
+  },
+  {
+   "L": 18,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7898,
+   "D": 0.7656,
+   "bL": -1.266,
+   "knobs": {
+    "koi": 13,
+    "cd": 3.05,
+    "decoys": 4,
+    "spdMul": 1.2,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.715,
+     "ci": [
+      0.6948,
+      0.7344
+     ],
+     "acc": 0.9119,
+     "msMedian": 48185,
+     "p3": 0.9745
+    },
+    "median": {
+     "p": 0.78,
+     "ci": [
+      0.7613,
+      0.7976
+     ],
+     "acc": 0.9265,
+     "msMedian": 45211,
+     "p3": 0.993
+    },
+    "skilled": {
+     "p": 0.862,
+     "ci": [
+      0.8462,
+      0.8764
+     ],
+     "acc": 0.9466,
+     "msMedian": 43724,
+     "p3": 0.997
+    }
+   }
+  },
+  {
+   "L": 19,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7861,
+   "D": 0.7878,
+   "bL": -1.205,
+   "knobs": {
+    "koi": 13,
+    "cd": 3.1,
+    "decoys": 5,
+    "spdMul": 1.2,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.65,
+     "ci": [
+      0.6288,
+      0.6706
+     ],
+     "acc": 0.8948,
+     "msMedian": 48617,
+     "p3": 0.966
+    },
+    "median": {
+     "p": 0.7695,
+     "ci": [
+      0.7505,
+      0.7874
+     ],
+     "acc": 0.9238,
+     "msMedian": 45856,
+     "p3": 0.9895
+    },
+    "skilled": {
+     "p": 0.853,
+     "ci": [
+      0.8368,
+      0.8678
+     ],
+     "acc": 0.9428,
+     "msMedian": 44317,
+     "p3": 0.9965
+    }
+   }
+  },
+  {
+   "L": 20,
+   "kind": "peak",
+   "legacy": false,
+   "pStar": 0.7224,
+   "D": 0.8094,
+   "bL": -0.857,
+   "knobs": {
+    "koi": 14,
+    "cd": 3.1,
+    "decoys": 5,
+    "spdMul": 1.2,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6245,
+     "ci": [
+      0.6031,
+      0.6455
+     ],
+     "acc": 0.8952,
+     "msMedian": 52464,
+     "p3": 0.955
+    },
+    "median": {
+     "p": 0.702,
+     "ci": [
+      0.6816,
+      0.7216
+     ],
+     "acc": 0.916,
+     "msMedian": 49451,
+     "p3": 0.9775
+    },
+    "skilled": {
+     "p": 0.8095,
+     "ci": [
+      0.7917,
+      0.8261
+     ],
+     "acc": 0.9385,
+     "msMedian": 47862,
+     "p3": 0.996
+    }
+   }
+  },
+  {
+   "L": 21,
+   "kind": "breather",
+   "legacy": false,
+   "pStar": 0.7788,
+   "D": 0.8305,
+   "bL": -1.298,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.1,
+    "decoys": 5,
+    "spdMul": 1.25,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6785,
+     "ci": [
+      0.6577,
+      0.6986
+     ],
+     "acc": 0.8945,
+     "msMedian": 44703,
+     "p3": 0.9725
+    },
+    "median": {
+     "p": 0.7855,
+     "ci": [
+      0.767,
+      0.8029
+     ],
+     "acc": 0.9194,
+     "msMedian": 42132,
+     "p3": 0.9935
+    },
+    "skilled": {
+     "p": 0.863,
+     "ci": [
+      0.8472,
+      0.8774
+     ],
+     "acc": 0.9399,
+     "msMedian": 40766,
+     "p3": 0.9955
+    }
+   }
+  },
+  {
+   "L": 22,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7753,
+   "D": 0.851,
+   "bL": -1.263,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.15,
+    "decoys": 5,
+    "spdMul": 1.3,
+    "turnMul": 1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6845,
+     "ci": [
+      0.6638,
+      0.7045
+     ],
+     "acc": 0.8935,
+     "msMedian": 45328,
+     "p3": 0.969
+    },
+    "median": {
+     "p": 0.7795,
+     "ci": [
+      0.7608,
+      0.7971
+     ],
+     "acc": 0.92,
+     "msMedian": 42727,
+     "p3": 0.9915
+    },
+    "skilled": {
+     "p": 0.8535,
+     "ci": [
+      0.8373,
+      0.8683
+     ],
+     "acc": 0.94,
+     "msMedian": 41300,
+     "p3": 0.997
+    }
+   }
+  },
+  {
+   "L": 23,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7719,
+   "D": 0.871,
+   "bL": -1.197,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.15,
+    "decoys": 5,
+    "spdMul": 1.3,
+    "turnMul": 1.1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6585,
+     "ci": [
+      0.6374,
+      0.679
+     ],
+     "acc": 0.8865,
+     "msMedian": 45316,
+     "p3": 0.975
+    },
+    "median": {
+     "p": 0.768,
+     "ci": [
+      0.749,
+      0.786
+     ],
+     "acc": 0.9146,
+     "msMedian": 42710,
+     "p3": 0.9895
+    },
+    "skilled": {
+     "p": 0.846,
+     "ci": [
+      0.8295,
+      0.8612
+     ],
+     "acc": 0.9388,
+     "msMedian": 41284,
+     "p3": 0.9975
+    }
+   }
+  },
+  {
+   "L": 24,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7686,
+   "D": 0.8906,
+   "bL": -1.049,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.15,
+    "decoys": 5,
+    "spdMul": 1.35,
+    "turnMul": 1.1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.632,
+     "ci": [
+      0.6106,
+      0.6529
+     ],
+     "acc": 0.8832,
+     "msMedian": 45260,
+     "p3": 0.9685
+    },
+    "median": {
+     "p": 0.7405,
+     "ci": [
+      0.7208,
+      0.7592
+     ],
+     "acc": 0.91,
+     "msMedian": 42691,
+     "p3": 0.9895
+    },
+    "skilled": {
+     "p": 0.8275,
+     "ci": [
+      0.8103,
+      0.8434
+     ],
+     "acc": 0.9325,
+     "msMedian": 41280,
+     "p3": 0.997
+    }
+   }
+  },
+  {
+   "L": 25,
+   "kind": "peak",
+   "legacy": false,
+   "pStar": 0.7053,
+   "D": 0.9097,
+   "bL": -0.895,
+   "knobs": {
+    "koi": 13,
+    "cd": 3.15,
+    "decoys": 5,
+    "spdMul": 1.35,
+    "turnMul": 1.1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.5905,
+     "ci": [
+      0.5688,
+      0.6119
+     ],
+     "acc": 0.8824,
+     "msMedian": 48970,
+     "p3": 0.9495
+    },
+    "median": {
+     "p": 0.71,
+     "ci": [
+      0.6897,
+      0.7295
+     ],
+     "acc": 0.9124,
+     "msMedian": 46392,
+     "p3": 0.97
+    },
+    "skilled": {
+     "p": 0.806,
+     "ci": [
+      0.7881,
+      0.8227
+     ],
+     "acc": 0.9306,
+     "msMedian": 44877,
+     "p3": 0.995
+    }
+   }
+  },
+  {
+   "L": 26,
+   "kind": "breather",
+   "legacy": false,
+   "pStar": 0.7622,
+   "D": 0.9285,
+   "bL": -1.164,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.15,
+    "decoys": 5,
+    "spdMul": 1.3,
+    "turnMul": 1.1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.657,
+     "ci": [
+      0.6359,
+      0.6775
+     ],
+     "acc": 0.8872,
+     "msMedian": 45296,
+     "p3": 0.9645
+    },
+    "median": {
+     "p": 0.762,
+     "ci": [
+      0.7428,
+      0.7802
+     ],
+     "acc": 0.9135,
+     "msMedian": 42668,
+     "p3": 0.9825
+    },
+    "skilled": {
+     "p": 0.8555,
+     "ci": [
+      0.8394,
+      0.8702
+     ],
+     "acc": 0.9396,
+     "msMedian": 41275,
+     "p3": 0.9965
+    }
+   }
+  },
+  {
+   "L": 27,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.759,
+   "D": 0.9469,
+   "bL": -1.123,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.2,
+    "decoys": 5,
+    "spdMul": 1.35,
+    "turnMul": 1.1,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6595,
+     "ci": [
+      0.6384,
+      0.6799
+     ],
+     "acc": 0.8882,
+     "msMedian": 45902,
+     "p3": 0.968
+    },
+    "median": {
+     "p": 0.7545,
+     "ci": [
+      0.7352,
+      0.7729
+     ],
+     "acc": 0.9128,
+     "msMedian": 43247,
+     "p3": 0.988
+    },
+    "skilled": {
+     "p": 0.8535,
+     "ci": [
+      0.8373,
+      0.8683
+     ],
+     "acc": 0.9371,
+     "msMedian": 41839,
+     "p3": 0.9985
+    }
+   }
+  },
+  {
+   "L": 28,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.756,
+   "D": 0.9649,
+   "bL": -1.036,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.2,
+    "decoys": 5,
+    "spdMul": 1.35,
+    "turnMul": 1.2,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.621,
+     "ci": [
+      0.5995,
+      0.642
+     ],
+     "acc": 0.88,
+     "msMedian": 45807,
+     "p3": 0.959
+    },
+    "median": {
+     "p": 0.738,
+     "ci": [
+      0.7183,
+      0.7568
+     ],
+     "acc": 0.9086,
+     "msMedian": 43211,
+     "p3": 0.9865
+    },
+    "skilled": {
+     "p": 0.836,
+     "ci": [
+      0.8191,
+      0.8516
+     ],
+     "acc": 0.9336,
+     "msMedian": 41849,
+     "p3": 0.995
+    }
+   }
+  },
+  {
+   "L": 29,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.753,
+   "D": 0.9826,
+   "bL": -0.94,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.2,
+    "decoys": 5,
+    "spdMul": 1.4,
+    "turnMul": 1.2,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.616,
+     "ci": [
+      0.5945,
+      0.6371
+     ],
+     "acc": 0.8776,
+     "msMedian": 45713,
+     "p3": 0.9465
+    },
+    "median": {
+     "p": 0.719,
+     "ci": [
+      0.6989,
+      0.7383
+     ],
+     "acc": 0.9044,
+     "msMedian": 43187,
+     "p3": 0.9835
+    },
+    "skilled": {
+     "p": 0.819,
+     "ci": [
+      0.8015,
+      0.8353
+     ],
+     "acc": 0.9297,
+     "msMedian": 41832,
+     "p3": 0.9955
+    }
+   }
+  },
+  {
+   "L": 30,
+   "kind": "peak",
+   "legacy": false,
+   "pStar": 0.69,
+   "D": 1,
+   "bL": -0.654,
+   "knobs": {
+    "koi": 13,
+    "cd": 3.2,
+    "decoys": 5,
+    "spdMul": 1.4,
+    "turnMul": 1.3,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.558,
+     "ci": [
+      0.5361,
+      0.5796
+     ],
+     "acc": 0.8703,
+     "msMedian": 49553,
+     "p3": 0.9275
+    },
+    "median": {
+     "p": 0.658,
+     "ci": [
+      0.6369,
+      0.6785
+     ],
+     "acc": 0.8976,
+     "msMedian": 46965,
+     "p3": 0.971
+    },
+    "skilled": {
+     "p": 0.778,
+     "ci": [
+      0.7593,
+      0.7957
+     ],
+     "acc": 0.9258,
+     "msMedian": 45518,
+     "p3": 0.9905
+    }
+   }
+  }
+ ]
+}

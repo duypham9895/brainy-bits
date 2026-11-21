@@ -7,6 +7,13 @@
   "scripts": {
     "parity": "node scripts/parity-check.mjs",
     "test": "playwright test",
+    "test:sim": "node --test scripts/sim/difficulty.test.mjs",
+    "sim": "node scripts/sim/calibrate.mjs",
+    "sim:train": "node scripts/sim/calibrate.mjs train --n 1200",
+    "sim:koi": "node scripts/sim/calibrate.mjs koi --n 2000",
+    "sim:mem": "node scripts/sim/calibrate.mjs mem",
+    "sim:rain": "node scripts/sim/calibrate.mjs rain",
+    "sim:word": "node scripts/sim/calibrate.mjs word",
     "serve": "python3 -m http.server 8765 --bind 127.0.0.1"
   },
   "devDependencies": {

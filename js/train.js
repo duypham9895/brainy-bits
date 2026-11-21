@@ -7,7 +7,16 @@ function boot(){
 const M = window.RTD_MAP;
 const { DIRS, mulberry32, shuffle, shade, rr, stationsFor, pointAt, strokeEdge, strokeRails } = M;
 const BB = window.BB;
-const LV_MAX = BB.LV_MAX.train;      // 11: level 1..11 = 5..15 ga
+// Level parameters come from the shared difficulty table (js/difficulty.js + js/levels/train.js).
+// The reference is kept, so a later reload of difficulty.js by another script cannot drop train's table.
+// L1..11 there equal the old formulas exactly (E3). If the table failed to load (e.g. an old offline
+// cache), the game falls back to those formulas and its old 11 levels.
+const BBD = window.BBD && window.BBD.games().includes('train') ? window.BBD : null;
+const legacySpec = lv => ({ stations: stationsFor(lv), base: Math.max(1.8, 2.6 - 0.075*(lv-1)) * (0.75 / 0.45),
+  speedF: 0.45, burstP: 0.15 });
+const specFor = lv => BBD ? BBD.level('train', lv) : legacySpec(lv);
+const LV_MAX = BBD ? BB.setLvMax('train', BBD.maxLevel('train')) : BB.LV_MAX.train;   // 30 (11 without the table)
+const gaOf = lv => specFor(lv).stations;
 const LEVEL_TIME = 90;               // 90 giây ra tàu + đếm ngược + chờ tàu cuối ≈ 1p40–1p50 mỗi round
 
 const cv = document.getElementById('cv');
@@ -19,10 +28,14 @@ let W = 0, H = 0, dpr = 1;
 let level = 1, state = 'menu', seed = 1, pausedFrom = 'play';
 let map = null;            // {C, R, tunnel, switches, stations, edges, land}
 let cell = 50, ox = 0, oy = 0, TR = 20; // kích thước ô lưới, bán kính ô rẽ
+// Drawn switch disc ≥ 44 px wide even on a 320 px phone (MERGED-SPEC A-5). Drawing only: TR still sets the
+// rail curves, tileLen and the tap radius, so every level plays exactly as before.
+const DISC_MIN_R = 22;
+const discR = () => Math.max(TR + 1, DISC_MIN_R);
 let trains = [], particles = [], popups = [], rings = [];
 let timeLeft = 0, spawnTimer = 0, correct = 0, total = 0, streak = 0, bestStreak = 0, playS = 0;
 let speed = 60, lastT = 0, cdT = 0, shakeLeft = 0;
-const speedFactor = 0.45;  // tốc độ chậm cố định
+let spec = specFor(1);     // tham số của level đang chơi: stations, base, speedF, burstP
 let colorBag = [], lastKey = null, lastBurst = false;
 const shake = BB.trauma(7);
 const reduced = () => BB.motion.reduced;
@@ -60,7 +73,8 @@ function assignColors(stations){
 
 function setupLevel(){
   seed = (Math.random()*1e9)|0;
-  map = M.generate(stationsFor(level), W || 390, H || 700);
+  spec = specFor(level);
+  map = M.generate(spec.stations, W || 390, H || 700);
   map.land = W > H;
   assignColors(map.stations);
   trains = []; particles = []; popups = []; rings = [];
@@ -81,7 +95,7 @@ function layout(){
   ox = (W - (C-1)*cell) / 2;
   oy = (H - (R-1)*cell) / 2;
   TR = cell * 0.48;
-  speed = cell * 2.6 * speedFactor;   // tốc độ cố định mọi màn
+  speed = cell * 2.6 * spec.speedF;   // 0.45 ở mọi level hiện có
   map.switches.forEach(s => s.px = toPx(s.g));
   map.stations.forEach(s => s.px = toPx(s.g));
   const T = map.tunnel; T.px = toPx(T.g);
@@ -175,7 +189,7 @@ function buildStatic(){
 
   // ô ngã rẽ: to, sáng màu, nổi bật trên nền tối
   map.switches.forEach(sw => {
-    const {x, y} = sw.px, Rp = TR + 1;
+    const {x, y} = sw.px, Rp = discR();
     g.fillStyle = 'rgba(0,0,0,.45)'; g.beginPath(); g.arc(x + 2, y + 4, Rp + 2, 0, Math.PI*2); g.fill();
     g.fillStyle = '#0f2416'; g.beginPath(); g.arc(x, y, Rp + 3, 0, Math.PI*2); g.fill();
     const pg = g.createRadialGradient(x - Rp*0.35, y - Rp*0.4, 2, x, y, Rp);
@@ -283,14 +297,11 @@ cv.addEventListener('pointerdown', ev => {
 });
 
 // ================== TÀU ==================
+// ~5s/tàu ở level 1, ~3,5s ở level 11 (18→25 tàu mỗi round); công thức trộn nằm ở RTD_MAP.spawnGap
 function nextSpawnDelay(){
-  const m = Math.max(1.8, 2.6 - 0.075*(level-1)) * (0.75 / speedFactor);   // ~5s/tàu ở level 1, ~3,5s ở level 11 (18→25 tàu mỗi round)
-  const r = Math.random();
-  // không cho 2 lần "dồn dập" liền nhau → tối đa 2 tàu sát nhau, không có chuỗi 3 tàu
-  if (r < 0.15 && !lastBurst) { lastBurst = true; return Math.max(2.0, m * (0.55 + Math.random()*0.15)); }  // dồn dập
-  lastBurst = false;
-  if (r < 0.33) return m * (1.5 + Math.random()*0.6);    // nghỉ
-  return m * (0.75 + Math.random()*0.6);                 // bình thường
+  const g = M.spawnGap(spec.base, spec.burstP, lastBurst, Math.random);
+  lastBurst = g.burst;
+  return g.gap;
 }
 
 function spawn(){
@@ -377,7 +388,7 @@ function updateHud(){
   const tl = Math.max(0, timeLeft);
   // hết giờ nhưng tàu còn chạy: nói rõ đang chờ, đừng để "0s" như treo máy (RTD-07)
   const wait = tl <= 0 && trains.length;
-  setHud(level, map ? map.stations.length : stationsFor(level), wait ? `Chờ ${trains.length} tàu` : Math.ceil(tl) + 's');
+  setHud(level, map ? map.stations.length : gaOf(level), wait ? `Chờ ${trains.length} tàu` : Math.ceil(tl) + 's');
   // narrow phones: "⏳ 3" keeps the HUD on one row; the full words stay for screen readers (Neon #5)
   if (wait && narrowHud.matches) $('hTime').innerHTML =
     `<span aria-hidden="true">⏳ ${trains.length}</span><span class="rtd-sr">Chờ ${trains.length} tàu</span>`;
@@ -390,7 +401,7 @@ function updateHud(){
   st.textContent = '🔥 ' + streak;
 }
 function menuHud(lv){
-  setHud(lv, stationsFor(lv), LEVEL_TIME + 's');
+  setHud(lv, gaOf(lv), LEVEL_TIME + 's');
   $('hScore').textContent = '✓ 0/0';
   $('hStreak').classList.add('hidden');
   const tf = $('timefill'); tf.style.width = '100%'; tf.classList.remove('low');
@@ -497,7 +508,7 @@ function drawSwitch(s){
   const {x, y} = s.px;
   const on = s.childEdges[s.sel], off = s.childEdges[1-s.sel];
   ctx.save();
-  ctx.beginPath(); ctx.arc(x, y, TR + 1, 0, Math.PI*2); ctx.clip();
+  ctx.beginPath(); ctx.arc(x, y, discR(), 0, Math.PI*2); ctx.clip();
   ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
   ctx.strokeStyle = 'rgba(20,70,35,.28)'; ctx.lineWidth = cell*0.16; strokeEdge(ctx, off, off.tileLen + 6);
   ctx.strokeStyle = '#2b2e2a'; ctx.lineWidth = cell*0.32; strokeEdge(ctx, on, on.tileLen + 6);
@@ -586,7 +597,7 @@ function endLevel(){
   $('rCorrect').textContent = `${correct}/${total}`;
   $('rStreak').textContent = bestStreak;
   $('rDetail').textContent = finished ? 'Đây là level cuối. Quay lại lấy đủ 3 sao ở từng level nhé.'
-    : passed ? `Level ${level+1} có ${stationsFor(level+1)} ga.`
+    : passed ? nextHint(level)
     : 'Cần đúng ít nhất 80% để qua level.';
   $('rNext').textContent = finished ? 'Chọn level khác' : passed ? `Level ${level+1} →` : `Chơi lại Level ${level}`;
 
@@ -612,6 +623,15 @@ function endLevel(){
   kick();
 }
 
+// One line about what the next level changes (feedforward, MERGED-SPEC §4.1).
+function nextHint(lv){
+  const a = specFor(lv), b = specFor(lv + 1);
+  if (b.stations !== a.stations) return `Level ${lv+1} có ${b.stations} ga.`;
+  if (b.base > a.base + 1e-9) return `Level ${lv+1} là màn nghỉ: tàu ra thưa hơn.`;
+  if (b.base < a.base - 1e-9 || b.burstP > a.burstP + 1e-9) return `Level ${lv+1}: tàu ra dày hơn.`;
+  return `Level ${lv+1} có ${b.stations} ga.`;
+}
+
 let chosenLv = 1;
 function renderLevels(){
   const grid = $('lvgrid'), st = BB.gameStats('train').stars;
@@ -623,13 +643,13 @@ function renderLevels(){
     // "done" chỉ cho level đã thật sự qua, không suy từ level cao nhất (RTD-09); dữ liệu cũ thì giữ như bản cũ
     el.className = 'lv' + (done ? ' done' : '') + (lv === chosenLv ? ' on' : '');
     el.setAttribute('aria-pressed', lv === chosenLv ? 'true' : 'false');
-    el.setAttribute('aria-label', `Level ${lv}, ${stationsFor(lv)} ga` + (n ? `, ${n} sao` : done ? ', đã qua' : ''));
-    el.innerHTML = `${lv}<small>${stationsFor(lv)} ga</small>` +
+    el.setAttribute('aria-label', `Level ${lv}, ${gaOf(lv)} ga` + (n ? `, ${n} sao` : done ? ', đã qua' : ''));
+    el.innerHTML = `${lv}<small>${gaOf(lv)} ga</small>` +
       (n ? `<span class="lvst" aria-hidden="true">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</span>` : '');
     el.onclick = () => { chosenLv = lv; renderLevels(); menuHud(lv); BB.sfx('key'); };
     grid.appendChild(el);
   }
-  $('startBtn').textContent = `Chơi Level ${chosenLv} · ${stationsFor(chosenLv)} ga`;
+  $('startBtn').textContent = `Chơi Level ${chosenLv} · ${gaOf(chosenLv)} ga`;
 }
 function toMenu(){
   clearResTimers();
@@ -696,6 +716,7 @@ if (navigator.webdriver || /[?&]test\b/.test(location.search)) window.__rtd = {
   get state(){ return state; }, get level(){ return level; }, get running(){ return running; },
   get map(){ return map; }, get cell(){ return cell; }, get W(){ return W; }, get H(){ return H; },
   get passed(){ return passed; }, get finished(){ return finished; },
+  get spec(){ return spec; }, specFor, LV_MAX, usesTable: !!BBD, discR,
   // jump to the result screen with a given score, for the finished-state test
   // render the HUD as if `n` trains were still out after time ran out (drain pill), then restore
   hudDrain(n){ const t = timeLeft, tr = trains; timeLeft = 0; trains = Array(n).fill(null); updateHud(); timeLeft = t; trains = tr; },
@@ -703,16 +724,36 @@ if (navigator.webdriver || /[?&]test\b/.test(location.search)) window.__rtd = {
 };
 }
 
-if (window.RTD_MAP) boot();
+// Boot needs js/train-map.js (RTD_MAP), js/difficulty.js (BBD) and js/levels/train.js, in that order.
+// index.html may not list all three yet: load what is missing, then boot. A script another file is
+// already loading is waited for, not loaded twice (a second difficulty.js would wipe other games' tables).
+// A failed or slow load still boots, on the legacy 11 levels. Until then the hub may already call
+// trainEnter/trainBest, so queue the enter and answer best from storage.
+const NEED = [
+  ['js/train-map.js', () => !!window.RTD_MAP],
+  ['js/difficulty.js', () => !!window.BBD],
+  ['js/levels/train.js', () => !!(window.BBD && window.BBD.games().includes('train')), () => !!window.BBD],
+];
+const ready = () => NEED.every(([, ok, can]) => ok() || (can && !can()));
+function ensure(i, done){
+  if (i >= NEED.length) { done(); return; }
+  const [src, ok, can] = NEED[i];
+  if (ok() || (can && !can())) { ensure(i + 1, done); return; }
+  let s = document.querySelector(`script[src="${src}"]`), fired = false;
+  const next = () => { if (!fired) { fired = true; ensure(i + 1, done); } };
+  if (!s) { s = document.createElement('script'); s.src = src; document.head.appendChild(s); }
+  s.addEventListener('load', next); s.addEventListener('error', next);
+  setTimeout(next, 4000);
+}
+if (ready()) boot();
 else {
-  // index.html has no <script src="js/train-map.js"> yet: load it, then boot. Until then the hub
-  // may already call trainEnter/trainBest, so queue the enter and answer best from storage.
   let wantEnter = false;
   window.trainEnter = () => { wantEnter = true; };
   window.trainBest = () => (window.BB ? BB.store.num('rtd_best3', 0, 0, BB.LV_MAX.train) : 0);
-  const s = document.createElement('script');
-  s.src = 'js/train-map.js';
-  s.onload = () => { boot(); if (wantEnter && (!window.APP || window.APP.active === 'train')) window.trainEnter(); };
-  document.head.appendChild(s);
+  ensure(0, () => {
+    if (!window.RTD_MAP) return;               // no map generator, no game: the hub keeps the stub
+    boot();
+    if (wantEnter && (!window.APP || window.APP.active === 'train')) window.trainEnter();
+  });
 }
 })();

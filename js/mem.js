@@ -2,7 +2,11 @@
 (() => {
 const $ = id => document.getElementById(id);
 const BB = window.BB;
-const ROUNDS = 3, NEED = 2, LV_MAX = BB.LV_MAX.mem;   // 13
+// Level parameters come from the shared difficulty engine (js/difficulty.js + js/levels/mem.js).
+// L1..13 are the frozen legacy values (E3); L14..30 are generated and calibrated offline.
+// Without BBD on the page the game falls back to the legacy 13 levels, so it never breaks.
+const BBD = window.BBD && window.BBD.games().includes('mem') ? window.BBD : null;
+const ROUNDS = 3, NEED = 2, LV_MAX = BBD ? BB.setLvMax('mem', BBD.maxLevel('mem')) : BB.LV_MAX.mem;   // 30 | 13
 let level = 1, round = 0, perfect = 0, totalOk = 0;
 let phase = 'idle';            // idle | show | input | wait | paused
 let targets = new Set(), found = 0, n = 3;
@@ -18,13 +22,20 @@ const getLv = () => Math.min(LV_MAX + 1, Math.max(legacyLv(), BB.gameStats('mem'
 const setLv = v => BB.store.set('mem_lv', Math.min(LV_MAX + 1, v));
 // BB stats are seeded from mem_lv once by hub.js (seedFromLegacy, flag bb_seeded_v1); getLv() reads both.
 
-// level 1 = 3 ô sáng, mỗi level thêm 1 ô. Never more targets than cells - 1 (MEM-1 guard).
-function spec(L){
+// level 1 = 3 ô sáng, mỗi level thêm 1 ô tới 15 ô ở L13; sau đó thời gian nhìn ngắn dần và ô rải xa nhau (disp).
+// Never more targets than cells - 1 (MEM-1 guard).
+function legacySpec(L){
   const t0 = 2 + L;
   const size = t0 <= 4 ? 3 : t0 <= 7 ? 4 : t0 <= 11 ? 5 : 6;
   const t = Math.min(t0, size * size - 1);
-  return { t, size, show: 1.0 + 0.3*t };
+  return { t, size, show: 1.0 + 0.3*t, disp: 0 };
 }
+function spec(L){
+  if (!BBD) return legacySpec(L);
+  const r = BBD.level('mem', Math.max(1, L | 0));
+  return { t: Math.min(r.t, r.size * r.size - 1), size: r.size, show: r.show, disp: r.disp || 0 };
+}
+const secTxt = s => s.toFixed(1).replace('.', ',');
 // Stars: fail = 0. Pass with no wrong round = 3. Pass with one wrong round = 2 if that round
 // still had at least half the tiles found before the slip, else 1.
 function starsFor(){
@@ -107,8 +118,10 @@ function startLevel(L){
   after(0.8, nextRound);
 }
 
-function pickTargets(t){
-  // Partial Fisher-Yates over the cell list: always terminates, no duplicates.
+function pickTargets(t, disp){
+  // Shared pure picker (js/levels/mem.js), also used by the simulator. disp = 0 is the legacy
+  // partial Fisher-Yates over the cell list: always terminates, no duplicates.
+  if (BBD) return new Set(BBD.spec('mem').meta.gen.pickTargets(n, t, disp, Math.random));
   const cells = Array.from({ length: n*n }, (_, i) => i);
   for (let k = 0; k < t; k++) {
     const j = k + Math.floor(Math.random() * (cells.length - k));
@@ -120,7 +133,7 @@ function pickTargets(t){
 function nextRound(){
   const s = spec(level);
   tiles().forEach(t => setTile(t, '', ''));
-  targets = pickTargets(s.t);
+  targets = pickTargets(s.t, s.disp);
   found = 0;
   phase = 'show';
   hud();
@@ -200,7 +213,7 @@ function finish(){
     ? `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. Cần đúng ít nhất ${NEED} lượt để qua level.`
     : last
       ? `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. ${stars < 3 ? 'Chơi lại để gom đủ 3 sao.' : 'Level cuối, đủ 3 sao.'}`
-      : `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. Level ${level+1} có ${spec(level+1).t} ô sáng.`;
+      : `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. ${nextTxt()}`;
   $('mrNext').textContent = passed && !last ? `Level ${level+1} →` : `Chơi lại Level ${level}`;
   showStars(stars);
   $('mresult').classList.remove('hidden');
@@ -215,6 +228,17 @@ function finish(){
   else if (rec.newStars) BB.toast(`Level ${level} giờ có ${stars} sao`);
   if (rec.dailyDone) BB.toast('Xong thử thách hôm nay');
   if (rec.streakUp && rec.streak > 1) BB.toast(`Chuỗi ${rec.streak} ngày liền`);
+}
+
+// disp below this is not visible to the eye (adjacent pairs at t=15: 18.3 → 16.3 at 0.2), so the menu stays quiet.
+const DISP_SHOWN = 0.2;
+// What changes on the next level, in one short line (feedforward).
+function nextTxt(){
+  const a = spec(level), b = spec(level + 1);
+  if (b.t !== a.t) return `Level ${level+1} có ${b.t} ô sáng.`;
+  if (b.show < a.show) return `Level ${level+1} vẫn ${b.t} ô, chỉ được nhìn ${secTxt(b.show)} giây.`;
+  if (b.disp > a.disp && b.disp >= DISP_SHOWN) return `Level ${level+1} vẫn ${b.t} ô, nằm rải xa nhau hơn.`;
+  return `Level ${level+1} có ${b.t} ô sáng.`;
 }
 
 // ---------- result stars (built here so index.html needs no change) ----------
@@ -261,7 +285,7 @@ function renderLevels(){
     grid.appendChild(el);
   }
   const s = spec(chosen);
-  $('mLvTxt').textContent = `Lưới ${s.size}×${s.size} · ${s.t} ô sáng · nhìn ${s.show.toFixed(1).replace('.', ',')} giây`;
+  $('mLvTxt').textContent = `Lưới ${s.size}×${s.size} · ${s.t} ô sáng · nhìn ${secTxt(s.show)} giây${s.disp >= DISP_SHOWN ? ' · ô rải xa' : ''}`;
   $('mStart').textContent = `Chơi Level ${chosen} · ${s.t} ô`;
 }
 // The HUD and grid behind the menu follow the chosen level (fixes the stale level pill).
@@ -342,5 +366,5 @@ window.memEnter = () => {
 window.memBest = () => Math.min(getLv() - 1, LV_MAX);
 // Test hook: read-only view of state for Playwright.
 if (navigator.webdriver) window.__mem = { spec, get phase(){ return phase; }, get level(){ return level; }, get round(){ return round; },
-  get targets(){ return [...targets]; }, starsFor: () => starsFor(), LV_MAX };
+  get targets(){ return [...targets]; }, starsFor: () => starsFor(), LV_MAX, legacySpec, usesBBD: !!BBD };
 })();

@@ -24,6 +24,17 @@ function rr(c,x,y,w,h,r){
 }
 const stationsFor = lv => Math.min(4 + lv, MAX_STATIONS);  // màn 1 = 5 ga, mỗi màn +1 ga
 
+// Spawn gap in seconds (moved out of train.js nextSpawnDelay so scripts/sim/adapters/train.mjs runs the
+// same mix). base = level spec `base`, burstP = chance of a "dồn dập" gap. Never two bursts in a row,
+// so at most two trains run close together. Legacy levels: burstP 0.15, rest band 0.15..0.33.
+const REST_P = 0.18;
+function spawnGap(base, burstP, lastBurst, rnd){
+  const r = rnd();
+  if (r < burstP && !lastBurst) return { gap: Math.max(2.0, base * (0.55 + rnd()*0.15)), burst: true };  // dồn dập
+  if (r < Math.round((burstP + REST_P) * 1e6) / 1e6) return { gap: base * (1.5 + rnd()*0.6), burst: false };  // nghỉ
+  return { gap: base * (0.75 + rnd()*0.6), burst: false };                                                    // bình thường
+}
+
 // ================== SINH BẢN ĐỒ LƯỚI ==================
 function gridSize(n){
   const base = n <= 6 ? 6 : n <= 11 ? 7 : 8;   // ít cột hơn → ô to, dễ nhìn
@@ -433,6 +444,6 @@ function drawGlyph(c, idx, x, y, r){
   c.restore();
 }
 
-window.RTD_MAP = { MAX_STATIONS, DIRS, mulberry32, shuffle, shade, rr, stationsFor, generate, minSwitchDist,
+window.RTD_MAP = { MAX_STATIONS, DIRS, mulberry32, shuffle, shade, rr, stationsFor, spawnGap, generate, minSwitchDist, MIN_SW_DIST,
   simplify, roundPath, setPts, pointAt, strokeEdge, strokeRails, drawDeco, drawTunnel, drawGlyph, GLYPHS };
 })();

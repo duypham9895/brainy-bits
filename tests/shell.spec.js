@@ -106,14 +106,14 @@ test('hub reads legacy keys, seeds BB stats once and shows level/LV_MAX and star
     localStorage.clear();
     localStorage.setItem('rtd_best3', '3');   // train: highest level passed
     localStorage.setItem('mem_lv', '5');      // mem: next level to play -> passed 4
-    localStorage.setItem('koi_lv2', '99');    // corrupt / beyond the cap -> clamped to LV_MAX
+    localStorage.setItem('koi_lv2', '99');    // corrupt / beyond the old cap -> clamped to the legacy top (11), i.e. passed 10
     localStorage.setItem('bb_stats', JSON.stringify({ rain: { best: 2, stars: { 1: 3, 2: 2 } } }));
   });
   await page.goto('/');
-  await expect(page.locator('#hubTrain')).toHaveText('Đã qua 3/11 level');
-  await expect(page.locator('#hubMem')).toHaveText('Đã qua 4/13 level');
-  await expect(page.locator('#hubKoi')).toHaveText('Xong cả 10 level');
-  await expect(page.locator('#hubRain')).toHaveText('Đã qua 2/10 level · ★ 5/30');
+  await expect(page.locator('#hubTrain')).toHaveText('Đã qua 3/30 level');
+  await expect(page.locator('#hubMem')).toHaveText('Đã qua 4/30 level');
+  await expect(page.locator('#hubKoi')).toHaveText('Đã qua 10/30 level');
+  await expect(page.locator('#hubRain')).toHaveText('Đã qua 2/30 level · ★ 5/90');
   await expect(page.locator('#hubWord')).toHaveText('49 level, chưa chơi');
   await expect(page.locator('#hubStars')).toHaveText('5');
   const s = await page.evaluate(() => BB.gameStats('mem').best);

@@ -3,14 +3,35 @@
 (function (root) {
   'use strict';
   const BBD = root.BBD;
+
+  // Pure tile picker shared by js/mem.js and scripts/sim/adapters/mem.mjs (no DOM; rnd is injected).
+  // disp = 0 is the legacy partial Fisher–Yates of js/mem.js, call for call: same rnd() sequence, same tiles.
+  // disp > 0: with chance disp the next tile comes only from cells touching no lit tile yet (B, blocks chunking).
+  const adjacent = (a, b, size) =>
+    a !== b && Math.abs(((a / size) | 0) - ((b / size) | 0)) <= 1 && Math.abs((a % size) - (b % size)) <= 1;
+  function pickTargets(size, t, disp, rnd) {
+    const cells = Array.from({ length: size * size }, (_, i) => i);
+    for (let k = 0; k < t; k++) {
+      let j = -1;
+      if (disp > 0 && rnd() < disp) {
+        const apart = [];
+        for (let x = k; x < cells.length; x++) if (!cells.slice(0, k).some(c => adjacent(cells[x], c, size))) apart.push(x);
+        if (apart.length) j = apart[Math.floor(rnd() * apart.length)];
+      }
+      if (j < 0) j = k + Math.floor(rnd() * (cells.length - k));
+      [cells[k], cells[j]] = [cells[j], cells[k]];
+    }
+    return cells.slice(0, t);
+  }
   const legacyLevels = [];
   for (let L = 1; L <= 13; L++) {
     const t0 = 2 + L;
     const size = t0 <= 4 ? 3 : t0 <= 7 ? 4 : t0 <= 11 ? 5 : 6;
     const t = Math.min(t0, size * size - 1);
-    legacyLevels.push({ size, t, k: 0.3, disp: 0, show: +(1.0 + 0.3 * t).toFixed(2) });
+    // show unrounded, bit-for-bit the old js/mem.js value (toFixed(2) gave 3.7 instead of 3.6999… at L7).
+    legacyLevels.push({ size, t, k: 0.3, disp: 0, show: 1.0 + 0.3 * t });
   }
-  BBD.register('mem', {
+  if (BBD && BBD.register) BBD.register('mem', {
     legacyLevels,
     knobs: [
       // t stays at the legacy L13 value (R:cognitive advises ≤10–12; legacy already sits at 15). Breathers drop 2.
@@ -26,10 +47,15 @@
     lighterKnobs: ['t', 'k'],
     relief: [{ knob: 't', by: 2 }],
     peak: [{ knob: 'k', by: 0.02 }],
+    // Step overrides (14, 18, 19, 24, 29): every step level gets less viewing time. L14 at 0.26 splits the
+    // L13→L14 drop (5.5 → 4.9 s); disp alone barely changes chunk load in the sim (2.73 → 2.74 at t=15), so a
+    // disp-only step is not a real step.
     // Authored breathers: more viewing time so the weak profile stays ≥ 60% (G4), which a fixed
     // relief step cannot give once k is low. Breathers past L30 fall back to the relief rule above.
-    overrides: { 16: { t: 13, k: 0.32 }, 21: { t: 13, k: 0.32 }, 26: { t: 12, k: 0.35 } },
+    overrides: { 14: { k: 0.26 }, 16: { t: 13, k: 0.32 }, 18: { k: 0.24 }, 19: { k: 0.235 }, 21: { t: 13, k: 0.32 },
+      24: { k: 0.23 }, 26: { t: 12, k: 0.35 }, 29: { k: 0.225 } },
     derive: r => ({ show: +(1.0 + r.k * r.t).toFixed(2) }),
-    meta: { rounds: 3, need: 2, staggerMs: 25, table: 'js/levels/mem.js', game: 'js/mem.js' },
+    meta: { rounds: 3, need: 2, staggerMs: 25, table: 'js/levels/mem.js', game: 'js/mem.js',
+      gen: Object.freeze({ pickTargets, adjacent }) },
   });
 })(typeof globalThis !== 'undefined' ? globalThis : this);

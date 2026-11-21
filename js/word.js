@@ -3,6 +3,7 @@
 const $ = id => document.getElementById(id);
 const BB = window.BB;
 const MAX_TRIES = 6;
+// ---------- @pure-begin: không DOM, không BB. scripts/sim/adapters/word.mjs đọc nguyên khối này để bot dùng đúng luật game ----------
 // cụm 2 từ thông dụng + gợi ý chủ đề; được xếp theo tổng số chữ cái (ngắn → dài).
 // Gợi ý không được chứa từ nào của đáp án, cũng không được trùng một đáp án khác (kiểm trong tests/word.spec.js).
 const PHRASES = [
@@ -19,11 +20,6 @@ const PHRASES = [
 ].map(([p, cat]) => ({ words: p.normalize('NFC').split(' ').map(w => [...w]), cat }))
  .map((x, i) => ({ ...x, i, n: x.words[0].length + x.words[1].length }))
  .sort((a, b) => a.n - b.n || a.i - b.i);
-const LV_MAX = PHRASES.length;
-// Số level thật nằm ở đây (49 cụm), không phải hằng số trong core.js: đăng ký trước khi hub.js đọc
-// (word.js nạp trước hub.js), để hub, thử thách ngày và chia sẻ cùng đếm đúng số cụm.
-if (BB.setLvMax) BB.setLvMax('word', LV_MAX); else if (BB.LV_MAX) BB.LV_MAX.word = LV_MAX;
-
 // ---------- chữ tiếng Việt ----------
 const TONES = ['́', '̀', '̉', '̃', '̣'];   // sắc, huyền, hỏi, ngã, nặng
 const TONE_NAME = ['Dấu sắc', 'Dấu huyền', 'Dấu hỏi', 'Dấu ngã', 'Dấu nặng'];
@@ -79,6 +75,39 @@ function validSyllable(letters){
   return false;
 }
 
+// Chấm một lượt đoán với đáp án T (mảng chữ). Xem chú thích ở evaluate() bên dưới.
+function evaluateAgainst(T, guess){
+  const res = new Array(T.length).fill('gray'), free = new Array(T.length).fill(true);
+  T.forEach((t, i) => { if (guess[i] === t) { res[i] = 'green'; free[i] = false; } });
+  guess.forEach((g, i) => {
+    if (res[i] !== 'gray') return;
+    const j = T.findIndex((t, k) => free[k] && t === g);
+    if (j >= 0) { res[i] = 'yellow'; free[j] = false; }
+  });
+  const blueAt = (i, j) => { res[i] = 'blue'; free[j] = false; };
+  guess.forEach((g, i) => { if (res[i] === 'gray' && isVowel(g) && free[i] && fam(T[i]) === fam(g)) blueAt(i, i); });
+  guess.forEach((g, i) => {
+    if (res[i] !== 'gray' || !isVowel(g)) return;
+    const j = T.findIndex((t, k) => free[k] && isVowel(t) && fam(t) === fam(g));
+    if (j >= 0) blueAt(i, j);
+  });
+  return res;
+}
+// ---------- @pure-end ----------
+
+// ---------- level ----------
+// Level L = cụm BBD.level('word', L).phrase (chỉ số trong danh sách gốc ở trên). Bảng js/levels/word.js giữ
+// đúng thứ tự cũ (xếp theo số chữ), nên sao đã lưu theo số level không lệch. Chưa nạp BBD thì dùng thứ tự cũ.
+const BBD = window.BBD && window.BBD.games && window.BBD.games().includes('word') ? window.BBD : null;
+const LV_MAX = BBD ? Math.min(BBD.maxLevel('word'), PHRASES.length) : PHRASES.length;
+// Một dòng BBD trỏ sai cụm thì bỏ cả bảng, quay về thứ tự cũ: sao lưu theo số level không được gắn nhầm cụm.
+const rowsBBD = BBD ? Array.from({ length: LV_MAX }, (_, k) => PHRASES.find(p => p.i === BBD.level('word', k + 1).phrase)) : null;
+const LEVELS = rowsBBD && rowsBBD.every(Boolean) ? rowsBBD : PHRASES.slice(0, LV_MAX);
+if (rowsBBD && !rowsBBD.every(Boolean)) console.warn('word: BBD table mismatch, using legacy order');
+// Số level thật nằm ở đây, không phải hằng số trong core.js: đăng ký trước khi hub.js đọc
+// (word.js nạp trước hub.js), để hub, thử thách ngày và chia sẻ cùng đếm đúng số cụm.
+if (BB.setLvMax) BB.setLvMax('word', LV_MAX); else if (BB.LV_MAX) BB.LV_MAX.word = LV_MAX;
+
 // ---------- trạng thái ----------
 // state: menu | play | reveal (đang lật ô, khoá nhập) | result
 let level = 1, chosen = 1, puzzle = null, rows = [], cur = [], state = 'menu', passed = false, hintShown = false;
@@ -101,23 +130,7 @@ const answer = p => p.words.map(w => w.join('')).join(' ');
 // ---------- chấm điểm một lượt đoán ----------
 // green: đúng chữ đúng chỗ · yellow: có đúng chữ đó ở chỗ khác · blue: có nguyên âm cùng họ (o/ô/ơ...) nhưng
 // khác dấu, ưu tiên đúng chỗ trước · gray: không còn. Mỗi chữ của đáp án chỉ được dùng cho một ô.
-function evaluate(guess){
-  const T = target(), res = new Array(T.length).fill('gray'), free = new Array(T.length).fill(true);
-  T.forEach((t, i) => { if (guess[i] === t) { res[i] = 'green'; free[i] = false; } });
-  guess.forEach((g, i) => {
-    if (res[i] !== 'gray') return;
-    const j = T.findIndex((t, k) => free[k] && t === g);
-    if (j >= 0) { res[i] = 'yellow'; free[j] = false; }
-  });
-  const blueAt = (i, j) => { res[i] = 'blue'; free[j] = false; };
-  guess.forEach((g, i) => { if (res[i] === 'gray' && isVowel(g) && free[i] && fam(T[i]) === fam(g)) blueAt(i, i); });
-  guess.forEach((g, i) => {
-    if (res[i] !== 'gray' || !isVowel(g)) return;
-    const j = T.findIndex((t, k) => free[k] && isVowel(t) && fam(t) === fam(g));
-    if (j >= 0) blueAt(i, j);
-  });
-  return res;
-}
+function evaluate(guess){ return evaluateAgainst(target(), guess); }
 
 // ---------- vẽ bảng ----------
 // Ô lớn nhất vừa chỗ trống của .wstage. Bố cục do CSS quyết (css/word.css): dọc thì gợi ý và chú giải
@@ -326,7 +339,7 @@ function lockMenu(on){ const m = $('wMenuBtn'); m.disabled = on; m.setAttribute(
 function clearTimers(){ clearTimeout(revealT); revealT = 0; starT.forEach(clearTimeout); starT = []; tickT.forEach(clearTimeout); tickT = []; }
 function startLevel(L){
   clearTimers();
-  level = Math.min(LV_MAX, Math.max(1, Math.floor(L) || 1)); puzzle = PHRASES[level - 1];
+  level = Math.min(LV_MAX, Math.max(1, Math.floor(L) || 1)); puzzle = LEVELS[level - 1];
   rows = []; cur = []; hintShown = false; inGame = true; startedAt = performance.now();
   Object.keys(keyState).forEach(k => delete keyState[k]);
   ['wmenu', 'wresult'].forEach(id => $(id).classList.add('hidden'));
@@ -390,13 +403,13 @@ function renderLevels(){
   for (let L = 1; L <= LV_MAX; L++){
     const el = document.createElement('button'), st = starsOf(L);
     el.className = 'lv' + (isDone(L) ? ' done' : '') + (L === chosen ? ' on' : '');
-    el.innerHTML = `${L}<small>${PHRASES[L-1].n} chữ</small>` + (st ? `<i class="wlvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</i>` : '');
-    el.setAttribute('aria-label', `Level ${L}, ${PHRASES[L-1].n} chữ` + (st ? `, ${st} sao` : isDone(L) ? ', đã qua' : ''));
+    el.innerHTML = `${L}<small>${LEVELS[L-1].n} chữ</small>` + (st ? `<i class="wlvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</i>` : '');
+    el.setAttribute('aria-label', `Level ${L}, ${LEVELS[L-1].n} chữ` + (st ? `, ${st} sao` : isDone(L) ? ', đã qua' : ''));
     el.setAttribute('aria-pressed', L === chosen ? 'true' : 'false');
     el.onclick = () => { chosen = L; renderLevels(); BB.sfx('tap'); };
     grid.appendChild(el);
   }
-  $('wStart').textContent = `Chơi Level ${chosen} · ${PHRASES[chosen-1].n} chữ cái`;
+  $('wStart').textContent = `Chơi Level ${chosen} · ${LEVELS[chosen-1].n} chữ cái`;
 }
 function resumeBtn(){
   let b = $('wResume');
@@ -421,7 +434,7 @@ function toMenu(){
   rb.textContent = `Chơi tiếp Level ${level} (lượt ${rows.length + 1}/${MAX_TRIES})`;
   $('wStart').classList.toggle('alt', inGame);
   $('wresult').classList.add('hidden'); $('wmenu').classList.remove('hidden');
-  if (!inGame) { puzzle = PHRASES[chosen-1]; level = chosen; rows = []; cur = []; hintShown = false; }
+  if (!inGame) { puzzle = LEVELS[chosen-1]; level = chosen; rows = []; cur = []; hintShown = false; }
   renderBoard(); renderKeys(); hud();
 }
 // Vào game từ hub: thử thách ngày → mở thẳng level đó; ván dở → giữ nguyên bàn và mở menu có nút chơi tiếp.
@@ -511,6 +524,6 @@ window.wordEnter = enter;
 window.wordBest = bestLv;
 // Cho test: đọc đáp án và chạy các hàm thuần, không đụng tới trạng thái ván.
 // Chỉ mở cho trình duyệt tự động hoặc URL ?test, giống bốn game kia: người chơi thường không đọc được đáp án.
-if (navigator.webdriver || /[?&]test\b/.test(location.search)) window.__word = { PHRASES, LV_MAX, tonePos, validSyllable, evaluateFor: (p, g) => { const s = puzzle; puzzle = p; const r = evaluate(g); puzzle = s; return r; },
+if (navigator.webdriver || /[?&]test\b/.test(location.search)) window.__word = { PHRASES, LEVELS, LV_MAX, viaBBD: LEVELS === rowsBBD, tonePos, validSyllable, evaluateFor: (p, g) => { const s = puzzle; puzzle = p; const r = evaluate(g); puzzle = s; return r; },
   state: () => ({ state, level, rows: rows.length, cur: cur.join(''), puzzle: answer(puzzle), inGame }) };
 })();
