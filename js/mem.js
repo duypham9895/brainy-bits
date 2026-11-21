@@ -16,16 +16,7 @@ const RM = () => BB.motion.reduced;
 const legacyLv = () => BB.store.num('mem_lv', 1, 1, LV_MAX + 1);
 const getLv = () => Math.min(LV_MAX + 1, Math.max(legacyLv(), BB.gameStats('mem').best + 1));
 const setLv = v => BB.store.set('mem_lv', Math.min(LV_MAX + 1, v));
-// One-time seed of BB stats from the old key, so the hub, streaks and daily level see old progress.
-if (!BB.store.get('bb_seed_mem')) {
-  const done = legacyLv() - 1;
-  const all = BB.store.json('bb_stats', {});
-  const s = all.mem || (all.mem = { best: 0, stars: {} });
-  s.stars = s.stars || {};
-  if (done > (s.best || 0)) s.best = done;
-  BB.store.setJson('bb_stats', all);
-  BB.store.set('bb_seed_mem', '1');
-}
+// BB stats are seeded from mem_lv once by hub.js (seedFromLegacy, flag bb_seeded_v1); getLv() reads both.
 
 // level 1 = 3 ô sáng, mỗi level thêm 1 ô. Never more targets than cells - 1 (MEM-1 guard).
 function spec(L){
@@ -334,15 +325,19 @@ document.addEventListener('keydown', e => {
   }
 });
 
-BB.onLeave('mem', () => {
-  phase = 'idle'; timers = []; replayShow = false; clearStars();
-  $('mGrid').classList.remove('hush');
-});
+// Leaving the game (Back, home button, hash change) pauses the round instead of wiping it,
+// like Train, Koi, Rain and Word. The rAF timers stop on their own while phase is 'paused'.
+BB.onLeave('mem', () => { pause(); clearStars(); });
 
 window.memEnter = () => {
+  const req = BB.takeRequest('mem');                 // daily challenge: straight into that level
+  if (req != null) { toMenu(); chosen = Math.min(LV_MAX, Math.max(1, req | 0)); startLevel(chosen); return; }
+  if (phase === 'paused') {                          // a round is still in progress: show the pause card
+    $('mmenu').classList.add('hidden'); $('mresult').classList.add('hidden');
+    $('mGrid').classList.add('hush'); $('mpaused').classList.remove('hidden');
+    return;
+  }
   toMenu();
-  const req = BB.takeRequest('mem');
-  if (req != null) { chosen = Math.min(LV_MAX, Math.max(1, req | 0)); startLevel(chosen); }
 };
 window.memBest = () => Math.min(getLv() - 1, LV_MAX);
 // Test hook: read-only view of state for Playwright.

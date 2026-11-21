@@ -20,6 +20,9 @@ const PHRASES = [
  .map((x, i) => ({ ...x, i, n: x.words[0].length + x.words[1].length }))
  .sort((a, b) => a.n - b.n || a.i - b.i);
 const LV_MAX = PHRASES.length;
+// Số level thật nằm ở đây (49 cụm), không phải hằng số trong core.js: đăng ký trước khi hub.js đọc
+// (word.js nạp trước hub.js), để hub, thử thách ngày và chia sẻ cùng đếm đúng số cụm.
+if (BB.setLvMax) BB.setLvMax('word', LV_MAX); else if (BB.LV_MAX) BB.LV_MAX.word = LV_MAX;
 
 // ---------- chữ tiếng Việt ----------
 const TONES = ['́', '̀', '̉', '̃', '̣'];   // sắc, huyền, hỏi, ngã, nặng
@@ -79,7 +82,7 @@ function validSyllable(letters){
 // ---------- trạng thái ----------
 // state: menu | play | reveal (đang lật ô, khoá nhập) | result
 let level = 1, chosen = 1, puzzle = null, rows = [], cur = [], state = 'menu', passed = false, hintShown = false;
-let inGame = false, flipRow = -1, popAt = -1, revealT = 0, startedAt = 0, starT = [];
+let inGame = false, flipRow = -1, popAt = -1, revealT = 0, startedAt = 0, starT = [], tickT = [];
 const keyState = {};
 
 // Tiến độ cũ: word_lv = "level cao nhất + 1". Chỉ đọc, không ghi nữa; ✓ mới lấy từ sao trong BB.
@@ -135,7 +138,7 @@ function cellSize(){
       availH = stage.clientHeight - padY - side.reduce((a, e) => a + e.offsetHeight + (parseFloat(cs.rowGap) || 0), 0);
     }
   }
-  const gap = availW < 330 && n >= 10 ? 3 : availH > 420 ? 6 : 5;
+  const gap = (availW < 330 && n >= 10) || availH < 220 ? 3 : availH > 420 ? 6 : 5;
   const byW = Math.floor((availW - n * gap) / (n + 0.55));
   const byH = Math.floor((availH - (MAX_TRIES - 1) * gap) / MAX_TRIES);
   return { sz: Math.max(16, Math.min(76, byW, byH)), gap };
@@ -287,7 +290,10 @@ function submit(){
   renderBoard(); hud();
   const reduced = BB.motion.reduced;
   const step = 90, flipMs = 480, total = reduced ? 250 : (N() - 1) * step + flipMs;
-  if (!reduced) res.forEach((r, i) => BB.sfx('tick', { combo: r === 'green' ? i : 0, delay: (i * step + flipMs / 2) / 1000 }));
+  // Hẹn giờ tiếng tick ở đây (không dùng delay của BB.sfx) để rời game là huỷ được ngay, kể cả khi core không dọn.
+  if (!reduced) res.forEach((r, i) => tickT.push(setTimeout(() => {
+    if (window.APP && window.APP.active === 'word') BB.sfx('tick', { combo: r === 'green' ? i : 0 });
+  }, i * step + flipMs / 2)));
   revealT = setTimeout(() => afterReveal(win, lose, snap), total);
 }
 // Tóm tắt lượt vừa chấm cho trình đọc màn hình (vùng ẩn, không đổi giao diện).
@@ -317,7 +323,7 @@ function afterReveal(win, lose, snap){
 function lockMenu(on){ const m = $('wMenuBtn'); m.disabled = on; m.setAttribute('aria-disabled', on ? 'true' : 'false'); }
 
 // ---------- luồng chơi ----------
-function clearTimers(){ clearTimeout(revealT); revealT = 0; starT.forEach(clearTimeout); starT = []; }
+function clearTimers(){ clearTimeout(revealT); revealT = 0; starT.forEach(clearTimeout); starT = []; tickT.forEach(clearTimeout); tickT = []; }
 function startLevel(L){
   clearTimers();
   level = Math.min(LV_MAX, Math.max(1, Math.floor(L) || 1)); puzzle = PHRASES[level - 1];
@@ -386,6 +392,7 @@ function renderLevels(){
     el.className = 'lv' + (isDone(L) ? ' done' : '') + (L === chosen ? ' on' : '');
     el.innerHTML = `${L}<small>${PHRASES[L-1].n} chữ</small>` + (st ? `<i class="wlvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</i>` : '');
     el.setAttribute('aria-label', `Level ${L}, ${PHRASES[L-1].n} chữ` + (st ? `, ${st} sao` : isDone(L) ? ', đã qua' : ''));
+    el.setAttribute('aria-pressed', L === chosen ? 'true' : 'false');
     el.onclick = () => { chosen = L; renderLevels(); BB.sfx('tap'); };
     grid.appendChild(el);
   }
@@ -428,9 +435,10 @@ function enter(){
   toast(`Thử thách hôm nay: Level ${chosen}`);
 }
 // Rời game giữa lúc lật ô: chốt luôn kết quả để không mất tiến độ.
+// Mọi hẹn giờ (lật ô, tiếng tick, tiếng sao) bị huỷ ở mọi trạng thái, không chỉ lúc đang lật.
 BB.onLeave('word', () => {
-  if (state !== 'reveal') return;
   clearTimers();
+  if (state !== 'reveal') return;
   const last = rows[rows.length - 1];
   renderKeys();
   const snap = { level, puzzle, tries: rows.length, ms: performance.now() - startedAt };
@@ -502,6 +510,7 @@ window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = request
 window.wordEnter = enter;
 window.wordBest = bestLv;
 // Cho test: đọc đáp án và chạy các hàm thuần, không đụng tới trạng thái ván.
-window.__word = { PHRASES, LV_MAX, tonePos, validSyllable, evaluateFor: (p, g) => { const s = puzzle; puzzle = p; const r = evaluate(g); puzzle = s; return r; },
+// Chỉ mở cho trình duyệt tự động hoặc URL ?test, giống bốn game kia: người chơi thường không đọc được đáp án.
+if (navigator.webdriver || /[?&]test\b/.test(location.search)) window.__word = { PHRASES, LV_MAX, tonePos, validSyllable, evaluateFor: (p, g) => { const s = puzzle; puzzle = p; const r = evaluate(g); puzzle = s; return r; },
   state: () => ({ state, level, rows: rows.length, cur: cur.join(''), puzzle: answer(puzzle), inGame }) };
 })();

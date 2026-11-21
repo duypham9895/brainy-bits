@@ -188,3 +188,75 @@ test('review: 6x6 tiles stay >= 44px in phone landscape (844x390) and the grid f
   expect(r.bottom).toBeLessThanOrEqual(390);
   expect(r.right).toBeLessThanOrEqual(844);
 });
+
+// Neon review #11: short phone landscape. 740x360 must keep 6x6 tiles >= 44px; 568x320 cannot fit
+// 44px under the HUD, so it only has to stay readable (>= 39px) and inside the screen.
+for (const [w, h, min] of [[740, 360, 44], [568, 320, 39]]) {
+  test(`neon-11: 6x6 tiles at ${w}x${h} are >= ${min}px and the grid fits`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await open(page, { lv: 14 });
+    await pickLevel(page, 13);
+    const r = await page.evaluate(() => {
+      const t = document.querySelector('#mGrid .mtile').getBoundingClientRect();
+      const g = document.querySelector('#mGrid').getBoundingClientRect();
+      const hud = document.querySelector('#memApp .ghud').getBoundingClientRect();
+      return { w: t.width, h: t.height, top: g.top, bottom: g.bottom, right: g.right, hudBottom: hud.bottom,
+        sw: document.documentElement.scrollWidth };
+    });
+    expect(r.w).toBeGreaterThanOrEqual(min);
+    expect(r.h).toBeGreaterThanOrEqual(min);
+    expect(r.top).toBeGreaterThanOrEqual(r.hudBottom);
+    expect(r.bottom).toBeLessThanOrEqual(h);
+    expect(r.right).toBeLessThanOrEqual(w);
+    expect(r.sw).toBeLessThanOrEqual(w);
+  });
+}
+
+// Neon review #12: leaving mid-round pauses it, coming back shows the pause card with the round intact.
+test('neon-12: Back mid-round pauses Mem and keeps the round; resume continues it', async ({ page }) => {
+  await open(page);
+  await pickLevel(page, 2);
+  await winRound(page);                               // round 1 done, perfect 1
+  await untilPhase(page, 'input');
+  const ts = await page.evaluate(() => window.__mem.targets);
+  await page.locator('#mGrid .mtile').nth(ts[0]).click();
+  await page.goBack();
+  await expect(page.locator('#hub')).toBeVisible();
+  expect(await phase(page)).toBe('paused');
+  await page.clock.runFor(5000);                      // nothing runs on the hub
+  expect(await phase(page)).toBe('paused');
+  await page.click('#openMem');
+  await expect(page.locator('#mpaused')).toBeVisible();
+  await expect(page.locator('#mmenu')).toBeHidden();
+  await expect(page.locator('#mGrid')).toHaveCSS('visibility', 'hidden');
+  await expect(page.locator('#mScore')).toHaveText('✓ 1');
+  await expect(page.locator('#mRound')).toHaveText('Lượt 2/3');
+  await page.click('#mResume');
+  await expect(page.locator('#mGrid')).toHaveCSS('visibility', 'visible');
+  await expect(page.locator('#mGrid .mtile.ok')).toHaveCount(1);
+  for (const i of ts.slice(1)) await page.locator('#mGrid .mtile').nth(i).click();
+  await page.clock.runFor(1100);
+  await expect(page.locator('#mresult')).toBeVisible();
+  await expect(page.locator('#mrBig')).toHaveText('2/2');
+});
+
+test('neon-12: Back while tiles are lit hides them; coming back replays the round', async ({ page }) => {
+  await open(page);
+  await pickLevel(page, 1);
+  await untilPhase(page, 'show');
+  await page.goBack();
+  await page.click('#openMem');
+  await expect(page.locator('#mpaused')).toBeVisible();
+  await expect(page.locator('#mGrid .mtile.lit')).toHaveCount(0);
+  await page.click('#mResume');
+  await untilPhase(page, 'show');
+  await expect(page.locator('#mGrid .mtile.lit')).toHaveCount(3);
+  expect(await page.evaluate(() => window.__mem.round)).toBe(0);
+});
+
+test('neon-12: Mem no longer writes its own bb_seed_mem flag; hub seeding still carries mem_lv', async ({ page }) => {
+  await open(page, { lv: 6 });
+  expect(await page.evaluate(() => localStorage.getItem('bb_seed_mem'))).toBeNull();
+  expect(await page.evaluate(() => BB.gameStats('mem').best)).toBe(5);
+  await expect(page.locator('#mBestTxt')).toHaveText('Đã qua tới Level 5');
+});

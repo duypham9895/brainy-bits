@@ -136,8 +136,8 @@ test('OPS-6/KOI-04: passing level 10 shows the finished screen, never Level 11',
   // tổng sao của cả game, không phải sao riêng level 10; nhãn ô thống kê được gán theo id
   await expect(page.locator('#kdStars')).toHaveAttribute('aria-label', /^\d+ trên 30 sao$/);
   await expect(page.locator('#kdAcc')).toHaveText(/^\d+$/);
-  expect(await page.locator('#kdAcc').evaluate(b => b.parentNode.textContent.slice(b.textContent.length))).toBe('level đủ 3 sao');
-  expect(await page.locator('#kdLevel').evaluate(b => b.parentNode.textContent)).toBe('10level đã qua');
+  expect(await page.locator('#kdAcc').evaluate(b => b.parentNode.textContent.slice(b.textContent.length))).toBe(' level đủ 3 sao');
+  expect(await page.locator('#kdLevel').evaluate(b => b.parentNode.textContent)).toBe('10 level đã qua');   // neon-13: không dính "10level"
   expect(await page.evaluate(() => localStorage.getItem('koi_lv2'))).toBe('11');
   await page.click('#kdAgain');
   await expect(page.locator('#kmenu')).toBeVisible();
@@ -204,4 +204,73 @@ test('review: HUD behind the menu shows the chosen level, not the last pond', as
   await page.locator('#klvgrid .lv').nth(2).click();
   await expect(page.locator('#kPond')).toHaveText('Level 3 · 8 cá');
   await expect(page.locator('#kScore')).toHaveText('✓ 0/8');
+});
+
+// Neon review #13: câu báo trượt khi hết thức ăn, nhãn đọc màn hình không có "0 sao".
+test('neon-13: failing on the last pellet says "Chỉ được nhầm tối đa 1 lần"', async ({ page }) => {
+  const errors = await openKoi(page);
+  await start(page, 1);                                // 6 cá, 6 viên thức ăn
+  for (let i = 0; i < 4; i++) { await skipCooldown(page); expect(await tapFish(page, 'fresh')).toBe(true); }
+  for (let i = 0; i < 2; i++) { await skipCooldown(page); expect(await tapFish(page, 'fed')).toBe(true); }
+  expect(await page.evaluate(() => window.__koi.pellets)).toBe(0);
+  await expect(page.locator('#kresult')).toBeVisible();
+  await expect(page.locator('#krDetail')).toContainText('Chỉ được nhầm tối đa 1 lần để qua level.');
+  await expect(page.locator('#krDetail')).not.toContainText('Cần nhầm');
+  expect(errors).toEqual([]);
+});
+
+test('neon-13: level buttons never announce "0 sao" for legacy passes', async ({ page }) => {
+  await openKoi(page, { koi_lv2: '4', bb_stats: JSON.stringify({ koi: { best: 3, stars: { 2: 2 } } }) });
+  const lv = page.locator('#klvgrid .lv');
+  await expect(lv.nth(0)).toHaveAttribute('aria-label', 'Level 1, 6 cá, đã qua');
+  await expect(lv.nth(1)).toHaveAttribute('aria-label', 'Level 2, 7 cá, đã qua, 2 sao');
+  await expect(lv.nth(3)).toHaveAttribute('aria-label', 'Level 4, 9 cá');
+  for (let i = 0; i < 10; i++) expect(await lv.nth(i).getAttribute('aria-label')).not.toContain('0 sao');
+});
+
+// Neon review #14: hồ tạm dừng không chạy rAF 60 fps; chơi tiếp thì chạy lại.
+test('neon-14: paused pond stops requestAnimationFrame and resume restarts it', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__raf = 0; const raf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = cb => { window.__raf++; return raf(cb); };
+  });
+  const errors = await openKoi(page);
+  await start(page, 2);
+  await page.click('#kPauseBtn');
+  await expect(page.locator('#kpaused')).toBeVisible();
+  await page.waitForTimeout(100);                      // khung cuối đã vẽ
+  const a = await page.evaluate(() => window.__raf);
+  await page.waitForTimeout(400);
+  const b = await page.evaluate(() => window.__raf);
+  expect(b - a).toBeLessThanOrEqual(1);
+  // Đổi cỡ màn hình lúc tạm dừng: canvas vẫn có hình, không trắng trơn.
+  await page.setViewportSize({ width: 700, height: 400 });
+  await page.waitForTimeout(100);
+  const painted = await page.evaluate(() => {
+    const c = document.getElementById('kcv'), d = c.getContext('2d').getImageData(c.width >> 1, c.height >> 1, 1, 1).data;
+    return d[3] > 0;
+  });
+  expect(painted).toBe(true);
+  await page.click('#kResumeBtn');
+  expect(await page.evaluate(() => window.__koi.state)).toBe('play');
+  const c = await page.evaluate(() => window.__raf);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__raf) - c).toBeGreaterThan(5);
+  expect(errors).toEqual([]);
+});
+
+test('neon-14: quitting from pause to the menu restarts the swimming loop', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__raf = 0; const raf = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = cb => { window.__raf++; return raf(cb); };
+  });
+  await openKoi(page);
+  await start(page, 1);
+  await page.click('#kPauseBtn');
+  await page.waitForTimeout(100);
+  await page.click('#kQuitBtn');
+  await expect(page.locator('#kmenu')).toBeVisible();
+  const c = await page.evaluate(() => window.__raf);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__raf) - c).toBeGreaterThan(5);
 });

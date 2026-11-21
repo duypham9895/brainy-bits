@@ -28,8 +28,12 @@ const stationsFor = lv => Math.min(4 + lv, MAX_STATIONS);  // màn 1 = 5 ga, m�
 function gridSize(n){
   const base = n <= 6 ? 6 : n <= 11 ? 7 : 8;   // ít cột hơn → ô to, dễ nhìn
   const a = (H || 700) / (W || 390);
-  if (a >= 1) return { C: base, R: Math.max(base, Math.min(base*2, Math.round(base * a))) };
-  return { R: base, C: Math.max(base, Math.min(base*2, Math.round(base / a))) };
+  const g = a >= 1 ? { C: base, R: Math.max(base, Math.min(base*2, Math.round(base * a))) }
+                   : { R: base, C: Math.max(base, Math.min(base*2, Math.round(base / a))) };
+  // Square screens (tablet, desktop window) give base×base: 8×8 cannot fit 15 stations plus the
+  // 5-cell lead from the tunnel, so generate() fell back to a partial map. Keep ≥ 6 cells per station.
+  while (g.C * g.R < 6 * n) { if (g.C <= g.R) g.C++; else g.R++; }
+  return g;
 }
 
 function tryGen(n, C, R){

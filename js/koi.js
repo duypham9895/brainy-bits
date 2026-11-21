@@ -379,6 +379,8 @@ function loop(ts){
   const o = state === 'paused' ? { x: 0, y: 0 } : shakeCam.offset(dt);
   camX = o.x; camY = o.y;
   draw();
+  // Tạm dừng: vẽ xong khung đứng yên này rồi tắt vòng lặp; nút Chơi tiếp / Về menu bật lại.
+  if (state === 'paused') { running = false; return; }
   requestAnimationFrame(loop);
 }
 let camX = 0, camY = 0;
@@ -394,6 +396,7 @@ function resize(){
   buildStatic();
   const A = area();
   fish.forEach(f => { f.x = Math.max(A.x0, Math.min(A.x1, f.x)); f.y = Math.max(A.y0, Math.min(A.y1, f.y)); });
+  if (!running) draw();          // đang tạm dừng (vòng lặp tắt): đổi cỡ canvas xoá hình, vẽ lại một khung
 }
 window.addEventListener('resize', () => { if (window.APP && window.APP.active === 'koi') resize(); });
 
@@ -451,7 +454,7 @@ function renderKLevels(){
     const n = st[lv] || 0, done = lv <= b;
     el.className = 'lv' + (done ? ' done' : '') + (lv === chosenK ? ' on' : '');
     el.setAttribute('aria-pressed', lv === chosenK ? 'true' : 'false');
-    el.setAttribute('aria-label', `Level ${lv}, ${params(lv).koi} cá${done ? `, đã qua, ${n} sao` : ''}`);
+    el.setAttribute('aria-label', `Level ${lv}, ${params(lv).koi} cá${done ? ', đã qua' : ''}${n ? `, ${n} sao` : ''}`);
     el.innerHTML = `${lv}<small>${params(lv).koi} cá</small>` + (n ? `<span class="kst" aria-hidden="true">${starStr(n)}</span>` : '');
     el.onclick = () => { chosenK = lv; if (state === 'menu') { diff = lv; updateHud(); } renderKLevels(); BB.sfx('key'); };
     grid.appendChild(el);
@@ -468,6 +471,7 @@ function startKoiLevel(lv){
   setupPond();
   state = 'play';
   updateHud();
+  if (window.APP && window.APP.active === 'koi') startLoop();
 }
 
 function pondResult(){
@@ -483,7 +487,7 @@ function pondResult(){
   BB.countUp($('krBig'), 0, pondCorrect, { dur: 600, fmt: v => `${v}/${pondKoi}` });
   const parts = [`Cho ăn đúng ${pondCorrect}/${pondKoi} con cá koi.`];
   parts.push(pondMistakes ? `Nhầm ${pondMistakes} lần.` : 'Không nhầm lần nào!');
-  if (!kPassed) parts.push(pellets > 0 ? 'Nhầm 2 lần nên hồ dừng sớm. Chỉ được nhầm 1 lần.' : 'Cần nhầm tối đa 1 lần để qua level.');
+  if (!kPassed) parts.push(pellets > 0 ? 'Nhầm 2 lần nên hồ dừng sớm. Chỉ được nhầm 1 lần.' : 'Chỉ được nhầm tối đa 1 lần để qua level.');
   $('krDetail').textContent = parts.join(' ');
   krStars.classList.toggle('hidden', !kPassed);
   paintStars(krStars, stars, true);
@@ -505,10 +509,11 @@ function pondResult(){
 }
 
 // Ghi số + nhãn cho một ô thống kê, không dựa vào nextSibling (markup có thể có khoảng trắng hoặc <span>).
+// Nhãn có dấu cách đầu để textContent đọc "10 level đã qua", không dính "10level" (<b> là block nên mắt không thấy).
 function statCell(id, val, label){
   const b = $(id), cell = b.parentNode;
   b.textContent = val;
-  cell.replaceChildren(b, document.createTextNode(label));
+  cell.replaceChildren(b, document.createTextNode(' ' + label));
 }
 
 // Màn xong game: dùng lại #kdone (trước là "Hoàn thành 5 hồ", không bao giờ hiện).
@@ -545,6 +550,7 @@ function toMenu(){
   ['kresult','kdone','kpaused'].forEach(id => show(id, false));
   show('kmenu', true);
   if (!fish.length) setupPond();
+  if (window.APP && window.APP.active === 'koi') startLoop();   // Về menu từ màn tạm dừng: cá bơi lại sau menu
   pondCorrect = 0; pondMistakes = 0; pondKoi = 0;   // HUD sau lớp menu không giữ số cá của hồ trước
   updateHud();
 }
@@ -562,7 +568,7 @@ $('krNext').onclick = () => {
 $('krMenu').onclick = toMenu;
 $('kdAgain').onclick = toMenu;
 $('kPauseBtn').onclick = pause;
-$('kResumeBtn').onclick = () => { if (state !== 'paused') return; show('kpaused', false); state = resumeTo; lastT = performance.now(); };
+$('kResumeBtn').onclick = () => { if (state !== 'paused') return; show('kpaused', false); state = resumeTo; lastT = performance.now(); startLoop(); };
 $('kQuitBtn').onclick = toMenu;
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && window.APP && window.APP.active === 'koi') pause();

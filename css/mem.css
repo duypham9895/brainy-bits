@@ -24,9 +24,13 @@
 @keyframes mWave{0%{transform:scale(1)}40%{transform:scale(1.14);filter:brightness(1.15)}100%{transform:scale(1);filter:none}}
 
 /* Short landscape phones: hint beside the grid so the grid can use the full stage height.
-   The 64px HUD + 16px stage padding are subtracted from the viewport height. */
+   The HUD drops to 4px vertical padding (44px pause button + 8px = 52px); with the 16px stage padding
+   the grid gets 100dvh - 68px: 6x6 tiles stay >= 44px at 740x360 and ~39px at 568x320. The 8px
+   stage padding stays: the 3D flip-in of a lit tile pokes a few px past the grid edge. */
 @media (orientation: landscape) and (max-height: 500px){
+  #memApp .ghud{padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:4px}
   .mstage{flex-direction:row;gap:16px;padding:8px}
   .mstage .mhint{max-width:28vw;font-size:17px}
-  .mgrid{width:min(62vw, calc(100vh - 80px), 520px);width:min(62vw, calc(100dvh - 80px), 520px)}
+  .mgrid{width:min(62vw, calc(100vh - 68px), 520px);width:min(62vw, calc(100dvh - 68px), 520px)}
+  .mgrid.dense{gap:3px}
 }

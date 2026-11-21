@@ -211,12 +211,15 @@ for (const [w, h] of [[667, 375], [844, 390], [320, 568], [1920, 1080]]) {
     await pick(page, 49); await page.click('#wStart');
     const r = await page.evaluate(() => {
       const R = s => document.querySelector(s).getBoundingClientRect();
-      return { b: R('#wBoard'), k: R('#wKeys'), hint: R('#wHint'), lg: R('#wordApp .wlegend'), hud: R('#wordApp .ghud'), vw: innerWidth, vh: innerHeight,
+      return { b: R('#wBoard'), k: R('#wKeys'), hint: R('#wHint'), lg: R('#wordApp .wlegend'), vw: innerWidth, vh: innerHeight,
+        hudKids: ['#wLevel', '#wTries', '#wMenuBtn'].map(R),
         row: getComputedStyle(document.querySelector('#wordApp .wstage')).flexDirection === 'row' };
     });
     expect(r.b.bottom).toBeLessThanOrEqual(r.k.top + 1);
     expect(r.b.top).toBeGreaterThanOrEqual(0);
-    expect(r.b.top).toBeGreaterThanOrEqual(r.hud.bottom - 1);
+    // Màn ngang thấp: HUD nổi lên hai cột bên, nên kiểm từng pill/nút thay vì cả thanh HUD.
+    const hit = (a, c) => a.left < c.right - 1 && c.left < a.right - 1 && a.top < c.bottom - 1 && c.top < a.bottom - 1;
+    for (const h of r.hudKids) for (const o of [r.b, r.hint, r.lg]) expect(hit(h, o)).toBe(false);
     if (r.row) {
       expect(r.hint.right).toBeLessThanOrEqual(r.b.left + 1);
       expect(r.lg.left).toBeGreaterThanOrEqual(r.b.right - 1);
@@ -228,3 +231,107 @@ for (const [w, h] of [[667, 375], [844, 390], [320, 568], [1920, 1080]]) {
     expect(r.k.bottom).toBeLessThanOrEqual(r.vh + 1);
   });
 }
+
+// ---------- Review PR #2 (Neon round 1) ----------
+test('Neon #1: core/hub/chia sẻ đếm đúng 49 level của Đoán Cụm Từ', async ({ page }) => {
+  // Người chơi cũ đã qua 24 level, có word_lv từ trước khi hub seed lần đầu (trước khi trang chạy).
+  await page.addInitScript(() => localStorage.setItem('word_lv', '25'));
+  await page.goto('/');
+  const r = await page.evaluate(() => ({ core: window.BB.LV_MAX.word, game: window.__word.LV_MAX, phrases: window.__word.PHRASES.length,
+    best: window.wordBest(), share: window.BB.shareText() }));
+  expect(r).toMatchObject({ core: 49, game: 49, phrases: 49, best: 24 });
+  expect(r.share).toContain('Đoán Cụm Từ: Lv 24');
+  await expect(page.locator('#hubWord')).toContainText('24/49');
+  await page.click('#openWord');
+  await expect(page.locator('#wBestTxt')).toHaveText('Đã qua tới Level 24/49');
+  await expect(page.locator('#wlvgrid .lv')).toHaveCount(49);
+});
+
+test('Neon #4: rời game ngay sau khi đoán Level 49 → không còn tiếng tick nào kêu trên hub', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__audioAfterLeave = 0;
+    const orig = AudioContext.prototype.createBufferSource;
+    AudioContext.prototype.createBufferSource = function (...a) {
+      if (window.APP && window.APP.active !== 'word') window.__audioAfterLeave++;
+      return orig.apply(this, a);
+    };
+  });
+  await open(page, { reduced: false });
+  await pick(page, 49); await page.click('#wStart');                // truyền thống, 11 ô → 11 tiếng tick
+  // word.js tự hẹn giờ tiếng tick, không nhờ delay của BB.sfx: không phụ thuộc core dọn hẹn giờ lúc rời game.
+  await page.evaluate(() => { const o = window.BB.sfx; window.__delayed = 0;
+    window.BB.sfx = (n, opt = {}) => { if (opt.delay > 0) window.__delayed++; return o(n, opt); }; });
+  await vni(page, 'truye6n2tho6ng1'); await page.keyboard.press('Enter');
+  expect((await st(page)).state).toBe('reveal');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.__delayed)).toBe(0);
+  await page.evaluate(() => history.back());
+  await expect.poll(() => page.evaluate(() => window.APP.active)).not.toBe('word');
+  await page.waitForTimeout(1600);                                  // lâu hơn cả chuỗi tick (≤ 1140 ms) lẫn tiếng sao
+  expect(await page.evaluate(() => window.__delayed)).toBe(0);
+  expect(await page.evaluate(() => window.__audioAfterLeave)).toBe(0);
+  expect((await page.evaluate(() => window.BB.gameStats('word'))).stars['49']).toBe(3);
+});
+
+test('Neon #4: rời game ở màn kết quả → tiếng sao hẹn giờ cũng bị huỷ', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__audioAfterLeave = 0;
+    const orig = AudioContext.prototype.createBufferSource;
+    AudioContext.prototype.createBufferSource = function (...a) {
+      if (window.APP && window.APP.active !== 'word') window.__audioAfterLeave++;
+      return orig.apply(this, a);
+    };
+  });
+  await open(page);
+  await pick(page, 1); await page.click('#wStart');
+  await vni(page, 'ba2noi65'); await page.keyboard.press('Enter');
+  await expect(page.locator('#wresult')).toBeVisible();
+  await page.evaluate(() => history.back());
+  await expect.poll(() => page.evaluate(() => window.APP.active)).not.toBe('word');
+  await page.waitForTimeout(1000);
+  expect(await page.evaluate(() => window.__audioAfterLeave)).toBe(0);
+});
+
+for (const [w, h] of [[568, 320], [740, 360]]) {
+  test(`Neon #11: ô chữ Level 49 đọc được ở ${w}x${h} (≥ 22px), HUD không đè bảng`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await open(page);
+    await pick(page, 49); await page.click('#wStart');
+    await page.click('#wHint');
+    const r = await page.evaluate(() => {
+      const c = document.querySelector('#wBoard .wcell'), R = s => document.querySelector(s).getBoundingClientRect();
+      const m = R('#wMenuBtn'), top = document.elementFromPoint(m.left + m.width / 2, m.top + m.height / 2);
+      return { w: c.getBoundingClientRect().width, h: c.getBoundingClientRect().height, fs: parseFloat(getComputedStyle(c).fontSize),
+        menuOnTop: !!top && top.closest('#wMenuBtn') !== null, over: document.documentElement.scrollWidth - innerWidth,
+        rows: document.querySelectorAll('#wBoard .wrow').length, b: R('#wBoard'), k: R('#wKeys') };
+    });
+    expect(r.w).toBeGreaterThanOrEqual(22);
+    expect(r.h).toBeGreaterThanOrEqual(22);
+    expect(r.fs).toBeGreaterThanOrEqual(11);
+    expect(r.rows).toBe(6);
+    expect(r.b.bottom).toBeLessThanOrEqual(r.k.top + 1);
+    expect(r.menuOnTop).toBe(true);                                 // nút ☰ vẫn bấm được, không bị .wstage che
+    expect(r.over).toBeLessThanOrEqual(0);
+    await page.click('#wMenuBtn');
+    await expect(page.locator('#wmenu')).toBeVisible();
+  });
+}
+
+test('Neon #14: window.__word chỉ mở cho trình duyệt tự động hoặc ?test', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false }));
+  await page.goto('/');
+  expect(await page.evaluate(() => typeof window.__word)).toBe('undefined');
+  expect(await page.evaluate(() => window.BB.LV_MAX.word)).toBe(49);   // số level vẫn đúng khi không có cửa test
+  await page.goto('/?test');
+  expect(await page.evaluate(() => typeof window.__word)).toBe('object');
+});
+
+test('Neon #14: nút level có aria-pressed theo level đang chọn', async ({ page }) => {
+  await open(page);
+  const pressed = () => page.locator('#wlvgrid .lv[aria-pressed="true"]');
+  await expect(pressed()).toHaveCount(1);
+  await expect(page.locator('#wlvgrid .lv[aria-pressed="false"]')).toHaveCount(48);
+  await pick(page, 7);
+  await expect(pressed()).toHaveCount(1);
+  await expect(page.locator('#wlvgrid .lv').nth(6)).toHaveAttribute('aria-pressed', 'true');
+});

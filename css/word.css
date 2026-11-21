@@ -66,11 +66,20 @@
   .wstage{gap:14px}
 }
 /* Điện thoại xoay ngang: gợi ý | bảng | chú giải trên một hàng, bàn phím ba hàng (chữ trái, dấu phải) */
+/* Màn chỉ cao 320–375px: thanh HUD không chiếm một hàng riêng mà nổi lên hai cột bên của bảng
+   (Level/Lượt xếp dọc ở góc trái trên cột gợi ý, nút ☰ ở góc phải trên cột chú giải), nhường ~50px
+   chiều cao cho bảng để ô Level 49 (11 chữ) không teo dưới 22px ở 568x320. */
 @media (orientation:landscape) and (max-height:500px){
-  #wordApp .ghud{padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:4px}
-  .wstage{flex-direction:row;gap:14px;padding-top:6px;padding-bottom:6px}
-  #wHint{flex:none;width:clamp(128px, 20vw, 170px);white-space:normal;text-wrap:balance;line-height:1.25;font-size:13px;padding:6px 10px}
-  .wlegend{flex:none;flex-direction:column;flex-wrap:nowrap;align-items:flex-start;gap:5px;font-size:12px}
+  #wordApp .ghud{position:absolute;inset:0 0 auto 0;z-index:2;background:none;pointer-events:none;
+    display:grid;grid-template-columns:auto 1fr auto;align-items:start;justify-items:start;gap:4px 8px;
+    padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:0}
+  #wordApp .ghud > *{pointer-events:auto}
+  #wordApp .ghud .pill{grid-column:1;font-size:12px;padding:3px 8px;max-width:clamp(136px, 22vw, 170px);white-space:normal}
+  #wordApp .ghud .grow{grid-column:2;grid-row:1}
+  #wordApp .ghud .roundbtn{grid-column:3;grid-row:1 / span 2}
+  .wstage{flex-direction:row;gap:14px;padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:4px}
+  #wHint{flex:none;align-self:flex-end;width:clamp(136px, 22vw, 170px);white-space:normal;text-wrap:balance;line-height:1.25;font-size:13px;padding:6px 10px}
+  .wlegend{flex:none;align-self:flex-end;flex-direction:column;flex-wrap:nowrap;align-items:flex-start;gap:5px;font-size:12px}
   .wlegend .wl-l{display:none}
   .wlegend .wl-s{display:inline}
   #wKeys{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);column-gap:14px;row-gap:4px;

@@ -32,6 +32,19 @@ const reduced = () => BB.motion.reduced;
 // Copying it into bb_stats once is hub.js seedFromLegacy()'s job.
 const getBest = () => Math.min(LV_MAX, Math.max(BB.gameStats('train').best, BB.store.num('rtd_best3', 0, 0, LV_MAX)));
 function setBest(v){ v = Math.min(v, LV_MAX); if (v > BB.store.num('rtd_best3', 0, 0)) BB.store.set('rtd_best3', v); }
+// Pre-BB players only have rtd_best3, and the old menu showed levels 1..best as done. Keep that
+// for them (Neon #14), frozen at the first boot of this version: anyone with stars already plays
+// here, so new wins never mark skipped levels (RTD-09). A reset deletes rtd_best3, and this with it.
+const legacyDone = (() => {
+  const raw = BB.store.num('rtd_best3', 0, 0, LV_MAX);
+  if (!raw) { BB.store.del('rtd_legacy_done'); return 0; }
+  let v = BB.store.get('rtd_legacy_done');
+  if (v == null) {
+    v = Object.keys(BB.gameStats('train').stars).length ? 0 : raw;
+    BB.store.set('rtd_legacy_done', v);
+  }
+  return Math.min(Number(v) || 0, raw);
+})();
 // 0..3 stars from accuracy; shown on the result screen (#rRule) and saved by BB.record.
 const starsFor = pct => pct >= 100 ? 3 : pct >= 90 ? 2 : pct >= 80 ? 1 : 0;
 
@@ -355,6 +368,7 @@ function updateFx(dt){
   if (shakeLeft > 0) shakeLeft = Math.max(0, shakeLeft - dt);
 }
 
+const narrowHud = matchMedia('(max-width:430px)');
 function setHud(lv, n, time){
   $('hLevel').textContent = `Level ${lv} · ${n} ga`;
   $('hTime').textContent = time;
@@ -362,8 +376,11 @@ function setHud(lv, n, time){
 function updateHud(){
   const tl = Math.max(0, timeLeft);
   // hết giờ nhưng tàu còn chạy: nói rõ đang chờ, đừng để "0s" như treo máy (RTD-07)
-  setHud(level, map ? map.stations.length : stationsFor(level),
-    tl <= 0 && trains.length ? `Chờ ${trains.length} tàu` : Math.ceil(tl) + 's');
+  const wait = tl <= 0 && trains.length;
+  setHud(level, map ? map.stations.length : stationsFor(level), wait ? `Chờ ${trains.length} tàu` : Math.ceil(tl) + 's');
+  // narrow phones: "⏳ 3" keeps the HUD on one row; the full words stay for screen readers (Neon #5)
+  if (wait && narrowHud.matches) $('hTime').innerHTML =
+    `<span aria-hidden="true">⏳ ${trains.length}</span><span class="rtd-sr">Chờ ${trains.length} tàu</span>`;
   $('hScore').textContent = `✓ ${correct}/${total}`;
   const tf = $('timefill');
   tf.style.width = (tl / LEVEL_TIME * 100) + '%';
@@ -600,13 +617,13 @@ function renderLevels(){
   const grid = $('lvgrid'), st = BB.gameStats('train').stars;
   grid.innerHTML = '';
   for (let lv = 1; lv <= LV_MAX; lv++){
-    const n = st[lv] || 0;
+    const n = st[lv] || 0, done = n > 0 || lv <= legacyDone;
     const el = document.createElement('button');
     el.type = 'button';
-    // "done" chỉ cho level đã thật sự qua, không suy từ level cao nhất (RTD-09)
-    el.className = 'lv' + (n ? ' done' : '') + (lv === chosenLv ? ' on' : '');
+    // "done" chỉ cho level đã thật sự qua, không suy từ level cao nhất (RTD-09); dữ liệu cũ thì giữ như bản cũ
+    el.className = 'lv' + (done ? ' done' : '') + (lv === chosenLv ? ' on' : '');
     el.setAttribute('aria-pressed', lv === chosenLv ? 'true' : 'false');
-    el.setAttribute('aria-label', `Level ${lv}, ${stationsFor(lv)} ga` + (n ? `, ${n} sao` : ''));
+    el.setAttribute('aria-label', `Level ${lv}, ${stationsFor(lv)} ga` + (n ? `, ${n} sao` : done ? ', đã qua' : ''));
     el.innerHTML = `${lv}<small>${stationsFor(lv)} ga</small>` +
       (n ? `<span class="lvst" aria-hidden="true">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</span>` : '');
     el.onclick = () => { chosenLv = lv; renderLevels(); menuHud(lv); BB.sfx('key'); };
@@ -680,6 +697,8 @@ if (navigator.webdriver || /[?&]test\b/.test(location.search)) window.__rtd = {
   get map(){ return map; }, get cell(){ return cell; }, get W(){ return W; }, get H(){ return H; },
   get passed(){ return passed; }, get finished(){ return finished; },
   // jump to the result screen with a given score, for the finished-state test
+  // render the HUD as if `n` trains were still out after time ran out (drain pill), then restore
+  hudDrain(n){ const t = timeLeft, tr = trains; timeLeft = 0; trains = Array(n).fill(null); updateHud(); timeLeft = t; trains = tr; },
   endWith(lv, ok, tot){ level = lv; correct = ok; total = tot; trains = []; timeLeft = 0; endLevel(); },
 };
 }

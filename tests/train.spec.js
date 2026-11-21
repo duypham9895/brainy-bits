@@ -218,3 +218,100 @@ test('review #7: write-capable test hook is absent for a normal player', async (
   await page.waitForFunction(() => window.RTD_MAP);
   expect(await page.evaluate(() => typeof window.__rtd)).toBe('object');
 });
+
+// Neon #5: late-level HUD texts at common phone widths, with the real font and a wide fallback
+// (Verdana) standing in for Baloo 2 still loading or an Android/Linux substitute.
+for (const width of [320, 375, 390]) for (const font of ['app', 'Verdana']) {
+  test(`Neon #5: HUD pills fit at ${width}px (${font} font), Pause fully visible`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 700 });
+    await openTrain(page);
+    await page.locator('#lvgrid .lv').nth(10).click();
+    await page.click('#startBtn');
+    await page.click('#pauseBtn');
+    const m = await page.evaluate(async (font) => {
+      await document.fonts.ready;
+      const hud = document.getElementById('hud');
+      if (font !== 'app') hud.style.fontFamily = font;
+      document.getElementById('hLevel').textContent = 'Level 11 · 15 ga';
+      document.getElementById('hScore').textContent = '✓ 12/15';
+      const s = document.getElementById('hStreak'); s.textContent = '🔥 12'; s.classList.remove('hidden');
+      document.getElementById('hTime').textContent = 'Chờ 3 tàu';
+      const els = [...hud.querySelectorAll('.pill:not(.hidden)'), document.getElementById('pauseBtn')];
+      const boxes = els.map(e => { const r = e.getBoundingClientRect();
+        return { id: e.id, l: r.left, r: r.right, t: r.top, b: r.bottom, sw: e.scrollWidth, cw: e.clientWidth }; });
+      const overlaps = [];
+      for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i], b = boxes[j];
+        if (a.l < b.r - 0.5 && b.l < a.r - 0.5 && a.t < b.b - 0.5 && b.t < a.b - 0.5) overlaps.push(a.id + '/' + b.id);
+      }
+      return { boxes, overlaps, vw: innerWidth, docSw: document.documentElement.scrollWidth };
+    }, font);
+    expect(m.overlaps).toEqual([]);
+    for (const b of m.boxes) {
+      if (b.id !== 'pauseBtn') expect(b.sw, `${b.id} text clipped`).toBeLessThanOrEqual(b.cw);
+      expect(b.l).toBeGreaterThanOrEqual(0);
+      expect(b.r).toBeLessThanOrEqual(m.vw);
+    }
+    const p = m.boxes.find(b => b.id === 'pauseBtn');
+    expect(p.r - p.l).toBeGreaterThanOrEqual(44);
+    expect(m.docSw).toBeLessThanOrEqual(m.vw);
+  });
+}
+
+test('Neon #5: drain pill is "⏳ 3" on a phone (one HUD row) and "Chờ 3 tàu" for screen readers and wide screens', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 700 });
+  await openTrain(page);
+  await page.locator('#lvgrid .lv').nth(10).click();
+  await page.click('#startBtn');
+  await page.click('#pauseBtn');
+  const phone = await page.evaluate(async () => {
+    await document.fonts.ready;
+    const s = document.getElementById('hStreak'); s.textContent = '🔥 12'; s.classList.remove('hidden');
+    __rtd.hudDrain(3);
+    const t = document.getElementById('hTime');
+    const tops = [...document.querySelectorAll('#hud .pill:not(.hidden)')].map(e => Math.round(e.getBoundingClientRect().top));
+    return { shown: t.querySelector('[aria-hidden="true"]')?.textContent, sr: t.querySelector('.rtd-sr')?.textContent,
+      rows: new Set(tops).size, clipped: t.scrollWidth > t.clientWidth };
+  });
+  expect(phone).toEqual({ shown: '⏳ 3', sr: 'Chờ 3 tàu', rows: 1, clipped: false });
+  await expect(page.locator('#hTime')).toContainText('Chờ 3 tàu');   // accessible text still in the DOM
+  await page.setViewportSize({ width: 1024, height: 700 });
+  await page.evaluate(() => __rtd.hudDrain(3));
+  await expect(page.locator('#hTime')).toHaveText('Chờ 3 tàu');
+});
+
+test('Neon #10: generate(15) on square canvases reaches 15 stations with switches >= 2 cells apart', async ({ page }) => {
+  await openTrain(page);
+  const out = await page.evaluate(() => {
+    const r = [];
+    for (const [w, h] of [[768, 768], [800, 800], [768, 704], [1024, 1024]])
+      for (let i = 0; i < 3; i++) { const m = RTD_MAP.generate(15, w, h); r.push([w, h, m.stations.length, RTD_MAP.minSwitchDist(m)]); }
+    for (const n of [11, 14]) { const m = RTD_MAP.generate(n, 768, 768); r.push([768, 768, m.stations.length - (n - 15), RTD_MAP.minSwitchDist(m)]); }
+    return r;
+  });
+  for (const [w, h, st, d] of out) {
+    expect(st, `${w}x${h}`).toBe(15);
+    expect(d, `${w}x${h}`).toBeGreaterThanOrEqual(2);
+  }
+});
+
+test('Neon #14: a returning player with only rtd_best3 sees levels up to best marked done', async ({ page }) => {
+  await openTrain(page, () => { try { if (!sessionStorage.getItem('seeded')) {
+    localStorage.clear(); localStorage.setItem('rtd_best3', '5'); sessionStorage.setItem('seeded', '1'); } } catch (e) {} });
+  const tiles = page.locator('#lvgrid .lv');
+  await expect(page.locator('#lvgrid .lv.done')).toHaveCount(5);
+  await expect(tiles.nth(4)).toHaveClass(/done/);
+  await expect(tiles.nth(5)).not.toHaveClass(/done/);
+  await expect(tiles.nth(4)).toHaveAttribute('aria-label', 'Level 5, 9 ga, đã qua');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 6 · 10 ga');
+  // winning Level 9 in this version marks Level 9 only; 6-8 were never played (RTD-09)
+  await page.click('#startBtn');
+  await page.evaluate(() => __rtd.endWith(9, 10, 10));
+  await page.click('#rMenu');
+  await page.goto('/');                                   // fresh boot, back on the hub
+  await page.click('#openTrain');
+  await page.waitForFunction(() => window.__rtd && window.__rtd.map);
+  await expect(page.locator('#lvgrid .lv.done')).toHaveCount(6);
+  await expect(tiles.nth(8)).toHaveClass(/done/);
+  await expect(tiles.nth(6)).not.toHaveClass(/done/);
+});

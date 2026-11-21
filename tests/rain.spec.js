@@ -329,3 +329,119 @@ test('RAIN-1: rotating a 320 phone to landscape pauses even though the canvas wa
   expect((await dbg(page)).state).toBe('paused');
   await ctx.close();
 });
+
+// ---------- PR #2 review round 1 (Neon) ----------
+
+// Neon #4: thắng rồi rời game ngay thì 3 tiếng sao hẹn giờ không được kêu ở hub.
+test('neon #4: star sounds scheduled on the result card never play after leaving to the hub', async ({ page }) => {
+  await openRain(page);
+  await startAt(page, 1);
+  await page.evaluate(() => {
+    window.__stars = [];
+    const orig = window.BB.sfx;
+    window.BB.sfx = (name, o) => { if (name === 'star') window.__stars.push(window.APP.active); return orig(name, o); };
+  });
+  for (let i = 0; i < 40; i++) {
+    if ((await dbg(page)).state === 'result') break;
+    await page.evaluate(() => window.__rainTest.spawnDrop(900 + Math.floor(Math.random() * 99), 0.1));
+    const d = (await dbg(page)).drops[0];
+    for (const ch of String(d.ans)) await page.keyboard.press(ch);
+    await page.keyboard.press('Enter');
+  }
+  await expect(page.locator('#rresult')).toBeVisible();
+  await page.evaluate(() => { location.hash = ''; });
+  await expect(page.locator('#hub')).toBeVisible();
+  expect(await page.evaluate(() => window.__rainTest.starTimers())).toBe(0);
+  await page.waitForTimeout(1200);
+  expect(await page.evaluate(() => window.__stars.filter(a => a !== 'rain'))).toEqual([]);
+});
+
+// Neon #4: bấm "Level kế" hoặc về menu trước khi sao hiện hết thì hẹn giờ cũng bị huỷ.
+test('neon #4: starting the next level or going to the menu clears pending star timers', async ({ page }) => {
+  await openRain(page);
+  await startAt(page, 1);
+  for (let i = 0; i < 40; i++) {
+    if ((await dbg(page)).state === 'result') break;
+    await page.evaluate(() => window.__rainTest.spawnDrop(900 + Math.floor(Math.random() * 99), 0.1));
+    const d = (await dbg(page)).drops[0];
+    for (const ch of String(d.ans)) await page.keyboard.press(ch);
+    await page.keyboard.press('Enter');
+  }
+  await expect(page.locator('#rresult')).toBeVisible();
+  expect(await page.evaluate(() => window.__rainTest.starTimers())).toBeGreaterThan(0);
+  await page.click('#rrNext');
+  expect(await page.evaluate(() => window.__rainTest.starTimers())).toBe(0);
+});
+
+// Neon #9: nền ngay sau chữ trên giọt phải đủ tối cho chữ trắng đạt WCAG AA 4.5:1.
+test('neon #9: white drop text has >= 4.5:1 contrast across the whole glyph band', async ({ page }) => {
+  await openRain(page);
+  await startAt(page, 10);
+  const r = await page.evaluate(async () => {
+    // giọt rỗng chữ, rộng như phép dài nhất, để đo đúng phần nền nằm sau chữ
+    const c = document.createElement('canvas').getContext('2d');
+    c.font = '800 16px "Baloo 2", system-ui, sans-serif';
+    const tw = Math.ceil(c.measureText('198 − 175').width);
+    window.__rainTest.spawnDrop(999, 0.45, '', tw + 26);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));   // dừng: khung đứng yên
+    await new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res)));
+    const s = window.__rainDebug(), d = s.drops.find(x => x.ans === 999);
+    const cv = document.getElementById('rcv'), k = cv.width / s.W;
+    const g = cv.getContext('2d');
+    const lin = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+    let worst = 99;
+    // dải chữ: baseline giữa ở y+2, chữ số 16px cao ~12px; quét rộng hơn một chút cho chắc
+    for (let y = d.y + 2 - 8; y <= d.y + 2 + 8; y += 1) {
+      for (let x = d.x - tw / 2; x <= d.x + tw / 2; x += 2) {
+        const p = g.getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data;
+        const L = 0.2126 * lin(p[0]) + 0.7152 * lin(p[1]) + 0.0722 * lin(p[2]);
+        worst = Math.min(worst, 1.05 / (L + 0.05));
+      }
+    }
+    return { worst };
+  });
+  expect(r.worst).toBeGreaterThanOrEqual(4.5);
+});
+
+// Neon #12: tiến độ ghi trong bb_stats (hub, thử thách ngày) cũng mở level trong menu Mưa.
+test('neon #12: rain menu reads bb_stats best even without rain_lv, and writes no bb_seed_rain', async ({ page }) => {
+  await openRain(page, () => {
+    if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', '1');
+    localStorage.clear();
+    localStorage.setItem('bb_stats', JSON.stringify({ rain: { best: 4, stars: { 1: 3, 2: 3, 3: 2, 4: 1 } } }));
+  });
+  await expect(page.locator('#rBestTxt')).toHaveText('Đã qua tới Level 4');
+  await expect(page.locator('#rStart')).toHaveText('Chơi Level 5');
+  await expect(page.locator('#rlvgrid .lv.done')).toHaveCount(4);
+  expect(await page.evaluate(() => window.rainBest())).toBe(4);
+  expect(await page.evaluate(() => localStorage.getItem('bb_seed_rain'))).toBeNull();
+});
+
+// Neon #14: tạm dừng thì vòng rAF dừng hẳn; tiếp tục thì chạy lại; đổi cỡ lúc dừng vẫn vẽ lại canvas.
+test('neon #14: rAF stops while paused, restarts on resume, canvas redrawn on resize while paused', async ({ page }) => {
+  await openRain(page);
+  await startAt(page, 1);
+  await page.evaluate(() => window.__rainTest.spawnDrop(55, 0.3));
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#rpaused')).toBeVisible();
+  await page.waitForTimeout(100);                     // để khung đã hẹn trước lúc dừng chạy xong
+  await page.evaluate(() => {
+    window.__raf = 0; const o = window.requestAnimationFrame;
+    window.requestAnimationFrame = f => { window.__raf++; return o.call(window, f); };
+  });
+  await page.waitForTimeout(400);
+  expect(await page.evaluate(() => window.__raf)).toBe(0);
+  const p0 = (await dbg(page)).drops.find(d => d.ans === 55).p;
+  // đổi cỡ (không đổi chiều xoay) lúc dừng: canvas bị xoá khi đổi kích thước, phải được vẽ lại
+  const vp = page.viewportSize();
+  await page.setViewportSize({ width: vp.width, height: vp.height - 40 });
+  await page.waitForTimeout(150);
+  const painted = await page.evaluate(() => {
+    const cv = document.getElementById('rcv');
+    return cv.getContext('2d').getImageData(Math.floor(cv.width / 2), 4, 1, 1).data[3];
+  });
+  expect(painted).toBe(255);
+  await page.click('#rResume');
+  await page.waitForFunction(p => window.__rainDebug().drops.some(d => d.ans === 55 && d.p > p), p0, { timeout: 3000 });
+  expect(await page.evaluate(() => window.__raf)).toBeGreaterThan(0);
+});

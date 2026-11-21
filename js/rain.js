@@ -13,20 +13,11 @@ let combo = 0, playMs = 0, lastT = 0;
 const cam = BB.trauma(7);
 
 // Tiến độ cũ: rain_lv = level kế tiếp chưa qua. Giữ nguyên key để không ai mất level đã mở.
-const getLv = () => BB.store.num('rain_lv', 1, 1, LV_MAX + 1);
+// Đọc cả bb_stats: hub và thử thách ngày ghi tiến độ vào đó, nên hai nguồn phải cùng một con số.
+// Việc gieo bb_stats từ rain_lv cũ do hub.js seedFromLegacy() lo, ở đây không gieo lại.
+const getLv = () => Math.min(LV_MAX + 1, Math.max(BB.store.num('rain_lv', 1, 1, LV_MAX + 1), BB.gameStats('rain').best + 1));
 const setLv = v => BB.store.set('rain_lv', Math.min(LV_MAX + 1, v));
 const ri = (a, b) => a + (Math.random()*(b - a + 1)|0);
-
-// Gieo bb_stats từ key cũ một lần, để hub và thử thách ngày biết người chơi đã qua tới đâu.
-(function seedStats(){
-  if (BB.store.get('bb_seed_rain')) return;
-  const legacy = getLv() - 1;
-  if (legacy > 0) {
-    const all = BB.stats(); const s = all.rain || (all.rain = { best: 0, stars: {} });
-    if ((s.best || 0) < legacy) { s.best = legacy; s.stars = s.stars || {}; BB.store.setJson('bb_stats', all); }
-  }
-  BB.store.set('bb_seed_rain', '1');
-})();
 
 // Mỗi level hoặc mở rộng phạm vi số, hoặc thêm một phép tính mới. Không level nào lùi lại.
 const LVINFO = [
@@ -199,8 +190,9 @@ function drawDrop(d){
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,.25)';
   ctx.beginPath(); ctx.ellipse(x + 2, y + 4, w/2, h/2, 0, 0, Math.PI*2); ctx.fill();
+  // Chóp giọt còn sáng, phần thân chứa chữ đậm dần: chữ trắng đạt ≥ 5.5:1 trên mọi điểm của thân.
   const g = ctx.createLinearGradient(0, y - h/2 - 13, 0, y + h/2);
-  g.addColorStop(0, '#8fd0ff'); g.addColorStop(1, '#2f7fd6');
+  g.addColorStop(0, '#8fd0ff'); g.addColorStop(0.4, '#1b69b8'); g.addColorStop(1, '#0f4482');
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.ellipse(x, y, w/2, h/2, 0, 0, Math.PI*2); ctx.fill();
   ctx.beginPath();
@@ -209,10 +201,13 @@ function drawDrop(d){
   ctx.quadraticCurveTo(x + 3, y - h/2 - 1, x + 15, y - h/2 + 5);
   ctx.closePath(); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,.35)';
-  ctx.beginPath(); ctx.ellipse(x - w*0.3, y - h*0.18, 5, 3.5, -0.5, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#ffffff';
+  // Đốm sáng nằm trên dải chữ để không làm nhạt nền ngay sau chữ số.
+  ctx.beginPath(); ctx.ellipse(x - w*0.3, y - h*0.32, 5, 3, -0.5, 0, Math.PI*2); ctx.fill();
   ctx.font = DROP_FONT;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(7,22,42,.85)';
+  ctx.strokeText(d.eq, x, y + 2);
+  ctx.fillStyle = '#ffffff';
   ctx.fillText(d.eq, x, y + 2);
   ctx.restore();
 }
@@ -257,13 +252,15 @@ function draw(dt){
   });
 }
 
-// Chỉ chạy rAF khi đang ở màn Mưa; ra hub thì vòng lặp dừng, rainEnter khởi động lại.
+// Chỉ chạy rAF khi đang ở màn Mưa và không tạm dừng; ra hub hay tạm dừng thì vòng lặp dừng
+// sau khi vẽ khung cuối, rainEnter/resume khởi động lại.
 let running = false;
 function loop(ts){
   if (!(window.APP && window.APP.active === 'rain')) { running = false; return; }
   const dt = lastT ? Math.min(0.05, (ts - lastT)/1000 || 0) : 0; lastT = ts;
   if (state === 'play' && !BB.frozen()) update(dt);
   if (W) draw(dt);
+  if (state === 'paused') { running = false; return; }
   requestAnimationFrame(loop);
 }
 function startLoop(){ if (running) return; running = true; lastT = 0; requestAnimationFrame(loop); }
@@ -287,6 +284,8 @@ function resize(){
   const land = innerWidth > innerHeight, cl = W > H;
   if (landscape !== null && (land !== landscape || cl !== cvLand) && state === 'play') pause();
   landscape = land; cvLand = cl;
+  // Đổi cỡ canvas xoá trắng nó; khi vòng lặp đang dừng (tạm dừng) thì tự vẽ lại một khung.
+  if (!running && W && window.APP && window.APP.active === 'rain') draw(0);
 }
 window.addEventListener('resize', resize);
 
@@ -307,7 +306,12 @@ function showOnly(id){
   ['rmenu','rresult','rpaused'].forEach(x => $(x).classList.toggle('hidden', x !== id));
 }
 
+// Hẹn giờ hiện sao ở màn kết quả: giữ id để huỷ khi chơi tiếp, về menu hay rời game.
+let starTimers = [];
+function clearStarTimers(){ starTimers.forEach(clearTimeout); starTimers = []; }
+
 function startLevel(L){
+  clearStarTimers();
   level = Math.max(1, Math.min(LV_MAX, L|0 || 1));
   drops = []; fx = []; parts = []; solved = 0; misses = 0; combo = 0; playMs = 0;
   input = ''; pendT = 0; renderInput(); cam.reset();
@@ -324,6 +328,7 @@ function pause(){
 function resume(){
   if (state !== 'paused') return;
   showOnly(null); state = 'play';
+  startLoop();
 }
 
 // ---------- result ----------
@@ -348,11 +353,11 @@ function showStars(n, win){
     s.className = '';
     if (i >= n) return;
     if (BB.motion.reduced) { s.className = 'on'; return; }
-    setTimeout(() => {
-      if (state !== 'result') return;
+    starTimers.push(setTimeout(() => {
+      if (state !== 'result' || !(window.APP && window.APP.active === 'rain')) return;
       s.className = 'on pop';
       BB.sfx('star', { combo: i*2 });
-    }, 380 + i*220);
+    }, 380 + i*220));
   });
 }
 
@@ -405,6 +410,7 @@ function renderLevels(){
 }
 
 function toMenu(){
+  clearStarTimers();
   state = 'menu'; drops = []; fx = []; parts = []; input = ''; pendT = 0; renderInput();
   chosen = Math.min(getLv(), LV_MAX);
   renderLevels();
@@ -460,7 +466,7 @@ $('rQuit').onclick = toMenu;
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && window.APP && window.APP.active === 'rain') pause();
 });
-BB.onLeave('rain', pause);
+BB.onLeave('rain', () => { pause(); clearStarTimers(); });
 
 window.rainEnter = () => {
   startLoop();
@@ -476,8 +482,8 @@ window.rainBest = () => getLv() - 1;
 if (navigator.webdriver || /[?&]test\b/.test(location.search)) {
 window.__rainDebug = () => ({ state, level, misses, solved, target, input, combo, pendT, W, H,
   drops: drops.map(d => ({ ans: d.ans, eq: d.eq, x: d.x, y: dropY(d), p: d.p, w: d.w })) });
-window.__rainTest = { makeEq, LVINFO, spec, starsFor, spawnDrop: (ans, p = 0.5) => {
-  drops.push({ x: W/2, p, fall: spec(level).fall, eq: `? = ${ans}`, ans, w: 78 }); } };
+window.__rainTest = { makeEq, LVINFO, spec, starsFor, spawnDrop: (ans, p = 0.5, eq = `? = ${ans}`, w = 78) => {
+  drops.push({ x: W/2, p, fall: spec(level).fall, eq, ans, w }); }, starTimers: () => starTimers.length };
 }
 if (window.APP && window.APP.active === 'rain') startLoop();
 })();
