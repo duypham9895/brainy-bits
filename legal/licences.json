@@ -37,8 +37,13 @@
       "source": "https://github.com/mdn/pwa-examples"
     },
     {
-      "name": "App icons and share image (icons/)",
-      "licence": "Original artwork made for this repo",
+      "name": "Offline QR Code SVG encoder (js/qr.js)",
+      "licence": "Own code implementing ISO/IEC 18004 (Byte mode, ECC M, Versions 1-6)",
+      "source": "js/qr.js"
+    },
+    {
+      "name": "App icons, favicon and share image (icons/ & favicon.ico)",
+      "licence": "Original Tangram B mark and Sunlit Paper OG artwork made for this repo",
       "source": "icons/"
     }
   ]

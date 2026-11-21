@@ -183,8 +183,20 @@ function nextToast() {
     el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
     document.body.appendChild(el);
   }
-  el.textContent = text; el.classList.add('on');
-  setTimeout(() => { el.classList.remove('on'); setTimeout(nextToast, 250); }, 2200);
+  el.textContent = text;
+  if (typeof el.showPopover === 'function') {
+    try { el.popover = 'manual'; if (!el.matches(':popover-open')) el.showPopover(); } catch (e) { el.removeAttribute('popover'); }
+  }
+  el.classList.add('on');
+  setTimeout(() => {
+    el.classList.remove('on');
+    setTimeout(() => {
+      if (typeof el.hidePopover === 'function') {
+        try { if (el.matches(':popover-open')) el.hidePopover(); } catch (e) {}
+      }
+      nextToast();
+    }, 250);
+  }, 2200);
 }
 
 // ---------- dates (local calendar day, not UTC) ----------
@@ -276,13 +288,13 @@ function daily(date = dayKey()) {
 // Plain-text share card: no image, no server, works in Zalo/Messenger.
 function shareText() {
   const dl = daily();
-  const lines = [`🧠 Brainy Bits #${dl.idx}`, `🔥 Chuỗi ${dayStreak()} ngày · ⭐ ${totalStars()}`];
+  const lines = [`Brainy Bits #${dl.idx}`, `Chuỗi ${dayStreak()} ngày · ${totalStars()} sao`];
   for (const g of GAMES) {
     const s = gameStats(g); if (!s.best) continue;
     const st = s.stars[s.best] || 0;
-    lines.push(`${GAME_NAME[g]}: Lv ${s.best} ${'★'.repeat(st)}${'☆'.repeat(3 - st)}`);
+    lines.push(`${GAME_NAME[g]}: Lv ${s.best} (${st}/3 ★)`);
   }
-  if (dl.done) lines.push('✅ Đã xong thử thách hôm nay');
+  if (dl.done) lines.push('Đã xong thử thách hôm nay');
   lines.push(location.origin + location.pathname);
   return lines.join('\n');
 }
@@ -290,7 +302,7 @@ async function share() {
   const text = shareText();
   try { if (navigator.share) { await navigator.share({ text }); return 'shared'; } }
   catch (e) { if (e && e.name === 'AbortError') return 'cancel'; }
-  try { await navigator.clipboard.writeText(text); toast('Đã chép kết quả, dán vào tin nhắn nhé'); return 'copied'; } catch (e) {}
+  try { await navigator.clipboard.writeText(text); toast('Đã chép kết quả vào khay nhớ tạm'); return 'copied'; } catch (e) {}
   return 'failed';
 }
 

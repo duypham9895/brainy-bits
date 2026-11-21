@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="vi" data-tier="reference">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="text-scale" content="scale">
+<meta name="color-scheme" content="dark">
+<title>Phương án C · Bàn Cờ Ngăn Nắp — Brainy Bits</title>
+<style>
+  :root {
+    --bg: #0d1412;
+    --card: #15201c;
+    --card-alt: #1b2924;
+    --ink: #f2f5f3;
+    --sub: #b2c4ba;
+    --muted: #8da598;
+    --gold: #f0c451;
+    --gold-ink: #181d14;
+    --emerald: #6ed386;
+    --coral: #f07e4a;
+    --sky: #6fbef5;
+    --lavender: #b9a9f5;
+    --sand: #f0c892;
+    --paper: #f7f4ec;
+    --qr-ink: #101915;
+    --rule: rgba(255, 255, 255, 0.1);
+    --rule-ui: rgba(255, 255, 255, 0.28);
+    --focus: #f0c451;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: clip;
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: ui-rounded, "SF Pro Rounded", "Baloo 2", system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-size: 1rem;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(48px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  button { font-family: inherit; cursor: pointer; color: inherit; }
+  :focus { outline: none; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  /* ---- Mockup toolbar ---- */
+  .mockbar {
+    max-width: 1080px;
+    margin: 0 auto 16px;
+    padding: 8px 12px;
+    border-radius: 16px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .mockbar-label { font-size: 0.8125rem; font-weight: 700; color: var(--gold); padding-inline: 4px; }
+  .mockbar-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .seg {
+    display: inline-flex;
+    padding: 3px;
+    border-radius: 12px;
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    gap: 2px;
+  }
+  .seg button {
+    min-height: 44px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--sub);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+  .seg button[aria-pressed="true"] { background: var(--gold); color: var(--gold-ink); }
+  .pill-action {
+    min-height: 44px;
+    padding: 6px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--rule-ui);
+    background: var(--card-alt);
+    color: var(--ink);
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ---- 1. Tabletop Hub ---- */
+  .tabletop {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  @media (min-width: 960px) {
+    .tabletop {
+      grid-template-columns: minmax(0, 1.28fr) minmax(320px, 0.72fr);
+      gap: 22px;
+    }
+  }
+
+  .hubmain { min-width: 0; }
+  .hubtop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-mark { width: 40px; height: 40px; flex: none; display: block; border-radius: 11px; }
+  .brand h1 {
+    margin: 0;
+    font-size: clamp(1.4rem, 1.2rem + 0.8vw, 1.85rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  .top-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+  .iconbtn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 11px;
+    border-radius: 12px;
+    border: 1px solid var(--rule-ui);
+    background: var(--card);
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+  .iconbtn svg { width: 19px; height: 19px; flex: none; }
+  .iconbtn-text { display: none; }
+  @media (min-width: 600px) { .iconbtn-text { display: inline; } }
+
+  .hub-intro {
+    margin: 0 0 12px;
+    font-size: 0.96rem;
+    color: var(--sub);
+    line-height: 1.48;
+    text-wrap: pretty;
+  }
+
+  .hubstrip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 0 0 12px;
+  }
+  .hstat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 14px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+  }
+  .hstat svg { width: 20px; height: 20px; flex: none; }
+  .hstat b { font-size: 1.2rem; font-weight: 800; line-height: 1.1; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .hstat small { display: block; font-size: 0.78rem; color: var(--sub); line-height: 1.2; }
+
+  .dailycard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    margin: 0 0 10px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(240, 196, 81, 0.36);
+    border-left: 4px solid var(--gold);
+    background: #1b2218;
+    color: var(--ink);
+    transition-property: border-color, background-color;
+    transition-duration: 0.14s;
+    transition-timing-function: var(--ease);
+  }
+  .daily-k { display: block; font-size: 0.78rem; font-weight: 700; color: var(--gold); }
+  .daily-title { display: block; font-size: 1.04rem; font-weight: 800; line-height: 1.25; }
+  .daily-go {
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 11px;
+    display: inline-grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    background: var(--gold);
+    color: var(--gold-ink);
+    flex: none;
+  }
+
+  /* Compact 2-column Bento on mobile (fits 5 games inside 1 phone viewport cleanly) */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .bento-tile {
+    --bar: var(--gold);
+    position: relative;
+    display: grid;
+    gap: 8px;
+    align-content: space-between;
+    text-align: left;
+    min-width: 0;
+    min-height: 120px;
+    padding: 12px 12px 12px 15px;
+    border-radius: 16px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    color: var(--ink);
+    overflow: hidden;
+    transition-property: background-color, border-color, transform;
+    transition-duration: 0.15s;
+    transition-timing-function: var(--ease);
+  }
+  .bento-tile::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 4px;
+    border-radius: 0 4px 4px 0;
+    background: var(--bar);
+  }
+  .bento-tile.koi { --bar: #5bd6bf; }
+  .bento-tile.mem { --bar: var(--lavender); }
+  .bento-tile.rain { --bar: var(--sky); }
+  .bento-tile.word {
+    --bar: var(--sand);
+    grid-column: 1 / -1;
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .tile-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .gi {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--card-alt);
+    display: grid;
+    place-items: center;
+    flex: none;
+  }
+  .gi svg { width: 26px; height: 26px; display: block; }
+  .tile-text { min-width: 0; flex: 1; }
+  .tile-text b { display: block; font-size: 0.98rem; font-weight: 800; line-height: 1.22; }
+  .tile-text small { display: block; font-size: 0.78rem; color: var(--sub); line-height: 1.32; margin-top: 2px; }
+  .tile-meta {
+    font-style: normal;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+  .tile-meta.fresh { color: var(--muted); font-weight: 600; }
+
+  .hub-foot {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .btn-quiet {
+    min-height: 44px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--rule-ui);
+    background: var(--card);
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1 1 auto;
+  }
+  @media (min-width: 600px) { .btn-quiet { flex: 0 0 auto; } }
+  .foot-note { margin: 0; font-size: 0.82rem; color: var(--muted); }
+
+  /* ---- Persistent Desktop QR Rail (Option C signature) ---- */
+  .qr-rail {
+    display: none;
+  }
+  @media (min-width: 960px) {
+    .qr-rail {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 20px;
+      background: var(--card);
+      border: 1px solid var(--rule);
+    }
+  }
+  .rail-title { margin: 0; font-size: 1.08rem; font-weight: 800; line-height: 1.25; }
+  .rail-sub { margin: 2px 0 0; font-size: 0.84rem; color: var(--sub); line-height: 1.4; }
+  .qr-paper {
+    background: var(--paper);
+    color: var(--qr-ink);
+    border-radius: 16px;
+    padding: 14px;
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+  }
+  .qr-brand-row { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: 0.9rem; color: var(--qr-ink); }
+  .qr-frame { width: min(216px, 100%); aspect-ratio: 1; border-radius: 10px; overflow: hidden; }
+  .qr-frame svg { display: block; width: 100%; height: 100%; }
+  .qr-url { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.7rem; font-weight: 700; color: #2d4236; word-break: normal; overflow-wrap: break-word; text-align: center; }
+
+  .qr-targets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .qr-targets button {
+    min-height: 44px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    color: var(--sub);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .qr-targets button[aria-pressed="true"] {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--gold-ink);
+  }
+  .qr-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .qr-btn-main {
+    grid-column: 1 / -1;
+    min-height: 44px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--gold);
+    color: var(--gold-ink);
+    font-size: 0.9rem;
+    font-weight: 800;
+  }
+  .qr-btn-sub {
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--rule-ui);
+    background: var(--card-alt);
+    color: var(--ink);
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+
+  /* ---- Reference sections ---- */
+  .spec-block {
+    max-width: 1080px;
+    margin: 44px auto 0;
+    padding-top: 28px;
+    border-top: 1px solid var(--rule);
+  }
+  .spec-block h2 { margin: 0 0 6px; font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem); font-weight: 800; line-height: 1.25; }
+  .spec-lead { margin: 0 0 18px; font-size: 0.95rem; color: var(--sub); max-width: 64ch; text-wrap: pretty; }
+
+  .logo-shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    gap: 14px;
+  }
+  .swatch {
+    padding: 18px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .swatch.light { background: var(--paper); color: var(--qr-ink); border-color: rgba(16, 25, 21, 0.14); }
+  .swatch.light small { color: #3c5045; }
+  .swatch small { display: block; font-size: 0.82rem; color: var(--sub); font-weight: 600; }
+
+  .og-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
+  @media (min-width: 820px) { .og-grid { grid-template-columns: 1.05fr 0.95fr; } }
+  .chat-bubble { padding: 14px; border-radius: 18px; background: var(--card); border: 1px solid var(--rule); }
+  .chat-sender { font-size: 0.8rem; font-weight: 700; color: var(--muted); margin: 0 0 8px; }
+  .link-card { border-radius: 14px; overflow: hidden; border: 1px solid var(--rule); background: var(--bg); }
+  .og-svg { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 630; }
+  .link-meta { padding: 12px 14px; }
+  .link-domain { font-size: 0.75rem; font-weight: 700; color: var(--gold); text-transform: uppercase; }
+  .link-meta b { display: block; margin-top: 2px; font-size: 1rem; line-height: 1.3; color: var(--ink); }
+  .link-meta p { margin: 4px 0 0; font-size: 0.875rem; line-height: 1.45; color: var(--sub); }
+
+  .meta-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+  .meta-list li { padding: 11px 0; border-bottom: 1px solid var(--rule); display: grid; gap: 3px; }
+  .meta-list code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.78rem; color: var(--gold); word-break: break-word; }
+  .meta-list span { font-size: 0.9rem; color: var(--ink); line-height: 1.45; }
+
+  /* ---- Native Modal <dialog> for mobile/tablet & quick trigger ---- */
+  dialog.qr-dialog {
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--rule-ui);
+    border-radius: 22px;
+    width: min(420px, calc(100% - 24px));
+    max-height: min(88dvh, 720px);
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 26px 64px rgba(0, 0, 0, 0.65);
+    overflow: auto;
+    overscroll-behavior: contain;
+    opacity: 0;
+    transition-property: opacity, transform, display, overlay;
+    transition-duration: 0.28s;
+    transition-timing-function: var(--ease);
+    transition-behavior: allow-discrete;
+  }
+  dialog.qr-dialog:modal { overscroll-behavior: contain; }
+  @media (prefers-reduced-motion: no-preference) {
+    dialog.qr-dialog { transform: scale(0.95) translateY(8px); }
+  }
+  dialog.qr-dialog:is([open]):where(:not([data-closing])) {
+    opacity: 1;
+    @starting-style { opacity: 0; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    dialog.qr-dialog:is([open]):where(:not([data-closing])) {
+      transform: scale(1) translateY(0);
+      @starting-style { transform: scale(0.95) translateY(8px); }
+    }
+  }
+  dialog.qr-dialog::backdrop {
+    background-color: rgba(4, 10, 7, 0);
+    overflow: hidden;
+    overscroll-behavior: contain;
+    transition-property: background-color, display, overlay;
+    transition-duration: 0.28s;
+    transition-timing-function: var(--ease);
+    transition-behavior: allow-discrete;
+  }
+  dialog.qr-dialog:is([open]):where(:not([data-closing]))::backdrop {
+    background-color: rgba(4, 10, 7, 0.76);
+    @starting-style { background-color: rgba(4, 10, 7, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    dialog.qr-dialog, dialog.qr-dialog::backdrop { transition-duration: 0.12s; }
+  }
+  .qr-sheet { padding: 18px; display: grid; gap: 12px; }
+  .qr-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .qr-head h2 { margin: 0; font-size: 1.2rem; font-weight: 800; line-height: 1.25; }
+  .qr-head p { margin: 3px 0 0; font-size: 0.85rem; color: var(--sub); line-height: 1.4; }
+  .qr-close {
+    flex: none; min-width: 44px; min-height: 44px; border-radius: 11px;
+    border: 1px solid var(--rule-ui); background: var(--card-alt); color: var(--ink);
+    display: grid; place-items: center;
+  }
+  .qr-close svg { width: 20px; height: 20px; }
+
+  #mockToast {
+    position: fixed; left: 50%; top: max(14px, env(safe-area-inset-top));
+    transform: translate(-50%, -14px); max-width: min(360px, calc(100% - 32px));
+    padding: 10px 16px; border-radius: 12px; background: var(--card); color: var(--ink);
+    border: 1px solid var(--gold); font-size: 0.9rem; font-weight: 700;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45); opacity: 0; pointer-events: none; z-index: 90;
+    transition-property: opacity, transform; transition-duration: 0.2s; transition-timing-function: var(--ease);
+  }
+  #mockToast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bento-tile:hover { background: var(--card-alt); border-color: rgba(240, 196, 81, 0.45); transform: translateY(-2px); }
+    .dailycard:hover { border-color: var(--gold); }
+    .iconbtn:hover, .btn-quiet:hover, .pill-action:hover, .qr-btn-sub:hover { background: #22342e; border-color: var(--gold); }
+  }
+</style>
+</head>
+<body>
+  <div class="mockbar" role="region" aria-label="Tuỳ chỉnh xem mẫu Phương án C">
+    <span class="mockbar-label">Phương án C · Bàn Cờ Ngăn Nắp</span>
+    <div class="mockbar-controls">
+      <div class="seg" role="group" aria-label="Trạng thái người chơi">
+        <button type="button" id="stateNew" aria-pressed="true">Người mới quét QR</button>
+        <button type="button" id="stateReturning" aria-pressed="false">Người đã chơi</button>
+      </div>
+      <button type="button" class="pill-action" id="openQrQuick">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v4M14 20h6"/></svg>
+        Xem hộp thoại QR
+      </button>
+    </div>
+  </div>
+
+  <main class="tabletop">
+    <section class="hubmain" aria-label="Bàn cờ trò chơi">
+      <header class="hubtop">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+            <rect x="2" y="2" width="60" height="60" rx="15" fill="#121c18" stroke="#2c3e36" stroke-width="1.5"/>
+            <rect x="14" y="12" width="10" height="40" rx="5" fill="#f2f5f3"/>
+            <rect x="27" y="12" width="21" height="18" rx="9" fill="#f0c451"/>
+            <circle cx="37.5" cy="21" r="3.5" fill="#121c18"/>
+            <rect x="27" y="34" width="23" height="18" rx="9" fill="#6ed386"/>
+            <circle cx="38.5" cy="43" r="3.5" fill="#121c18"/>
+          </svg>
+          <h1>Brainy Bits</h1>
+        </div>
+        <div class="top-actions">
+          <button type="button" class="iconbtn" id="hubQrBtn" aria-label="Mở mã QR chia sẻ">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v4M14 20h6"/></svg>
+            <span class="iconbtn-text">Mã QR</span>
+          </button>
+          <button type="button" class="iconbtn" id="hubSetBtn" aria-label="Cài đặt">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.5" fill="#15201c"/><circle cx="15" cy="17" r="2.5" fill="#15201c"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <p class="hub-intro" id="hubIntro">Trò ngắn luyện nhớ, tính nhẩm và chữ Việt. Mở là chơi, không quảng cáo.</p>
+
+      <div class="hubstrip" id="hubStrip" hidden>
+        <div class="hstat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#f07e4a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2 3.5 5 5.5 5 10a5 5 0 1 1-10 0c0-2.4 1.2-4.4 2.5-6 .2 1.6 1.2 2.5 2.5 2.5-.4-1.8-.3-4 0-6.5z"/></svg>
+          <div><b>4</b><small>ngày liền</small></div>
+        </div>
+        <div class="hstat">
+          <svg viewBox="0 0 24 24" fill="#f0c451" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>
+          <div><b>18</b><small>sao đã có</small></div>
+        </div>
+      </div>
+
+      <button type="button" class="dailycard" data-preview="Thử thách hôm nay · Cá Koi Level 4">
+        <span>
+          <span class="daily-k">Thử thách hôm nay #2</span>
+          <span class="daily-title">Cho Cá Koi Ăn · Level 4</span>
+        </span>
+        <span class="daily-go">Chơi</span>
+      </button>
+
+      <div class="bento">
+        <button type="button" class="bento-tile" data-url="https://brainybits.thucanhtrantonnu.com/#tau">
+          <span class="tile-top">
+            <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 38h32" stroke="#8da598" stroke-width="3" stroke-linecap="round"/><rect x="12" y="10" width="24" height="24" rx="7" fill="#f0c451"/><rect x="17" y="15" width="14" height="8" rx="2.5" fill="#181d14"/></svg></span>
+            <em class="tile-meta fresh" data-new="11 màn" data-old="4/11">11 màn</em>
+          </span>
+          <span class="tile-text"><b>Đường Ray Tư Duy</b><small>Đổi ngã rẽ đưa tàu về ga</small></span>
+        </button>
+
+        <button type="button" class="bento-tile koi" data-url="https://brainybits.thucanhtrantonnu.com/#koi">
+          <span class="tile-top">
+            <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 24c6-9 19-11 27-4l6-5v18l-6-5c-8 7-21 5-27-4z" fill="#5bd6bf"/><circle cx="13" cy="22.5" r="2" fill="#0d1412"/></svg></span>
+            <em class="tile-meta fresh" data-new="10 màn" data-old="3/10">10 màn</em>
+          </span>
+          <span class="tile-text"><b>Cho Cá Koi Ăn</b><small>Cho mỗi con ăn đúng 1 lần</small></span>
+        </button>
+
+        <button type="button" class="bento-tile mem" data-url="https://brainybits.thucanhtrantonnu.com/#nho">
+          <span class="tile-top">
+            <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="7" y="7" width="14" height="14" rx="4" fill="#463e70"/><rect x="27" y="7" width="14" height="14" rx="4" fill="#b9a9f5"/><rect x="7" y="27" width="14" height="14" rx="4" fill="#b9a9f5"/><rect x="27" y="27" width="14" height="14" rx="4" fill="#463e70"/></svg></span>
+            <em class="tile-meta fresh" data-new="13 màn" data-old="13 màn">13 màn</em>
+          </span>
+          <span class="tile-text"><b>Ô Sáng Ghi Nhớ</b><small>Chạm lại các ô vừa sáng</small></span>
+        </button>
+
+        <button type="button" class="bento-tile rain" data-url="https://brainybits.thucanhtrantonnu.com/#mua">
+          <span class="tile-top">
+            <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M24 7c6.5 9.5 12 16 12 22.5a12 12 0 0 1-24 0C12 23 17.5 16.5 24 7z" fill="#6fbef5"/><path d="M24 23v10M19 28h10" stroke="#0d1412" stroke-width="3" stroke-linecap="round"/></svg></span>
+            <em class="tile-meta fresh" data-new="10 màn" data-old="10 màn">10 màn</em>
+          </span>
+          <span class="tile-text"><b>Mưa Phép Tính</b><small>Tính nhẩm trước khi giọt rơi</small></span>
+        </button>
+
+        <button type="button" class="bento-tile word" data-url="https://brainybits.thucanhtrantonnu.com/#chu">
+          <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="6" y="13" width="17" height="22" rx="4" fill="#469e54"/><rect x="25" y="13" width="17" height="22" rx="4" fill="#f0c892"/><path d="M10.5 29L14.5 19l4 10M12 26h5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>
+          <span class="tile-text"><b>Đoán Cụm Từ</b><small>Đoán cụm 2 từ tiếng Việt trong 6 lượt</small></span>
+          <em class="tile-meta fresh" data-new="49 màn" data-old="49 màn">49 màn</em>
+        </button>
+      </div>
+
+      <div class="hub-foot">
+        <button type="button" class="btn-quiet" id="hubShareCardBtn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.9l7.6-4.8M8.2 13.1l7.6 4.8"/></svg>
+          Chia sẻ kết quả
+        </button>
+        <p class="foot-note">Chạy được khi mất mạng · Không quảng cáo</p>
+      </div>
+    </section>
+
+    <!-- Desktop persistent QR column -->
+    <aside class="qr-rail" aria-label="Thẻ mã QR chia sẻ nhanh trên máy tính">
+      <div>
+        <h2 class="rail-title">Quét để mở trên điện thoại</h2>
+        <p class="rail-sub">Đưa camera điện thoại vào mã này, không cần gõ địa chỉ.</p>
+      </div>
+      <div class="qr-paper">
+        <div class="qr-brand-row">
+          <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true">
+            <rect x="2" y="2" width="60" height="60" rx="15" fill="#121c18"/>
+            <rect x="14" y="12" width="10" height="40" rx="5" fill="#f2f5f3"/>
+            <rect x="27" y="12" width="21" height="18" rx="9" fill="#f0c451"/>
+            <rect x="27" y="34" width="23" height="18" rx="9" fill="#6ed386"/>
+          </svg>
+          <span class="js-qr-label">Brainy Bits · Trang chủ</span>
+        </div>
+        <div class="qr-frame js-qr-mount" id="railQrMount"></div>
+        <div class="qr-url js-qr-url">https://brainybits.thucanhtrantonnu.com/</div>
+      </div>
+      <div class="qr-targets" role="group" aria-label="Chọn đích mã QR trên cột phải">
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/" data-label="Brainy Bits · Trang chủ" aria-pressed="true">Trang chủ</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#tau" data-label="Đường Ray Tư Duy" aria-pressed="false">Đường Ray</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#koi" data-label="Cho Cá Koi Ăn" aria-pressed="false">Cá Koi</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#nho" data-label="Ô Sáng Ghi Nhớ" aria-pressed="false">Ô Sáng</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#mua" data-label="Mưa Phép Tính" aria-pressed="false">Mưa Phép Tính</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#chu" data-label="Đoán Cụm Từ" aria-pressed="false">Đoán Từ</button>
+      </div>
+      <div class="qr-actions">
+        <button type="button" class="qr-btn-main js-qr-copy">Chép đường dẫn</button>
+        <button type="button" class="qr-btn-sub js-qr-save">Lưu mã QR</button>
+        <button type="button" class="qr-btn-sub js-qr-share">Gửi kết quả hôm nay</button>
+      </div>
+    </aside>
+  </main>
+
+  <section class="spec-block" aria-labelledby="logoHeadingC">
+    <h2 id="logoHeadingC">Biểu tượng mới · Monogram B-Grid</h2>
+    <p class="spec-lead">Chữ B tạo từ trục đứng và hai khối bầu trên nền đá lì, giữ tỷ lệ khối lớn để đọc ngay trên tab nhỏ 16px.</p>
+    <div class="logo-shelf">
+      <div class="swatch">
+        <svg width="72" height="72" viewBox="0 0 64 64" role="img" aria-label="App icon Monogram B-Grid 72px">
+          <rect x="2" y="2" width="60" height="60" rx="15" fill="#121c18" stroke="#2c3e36" stroke-width="1.5"/>
+          <rect x="14" y="12" width="10" height="40" rx="5" fill="#f2f5f3"/>
+          <rect x="27" y="12" width="21" height="18" rx="9" fill="#f0c451"/>
+          <circle cx="37.5" cy="21" r="3.5" fill="#121c18"/>
+          <rect x="27" y="34" width="23" height="18" rx="9" fill="#6ed386"/>
+          <circle cx="38.5" cy="43" r="3.5" fill="#121c18"/>
+        </svg>
+        <div><strong>App Icon 72px</strong><small>Khối chữ B tương phản cao</small></div>
+      </div>
+      <div class="swatch">
+        <svg width="32" height="32" viewBox="0 0 64 64" role="img" aria-label="Favicon 32px">
+          <rect x="2" y="2" width="60" height="60" rx="15" fill="#121c18"/>
+          <rect x="14" y="12" width="10" height="40" rx="5" fill="#f2f5f3"/>
+          <rect x="27" y="12" width="21" height="18" rx="9" fill="#f0c451"/>
+          <circle cx="37.5" cy="21" r="3.5" fill="#121c18"/>
+          <rect x="27" y="34" width="23" height="18" rx="9" fill="#6ed386"/>
+          <circle cx="38.5" cy="43" r="3.5" fill="#121c18"/>
+        </svg>
+        <svg width="16" height="16" viewBox="0 0 64 64" role="img" aria-label="Tab icon 16px">
+          <rect x="2" y="2" width="60" height="60" rx="15" fill="#121c18"/>
+          <rect x="14" y="12" width="10" height="40" rx="5" fill="#f2f5f3"/>
+          <rect x="27" y="12" width="21" height="18" rx="9" fill="#f0c451"/>
+          <rect x="27" y="34" width="23" height="18" rx="9" fill="#6ed386"/>
+        </svg>
+        <div><strong>32px &amp; 16px</strong><small>Giữ đúng dáng chữ B khi thu nhỏ</small></div>
+      </div>
+      <div class="swatch light">
+        <svg width="44" height="44" viewBox="0 0 64 64" role="img" aria-label="Logo trên nền sáng">
+          <rect x="2" y="2" width="60" height="60" rx="15" fill="#121c18"/>
+          <rect x="14" y="12" width="10" height="40" rx="5" fill="#f2f5f3"/>
+          <rect x="27" y="12" width="21" height="18" rx="9" fill="#f0c451"/>
+          <circle cx="37.5" cy="21" r="3.5" fill="#121c18"/>
+          <rect x="27" y="34" width="23" height="18" rx="9" fill="#6ed386"/>
+          <circle cx="38.5" cy="43" r="3.5" fill="#121c18"/>
+        </svg>
+        <div><strong>Trên nền sáng</strong><small>Tấm giấy QR in được</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="spec-block" aria-labelledby="metaHeadingC">
+    <h2 id="metaHeadingC">Metadata &amp; Thẻ chia sẻ Bàn Cờ Ngăn Nắp</h2>
+    <p class="spec-lead">Lưới Thuỵ Sĩ lì xếp dải 5 chip màu trò chơi cạnh monogram B-Grid, gọn mắt cả trên màn hình nhỏ.</p>
+    <div class="og-grid">
+      <div class="chat-bubble">
+        <p class="chat-sender">Xem trước trong tin nhắn Zalo / Messenger</p>
+        <div class="link-card">
+          <svg class="og-svg" viewBox="0 0 1200 630" role="img" aria-label="Ảnh Open Graph Brainy Bits phong cách Bàn Cờ Ngăn Nắp">
+            <rect width="1200" height="630" fill="#0d1412"/>
+            <g stroke="#ffffff" stroke-opacity="0.06" stroke-width="1">
+              <line x1="0" y1="157" x2="1200" y2="157"/><line x1="0" y1="315" x2="1200" y2="315"/><line x1="0" y1="472" x2="1200" y2="472"/>
+              <line x1="300" y1="0" x2="300" y2="630"/><line x1="600" y1="0" x2="600" y2="630"/><line x1="900" y1="0" x2="900" y2="630"/>
+            </g>
+            <g transform="translate(84 114) scale(1.75)">
+              <rect x="2" y="2" width="60" height="60" rx="15" fill="#15201c" stroke="#2c3e36" stroke-width="1.5"/>
+              <rect x="14" y="12" width="10" height="40" rx="5" fill="#f2f5f3"/>
+              <rect x="27" y="12" width="21" height="18" rx="9" fill="#f0c451"/>
+              <circle cx="37.5" cy="21" r="3.5" fill="#15201c"/>
+              <rect x="27" y="34" width="23" height="18" rx="9" fill="#6ed386"/>
+              <circle cx="38.5" cy="43" r="3.5" fill="#15201c"/>
+            </g>
+            <text x="84" y="314" fill="#f2f5f3" font-family="ui-rounded, system-ui, sans-serif" font-size="74" font-weight="800" letter-spacing="-1.5">Brainy Bits</text>
+            <text x="84" y="374" fill="#b2c4ba" font-family="ui-rounded, system-ui, sans-serif" font-size="30" font-weight="600">Trò ngắn luyện nhớ, tính nhẩm và chữ Việt</text>
+            <text x="84" y="426" fill="#f0c451" font-family="ui-monospace, monospace" font-size="23" font-weight="700">brainybits.thucanhtrantonnu.com</text>
+            <!-- Bottom 5 colored pills -->
+            <g transform="translate(84 484)">
+              <rect x="0" y="0" width="184" height="58" rx="14" fill="#15201c" stroke="#f0c451" stroke-width="2"/><text x="92" y="37" text-anchor="middle" fill="#f2f5f3" font-family="ui-rounded, sans-serif" font-size="22" font-weight="700">Đường Ray</text>
+              <rect x="206" y="0" width="166" height="58" rx="14" fill="#15201c" stroke="#5bd6bf" stroke-width="2"/><text x="289" y="37" text-anchor="middle" fill="#f2f5f3" font-family="ui-rounded, sans-serif" font-size="22" font-weight="700">Cá Koi</text>
+              <rect x="394" y="0" width="166" height="58" rx="14" fill="#15201c" stroke="#b9a9f5" stroke-width="2"/><text x="477" y="37" text-anchor="middle" fill="#f2f5f3" font-family="ui-rounded, sans-serif" font-size="22" font-weight="700">Ô Sáng</text>
+              <rect x="582" y="0" width="218" height="58" rx="14" fill="#15201c" stroke="#6fbef5" stroke-width="2"/><text x="691" y="37" text-anchor="middle" fill="#f2f5f3" font-family="ui-rounded, sans-serif" font-size="22" font-weight="700">Mưa Phép Tính</text>
+              <rect x="822" y="0" width="210" height="58" rx="14" fill="#15201c" stroke="#f0c892" stroke-width="2"/><text x="927" y="37" text-anchor="middle" fill="#f2f5f3" font-family="ui-rounded, sans-serif" font-size="22" font-weight="700">Đoán Cụm Từ</text>
+            </g>
+          </svg>
+          <div class="link-meta">
+            <span class="link-domain">brainybits.thucanhtrantonnu.com</span>
+            <b>Brainy Bits — Trò ngắn luyện não bằng tiếng Việt</b>
+            <p>Đổi ray tàu, cho cá koi ăn, nhớ ô sáng, giải mưa phép tính và đoán cụm từ tiếng Việt. Chơi ngay trên web, không cần cài.</p>
+          </div>
+        </div>
+      </div>
+
+      <ul class="meta-list">
+        <li><code>&lt;title&gt;</code><span>Brainy Bits — Trò ngắn luyện nhớ, tính nhẩm và chữ Việt</span></li>
+        <li><code>meta[name="description"]</code><span>Bộ trò chơi ngắn luyện trí nhớ, tính nhẩm và đoán cụm từ tiếng Việt. Mở lên chơi ngay trên điện thoại, chạy được khi mất mạng, không quảng cáo.</span></li>
+        <li><code>og:site_name · og:image:alt</code><span>Brainy Bits · Thẻ giới thiệu Brainy Bits với bộ trò chơi ngắn luyện trí nhớ, tính nhẩm và chữ Việt</span></li>
+        <li><code>manifest.webmanifest</code><span>Thêm 5 shortcuts mở thẳng từng trò (#tau, #koi, #nho, #mua, #chu)</span></li>
+        <li><code>QR đích mở</code><span>Khách ngồi cạnh bàn trên desktop quét thẳng cột phải không cần mở modal; điện thoại mở modal 1 chạm</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Native Modal <dialog> for mobile/tablet & quick button -->
+  <dialog class="qr-dialog" id="qrDialog" closedby="any" aria-labelledby="qrTitle">
+    <div class="qr-sheet">
+      <div class="qr-head">
+        <div>
+          <h2 id="qrTitle">Quét để chơi trên máy khác</h2>
+          <p>Đưa camera điện thoại vào mã này để mở thẳng Brainy Bits.</p>
+        </div>
+        <button type="button" class="qr-close" id="qrCloseBtn" aria-label="Đóng">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div class="qr-paper">
+        <div class="qr-brand-row">
+          <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true">
+            <rect x="2" y="2" width="60" height="60" rx="15" fill="#121c18"/>
+            <rect x="14" y="12" width="10" height="40" rx="5" fill="#f2f5f3"/>
+            <rect x="27" y="12" width="21" height="18" rx="9" fill="#f0c451"/>
+            <rect x="27" y="34" width="23" height="18" rx="9" fill="#6ed386"/>
+          </svg>
+          <span class="js-qr-label">Brainy Bits · Trang chủ</span>
+        </div>
+        <div class="qr-frame js-qr-mount" id="modalQrMount"></div>
+        <div class="qr-url js-qr-url">https://brainybits.thucanhtrantonnu.com/</div>
+      </div>
+      <div class="qr-targets" role="group" aria-label="Chọn đích của mã QR trong hộp thoại">
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/" data-label="Brainy Bits · Trang chủ" aria-pressed="true">Trang chủ</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#tau" data-label="Đường Ray Tư Duy" aria-pressed="false">Đường Ray</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#koi" data-label="Cho Cá Koi Ăn" aria-pressed="false">Cá Koi</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#nho" data-label="Ô Sáng Ghi Nhớ" aria-pressed="false">Ô Sáng</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#mua" data-label="Mưa Phép Tính" aria-pressed="false">Mưa Phép Tính</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#chu" data-label="Đoán Cụm Từ" aria-pressed="false">Đoán Từ</button>
+      </div>
+      <div class="qr-actions">
+        <button type="button" class="qr-btn-main js-qr-copy">Chép đường dẫn</button>
+        <button type="button" class="qr-btn-sub js-qr-save">Lưu mã QR</button>
+        <button type="button" class="qr-btn-sub js-qr-share">Gửi kết quả hôm nay</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="mockToast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const renderQrSvg = (() => {
+    const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+    for (let i = 0, x = 1; i < 255; i++) {
+      EXP[i] = EXP[i + 255] = x; LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11D;
+    }
+    const mul = (a, b) => (a && b ? EXP[LOG[a] + LOG[b]] : 0);
+    const rsEc = (data, ecLen) => {
+      let g = [1];
+      for (let i = 0; i < ecLen; i++) {
+        const next = new Array(g.length + 1).fill(0);
+        for (let j = 0; j < g.length; j++) { next[j] ^= g[j]; next[j + 1] ^= mul(g[j], EXP[i]); }
+        g = next;
+      }
+      const rem = new Uint8Array(data.length + ecLen); rem.set(data);
+      for (let i = 0; i < data.length; i++) {
+        const c = rem[i]; if (!c) continue;
+        for (let j = 0; j < g.length; j++) rem[i + j] ^= mul(g[j], c);
+      }
+      return rem.slice(data.length);
+    };
+    const SPECS = [[1,1,16,10,[]],[2,1,28,16,[6,18]],[3,1,44,26,[6,22]],[4,2,32,18,[6,26]],[5,2,43,24,[6,30]],[6,4,27,16,[6,34]]];
+    const maskFn = [
+      (r, c) => ((r + c) & 1) === 0, (r, c) => (r & 1) === 0, (r, c) => c % 3 === 0, (r, c) => (r + c) % 3 === 0,
+      (r, c) => ((r >> 1) + Math.floor(c / 3)) % 2 === 0, (r, c) => ((r * c) % 2) + ((r * c) % 3) === 0,
+      (r, c) => (((r * c) % 2) + ((r * c) % 3)) % 2 === 0, (r, c) => (((r + c) & 1) + ((r * c) % 3)) % 2 === 0,
+    ];
+    const penalty = (m, n) => {
+      let score = 0, dark = 0;
+      const p1 = [1,0,1,1,1,0,1,0,0,0,0], p2 = [0,0,0,0,1,0,1,1,1,0,1];
+      for (let r = 0; r < n; r++) {
+        let rr = 0, rp = -1, cr = 0, cp = -1;
+        for (let c = 0; c < n; c++) {
+          const rv = m[r][c], cv = m[c][r]; dark += rv;
+          if (rv === rp) { rr++; if (rr === 5) score += 3; else if (rr > 5) score += 1; } else { rp = rv; rr = 1; }
+          if (cv === cp) { cr++; if (cr === 5) score += 3; else if (cr > 5) score += 1; } else { cp = cv; cr = 1; }
+          if (r < n - 1 && c < n - 1 && rv === m[r][c + 1] && rv === m[r + 1][c] && rv === m[r + 1][c + 1]) score += 3;
+          if (c <= n - 11) {
+            let mr1 = true, mr2 = true, mc1 = true, mc2 = true;
+            for (let k = 0; k < 11; k++) {
+              if (m[r][c+k] !== p1[k]) mr1 = false; if (m[r][c+k] !== p2[k]) mr2 = false;
+              if (m[c+k][r] !== p1[k]) mc1 = false; if (m[c+k][r] !== p2[k]) mc2 = false;
+            }
+            if (mr1 || mr2) score += 40; if (mc1 || mc2) score += 40;
+          }
+        }
+      }
+      return score + Math.floor(Math.abs((dark * 100) / (n * n) - 50) / 5) * 10;
+    };
+    const encode = text => {
+      const bytes = new TextEncoder().encode(text);
+      const [ver, numBlocks, dpb, epb, aligns] = SPECS.find(s => bytes.length <= s[1] * s[2] - 2);
+      const totalData = numBlocks * dpb, bits = [];
+      const push = (v, l) => { for (let i = l - 1; i >= 0; i--) bits.push((v >> i) & 1); };
+      push(0b0100, 4); push(bytes.length, 8);
+      for (const b of bytes) push(b, 8);
+      for (let i = 0, t = Math.min(4, totalData * 8 - bits.length); i < t; i++) bits.push(0);
+      while (bits.length % 8) bits.push(0);
+      const code = [];
+      for (let i = 0; i < bits.length; i += 8) {
+        let v = 0; for (let j = 0; j < 8; j++) v = (v << 1) | bits[i + j]; code.push(v);
+      }
+      for (let i = 0; code.length < totalData; i++) code.push(i & 1 ? 0x11 : 0xEC);
+      const blocks = [];
+      for (let b = 0; b < numBlocks; b++) { const d = code.slice(b * dpb, (b + 1) * dpb); blocks.push({ d, ec: rsEc(d, epb) }); }
+      const stream = [];
+      for (let i = 0; i < dpb; i++) for (const b of blocks) stream.push(b.d[i]);
+      for (let i = 0; i < epb; i++) for (const b of blocks) stream.push(b.ec[i]);
+      const allBits = [];
+      for (const byte of stream) for (let i = 7; i >= 0; i--) allBits.push((byte >> i) & 1);
+      const n = 17 + 4 * ver, base = Array.from({ length: n }, () => new Uint8Array(n)), func = Array.from({ length: n }, () => new Uint8Array(n));
+      const setF = (r, c, v) => { if (r >= 0 && r < n && c >= 0 && c < n) { base[r][c] = v ? 1 : 0; func[r][c] = 1; } };
+      const finder = (r0, c0) => {
+        for (let dr = -1; dr <= 7; dr++) for (let dc = -1; dc <= 7; dc++) {
+          const inF = dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6;
+          setF(r0 + dr, c0 + dc, inF && (dr === 0 || dr === 6 || dc === 0 || dc === 6 || (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4)));
+        }
+      };
+      finder(0, 0); finder(0, n - 7); finder(n - 7, 0);
+      for (let i = 8; i < n - 8; i++) { setF(6, i, (i & 1) === 0); setF(i, 6, (i & 1) === 0); }
+      for (const ar of aligns) for (const ac of aligns) {
+        if (func[ar][ac]) continue;
+        for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) setF(ar + dr, ac + dc, Math.abs(dr) === 2 || Math.abs(dc) === 2 || (!dr && !dc));
+      }
+      setF(4 * ver + 9, 8, 1);
+      for (let i = 0; i < 9; i++) { func[8][i] = 1; func[i][8] = 1; }
+      for (let i = 0; i < 8; i++) { func[8][n - 1 - i] = 1; if (i < 7) func[n - 1 - i][8] = 1; }
+      let bitIdx = 0, upward = true;
+      for (let right = n - 1; right >= 1; right -= 2) {
+        if (right === 6) right = 5;
+        for (let step = 0; step < n; step++) {
+          const r = upward ? n - 1 - step : step;
+          for (let dc = 0; dc < 2; dc++) { const c = right - dc; if (!func[r][c]) base[r][c] = bitIdx < allBits.length ? allBits[bitIdx++] : 0; }
+        }
+        upward = !upward;
+      }
+      const c1 = [[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[7,8],[8,8],[8,7],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0]];
+      const c2 = [[8,n-1],[8,n-2],[8,n-3],[8,n-4],[8,n-5],[8,n-6],[8,n-7],[8,n-8],[n-7,8],[n-6,8],[n-5,8],[n-4,8],[n-3,8],[n-2,8],[n-1,8]];
+      let bestScore = Infinity, bestMat = null;
+      for (let mask = 0; mask < 8; mask++) {
+        const m = base.map(row => row.slice()), fn = maskFn[mask];
+        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (!func[r][c] && fn(r, c)) m[r][c] ^= 1;
+        let rem = mask << 10;
+        for (let i = 4; i >= 0; i--) if (rem & (1 << (i + 10))) rem ^= 0x537 << i;
+        const fmt = ((mask << 10) | rem) ^ 0x5412;
+        for (let i = 0; i < 15; i++) { const b = (fmt >> i) & 1; m[c1[i][0]][c1[i][1]] = b; m[c2[i][0]][c2[i][1]] = b; }
+        const sc = penalty(m, n);
+        if (sc < bestScore) { bestScore = sc; bestMat = m; }
+      }
+      return { size: n, mat: bestMat };
+    };
+    return (text, fg = '#101915', bg = '#f7f4ec', qz = 4) => {
+      const { size, mat } = encode(text), total = size + qz * 2;
+      let d = '';
+      for (let r = 0; r < size; r++) {
+        let c = 0;
+        while (c < size) {
+          if (!mat[r][c]) { c++; continue; }
+          let run = 1; while (c + run < size && mat[r][c + run]) run++;
+          d += `M${c + qz},${r + qz}h${run}v1h-${run}z`; c += run;
+        }
+      }
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" role="img" aria-label="Mã QR mở ${text}"><rect width="${total}" height="${total}" fill="${bg}"/><path fill="${fg}" d="${d}"/></svg>`;
+    };
+  })();
+
+  let toastTimer = null;
+  const toast = msg => {
+    const el = document.getElementById('mockToast');
+    el.textContent = msg; el.classList.add('on');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 2200);
+  };
+
+  let supportsDisplayTransition;
+  function canTransitionDisplay() {
+    if (supportsDisplayTransition !== undefined) return supportsDisplayTransition;
+    if (!window.CSS?.supports?.('transition-behavior', 'allow-discrete') || !document.body) return false;
+    const probe = document.createElement('div');
+    probe.style.cssText = 'transition: display 1s allow-discrete !important; display: block;';
+    document.body.appendChild(probe); getComputedStyle(probe).display; probe.style.display = 'none';
+    supportsDisplayTransition = getComputedStyle(probe).display === 'block'; probe.remove();
+    return supportsDisplayTransition;
+  }
+  const supportsTopLayerExit = () => window.CSS?.supports?.('overlay', 'auto') && canTransitionDisplay();
+
+  const dialog = document.getElementById('qrDialog');
+  async function closeTopLayer(el) {
+    if (!el.open) return;
+    if (!supportsTopLayerExit()) {
+      el.setAttribute('data-closing', '');
+      const anims = el.getAnimations({ subtree: true });
+      if (anims.length > 0) await Promise.race([Promise.allSettled(anims.map(a => a.finished)), new Promise(r => setTimeout(r, 1200))]);
+      if (!el.hasAttribute('data-closing')) return;
+      el.removeAttribute('data-closing');
+    }
+    el.close();
+  }
+  dialog.addEventListener('cancel', e => { e.preventDefault(); closeTopLayer(dialog); });
+  if (!('closedBy' in HTMLDialogElement.prototype)) {
+    dialog.addEventListener('click', event => {
+      if (event.target !== dialog) return;
+      const r = dialog.getBoundingClientRect();
+      const inside = r.top <= event.clientY && event.clientY <= r.top + r.height && r.left <= event.clientX && event.clientX <= r.left + r.width;
+      if (!inside) closeTopLayer(dialog);
+    });
+  }
+
+  let currentUrl = 'https://brainybits.thucanhtrantonnu.com/';
+  let currentSvg = '';
+  const mounts = [...document.querySelectorAll('.js-qr-mount')];
+  const urlTexts = [...document.querySelectorAll('.js-qr-url')];
+  const labelTexts = [...document.querySelectorAll('.js-qr-label')];
+  const targetBtns = [...document.querySelectorAll('.qr-targets button')];
+
+  function setQrTarget(url, label) {
+    currentUrl = url;
+    currentSvg = renderQrSvg(url);
+    mounts.forEach(m => m.innerHTML = currentSvg);
+    const fmtUrl = url.replace('https://', 'https://<wbr>').replace('#', '<wbr>#');
+    urlTexts.forEach(u => u.innerHTML = fmtUrl);
+    labelTexts.forEach(l => l.textContent = label);
+    targetBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.url === url)));
+  }
+  setQrTarget(currentUrl, 'Brainy Bits · Trang chủ');
+  targetBtns.forEach(b => b.addEventListener('click', () => setQrTarget(b.dataset.url, b.dataset.label)));
+
+  const openQr = () => { dialog.removeAttribute('data-closing'); if (!dialog.open) dialog.showModal(); };
+  document.getElementById('hubQrBtn').addEventListener('click', openQr);
+  document.getElementById('openQrQuick').addEventListener('click', openQr);
+  document.getElementById('qrCloseBtn').addEventListener('click', () => closeTopLayer(dialog));
+
+  document.querySelectorAll('.js-qr-copy').forEach(btn => btn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(currentUrl); } catch (e) {}
+    toast('Đã chép đường dẫn: ' + currentUrl.replace('https://', ''));
+  }));
+  document.querySelectorAll('.js-qr-save').forEach(btn => btn.addEventListener('click', () => {
+    const blob = new Blob([currentSvg], { type: 'image/svg+xml;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'brainy-bits-qr.svg'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('Đã lưu tệp mã QR (SVG)');
+  }));
+  document.querySelectorAll('.js-qr-share').forEach(btn => btn.addEventListener('click', () => toast('Đã chép kết quả hôm nay để gửi vào tin nhắn')));
+  document.getElementById('hubShareCardBtn').addEventListener('click', () => toast('Đã chép kết quả hôm nay để gửi vào tin nhắn'));
+  document.getElementById('hubSetBtn').addEventListener('click', () => toast('Mở hộp thoại Cài đặt (Âm thanh · Rung · Xoá tiến độ)'));
+  document.querySelectorAll('.bento-tile').forEach(tile => tile.addEventListener('click', () => toast('Đích mở: ' + tile.dataset.url.replace('https://', ''))));
+  document.querySelector('.dailycard').addEventListener('click', e => toast('Mở ngay: ' + e.currentTarget.dataset.preview));
+
+  const btnNew = document.getElementById('stateNew'), btnOld = document.getElementById('stateReturning');
+  const strip = document.getElementById('hubStrip'), intro = document.getElementById('hubIntro');
+  const setContext = returning => {
+    btnNew.setAttribute('aria-pressed', String(!returning));
+    btnOld.setAttribute('aria-pressed', String(returning));
+    strip.hidden = !returning; intro.hidden = returning;
+    document.querySelectorAll('.bento-tile').forEach((tile, i) => {
+      const em = tile.querySelector('.tile-meta');
+      em.textContent = returning ? em.dataset.old : em.dataset.new;
+      em.classList.toggle('fresh', !returning || i > 1);
+    });
+  };
+  btnNew.addEventListener('click', () => setContext(false));
+  btnOld.addEventListener('click', () => setContext(true));
+})();
+</script>
+</body>
+</html>

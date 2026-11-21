@@ -4,28 +4,63 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="text-scale" content="scale">
-<title>Brainy Bits</title>
-<meta name="description" content="5 trò chơi nhỏ luyện trí nhớ, tính nhẩm và tư duy. Chơi ngay trên điện thoại, không cần cài.">
-<meta name="theme-color" content="#0a150e">
-<meta name="color-scheme" content="dark">
+<title>Brainy Bits — Trò ngắn luyện nhớ, tính nhẩm và chữ Việt</title>
+<meta name="description" content="Đổi ray tàu, cho cá koi ăn, nhớ ô sáng, giải mưa phép tính và đoán cụm từ tiếng Việt. Chơi ngay trên web, không cần cài.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f0e4">
+<script>
+(function(){
+  var s=null;
+  try{s=localStorage.getItem('bb_theme')}catch(e){}
+  var m=document.querySelector('meta[name="color-scheme"]');
+  var t=document.querySelector('meta[name="theme-color"]');
+  var dark=s==='dark'||(s!=='light'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+  if(m&&(s==='light'||s==='dark'))m.content=s;
+  if(t)t.content=dark?'#0e1712':'#f6f0e4';
+})();
+</script>
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Brainy Bits">
 <meta property="og:locale" content="vi_VN">
-<meta property="og:title" content="Brainy Bits">
-<meta property="og:description" content="5 trò chơi nhỏ luyện trí nhớ, tính nhẩm và tư duy.">
+<meta property="og:title" content="Brainy Bits — Trò ngắn luyện nhớ, tính nhẩm và chữ Việt">
+<meta property="og:description" content="Đổi ray tàu, cho cá koi ăn, nhớ ô sáng, giải mưa phép tính và đoán cụm từ tiếng Việt. Chơi ngay trên web, không cần cài.">
 <meta property="og:url" content="https://brainybits.thucanhtrantonnu.com/">
 <meta property="og:image" content="https://brainybits.thucanhtrantonnu.com/icons/og.png">
+<meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Brainy Bits — Dấu Triện Tangram cùng bộ trò ngắn luyện nhớ, tính nhẩm và chữ Việt trên nền giấy ấm.">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Brainy Bits — Trò ngắn luyện nhớ, tính nhẩm và chữ Việt">
+<meta name="twitter:description" content="Đổi ray tàu, cho cá koi ăn, nhớ ô sáng, giải mưa phép tính và đoán cụm từ tiếng Việt. Chơi ngay trên web, không cần cài.">
+<meta name="twitter:image" content="https://brainybits.thucanhtrantonnu.com/icons/og.png">
+<meta name="twitter:image:alt" content="Brainy Bits — Dấu Triện Tangram cùng bộ trò ngắn luyện nhớ, tính nhẩm và chữ Việt trên nền giấy ấm.">
 <link rel="canonical" href="https://brainybits.thucanhtrantonnu.com/">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Brainy Bits">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Brainy Bits",
+  "alternateName": "Trò luyện não bằng tiếng Việt",
+  "description": "Đổi ray tàu, cho cá koi ăn, nhớ ô sáng, giải mưa phép tính và đoán cụm từ tiếng Việt. Chơi ngay trên web, không cần cài.",
+  "url": "https://brainybits.thucanhtrantonnu.com/",
+  "inLanguage": "vi",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires JavaScript",
+  "isAccessibleForFree": true,
+  "image": "https://brainybits.thucanhtrantonnu.com/icons/og.png"
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -96,54 +131,79 @@
 </div><!-- /trainApp -->
 
 <!-- ================= TRANG CHỦ ================= -->
-<div id="hub" class="overlay hubbg" data-bb-wired="1">
+<main id="hub" class="overlay hubbg" data-bb-wired="1">
   <div class="hubwrap">
     <header class="hubtop">
-      <h1 class="hubtitle"><svg class="hubmark" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="4" y="4" width="18" height="18" rx="5" fill="#ffd54a"/><rect x="26" y="4" width="18" height="18" rx="5" fill="#ff8a3d"/><rect x="4" y="26" width="18" height="18" rx="5" fill="#7ee081"/><rect x="27.5" y="27.5" width="15" height="15" rx="4" fill="none" stroke="#ffd54a" stroke-opacity=".6" stroke-width="3"/><circle cx="35" cy="35" r="3" fill="#ffd54a"/></svg>Brainy Bits</h1>
-      <button type="button" class="iconbtn" id="hubSettings" aria-label="Cài đặt" aria-haspopup="dialog"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="6" width="16" height="2.2" rx="1.1"/><circle cx="9" cy="7.1" r="2.6"/><rect x="4" y="15.8" width="16" height="2.2" rx="1.1"/><circle cx="15" cy="16.9" r="2.6"/></svg></button>
+      <h1 class="hubtitle"><svg class="hubmark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="2" y="2" width="60" height="60" rx="15" fill="#192a21" stroke="#faf5ea" stroke-opacity=".22" stroke-width="1.5"/><path d="M14 13h16v17H14z" fill="#faf5ea"/><path d="M32 13h10a9 9 0 0 1 0 18H32z" fill="#e2632e"/><path d="M14 33h16v18H14z" fill="#ebb038"/><path d="M32 33h11a9 9 0 0 1 0 18H32z" fill="#5eb477"/><circle cx="49" cy="18" r="4.5" fill="#5a9bd4"/></svg>Brainy Bits</h1>
+      <div class="top-actions">
+        <button type="button" class="iconbtn qr-trigger" id="hubQrBtn" aria-label="Mã QR chia sẻ" aria-haspopup="dialog" aria-controls="qrDialog">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v4M14 20h6"/></svg>
+          <span class="iconbtn-text">Mã QR</span>
+        </button>
+        <button type="button" class="iconbtn" id="hubSettings" aria-label="Cài đặt" aria-haspopup="dialog" aria-controls="settings">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.5" fill="currentColor"/><circle cx="15" cy="17" r="2.5" fill="currentColor"/></svg>
+        </button>
+      </div>
+      <div class="hubstrip" id="hubStrip" hidden>
+        <div class="hstat"><svg class="hico hico-streak" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3c2 3.5 5 5.5 5 10a5 5 0 1 1-10 0c0-2.4 1.2-4.4 2.5-6 .2 1.6 1.2 2.5 2.5 2.5-.4-1.8-.3-4 0-6.5z"/></svg><b id="hubStreak">0</b><small>ngày liên tiếp</small></div>
+        <div class="hstat"><svg class="hico hico-star" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg><b id="hubStars">0</b><small>sao đã có</small></div>
+      </div>
     </header>
-    <div class="hubstrip">
-      <div class="hstat"><svg class="hico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12.5 2.5c.4 3.4-2.1 5-2.1 7.6 0 1.4 1.1 2.4 2.3 2.4 1.7 0 2.7-1.6 2.3-4.1 2.5 1.8 4 4.5 4 7.3a7 7 0 1 1-14 0c0-3.4 2-6.6 5.1-8.9-.2 1.8.8 3.2 2.2 3.2-.5-2-.4-5 .2-7.5z" fill="#ff8a3d"/></svg><b id="hubStreak">0</b><small>ngày liên tiếp</small></div>
-      <div class="hstat"><svg class="hico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.8l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 16.7l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="#ffd54a"/></svg><b id="hubStars">0</b><small>sao đã có</small></div>
-    </div>
+    <p class="hub-intro" id="hubIntro">Trò ngắn luyện nhớ, tính nhẩm và chữ Việt. Mở lên là chơi.</p>
     <button type="button" class="dailycard" id="hubDaily">
       <span class="dk">Thử thách hôm nay <span id="hubDailyNo"></span></span>
       <b id="hubDailyGame">&nbsp;</b>
       <span class="dgo" id="hubDailyState">Chơi</span>
     </button>
     <p class="sub hubsub">Chọn một trò để chơi</p>
-    <button type="button" class="gamecard" id="openTrain">
-      <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M6 40h36" stroke="#a9c2b2" stroke-width="3" stroke-linecap="round"/><rect x="11" y="8" width="26" height="26" rx="8" fill="#ffb02e"/><rect x="16" y="13" width="16" height="9" rx="3" fill="#2a1300"/><circle cx="18" cy="28" r="2.4" fill="#2a1300"/><circle cx="30" cy="28" r="2.4" fill="#2a1300"/><path d="M15 34l-4 6M33 34l4 6" stroke="#ffb02e" stroke-width="3" stroke-linecap="round"/></svg></span>
-      <span class="gt"><b>Đường Ray Tư Duy</b><small>Đổi ngã rẽ, đưa tàu về đúng ga cùng màu, cùng hình</small><em id="hubTrain"></em></span>
-      <span class="gchev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
-    </button>
-    <button type="button" class="gamecard koi" id="openKoi">
-      <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M7 24c6-10 20-12 28-4l7-6v20l-7-6c-8 8-22 6-28-4z" fill="#ffb38a"/><path d="M16 17c3 2 3 6 0 8M24 15c3 3 3 9 0 12" stroke="#ff6b3d" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="12.5" cy="22.5" r="1.8" fill="#0d2c2e"/></svg></span>
-      <span class="gt"><b>Cho Cá Koi Ăn</b><small>Mỗi con cá chỉ được cho ăn một lần, nhớ kỹ nhé</small><em id="hubKoi"></em></span>
-      <span class="gchev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
-    </button>
-    <button type="button" class="gamecard mem" id="openMem">
-      <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><g fill="#463d7a"><rect x="5" y="5" width="11" height="11" rx="3"/><rect x="18.5" y="5" width="11" height="11" rx="3"/><rect x="5" y="18.5" width="11" height="11" rx="3"/><rect x="32" y="18.5" width="11" height="11" rx="3"/><rect x="18.5" y="32" width="11" height="11" rx="3"/><rect x="32" y="32" width="11" height="11" rx="3"/></g><g fill="#ffd54a"><rect x="32" y="5" width="11" height="11" rx="3"/><rect x="18.5" y="18.5" width="11" height="11" rx="3"/><rect x="5" y="32" width="11" height="11" rx="3"/></g></svg></span>
-      <span class="gt"><b>Ô Sáng Ghi Nhớ</b><small>Nhớ vị trí các ô vừa sáng rồi chạm lại đúng</small><em id="hubMem"></em></span>
-      <span class="gchev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
-    </button>
-    <button type="button" class="gamecard rain" id="openRain">
-      <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M24 5c7 10 13 17 13 24a13 13 0 0 1-26 0c0-7 6-14 13-24z" fill="#7cc7ff"/><path d="M24 23v12M18 29h12" stroke="#0e2338" stroke-width="3.4" stroke-linecap="round"/></svg></span>
-      <span class="gt"><b>Mưa Phép Tính</b><small>Giải phép tính trước khi giọt mưa chạm mặt nước</small><em id="hubRain"></em></span>
-      <span class="gchev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
-    </button>
-    <button type="button" class="gamecard word" id="openWord">
-      <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><rect x="3" y="12" width="20" height="24" rx="5" fill="#3fa34d"/><rect x="25" y="12" width="20" height="24" rx="5" fill="#ffcf8a"/><path d="M8 31l5-14 5 14M9.8 26h6.4" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M31 17v14h8" stroke="#2a1a12" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>
-      <span class="gt"><b>Đoán Cụm Từ</b><small>Đoán cụm 2 từ tiếng Việt trong 6 lượt</small><em id="hubWord"></em></span>
-      <span class="gchev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
-    </button>
-    <button type="button" class="btn alt" id="hubShare">Chia sẻ kết quả</button>
+    <div class="hubshelf" id="hubShelf">
+      <button type="button" class="gamecard" id="openTrain">
+        <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M8 38h32" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="12" y="10" width="24" height="24" rx="7" fill="currentColor"/><rect x="17" y="15" width="14" height="8" rx="2.5" fill="var(--g-bg)"/><circle cx="18.5" cy="28" r="2" fill="var(--g-bg)"/><circle cx="29.5" cy="28" r="2" fill="var(--g-bg)"/></svg></span>
+        <span class="gt"><b>Đường Ray Tư Duy</b><small>Đổi ngã rẽ, đưa tàu về đúng ga cùng màu, cùng hình</small><em id="hubTrain"></em></span>
+        <span class="gchev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+      <button type="button" class="gamecard koi" id="openKoi">
+        <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M8 24c6-9 19-11 27-4l6-5v18l-6-5c-8 7-21 5-27-4z" fill="currentColor"/><circle cx="14" cy="22.5" r="2" fill="var(--g-bg)"/></svg></span>
+        <span class="gt"><b>Cho Cá Koi Ăn</b><small>Cho mỗi con cá ăn đúng một lần, tránh cho ăn trùng</small><em id="hubKoi"></em></span>
+        <span class="gchev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+      <button type="button" class="gamecard mem" id="openMem">
+        <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><rect x="7" y="7" width="14" height="14" rx="4" fill="currentColor" fill-opacity=".35"/><rect x="27" y="7" width="14" height="14" rx="4" fill="currentColor"/><rect x="7" y="27" width="14" height="14" rx="4" fill="currentColor"/><rect x="27" y="27" width="14" height="14" rx="4" fill="currentColor" fill-opacity=".35"/></svg></span>
+        <span class="gt"><b>Ô Sáng Ghi Nhớ</b><small>Nhớ vị trí các ô vừa sáng rồi chạm lại đúng</small><em id="hubMem"></em></span>
+        <span class="gchev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+      <button type="button" class="gamecard rain" id="openRain">
+        <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><path d="M24 7c6.5 9.5 12 16 12 22.5a12 12 0 0 1-24 0C12 23 17.5 16.5 24 7z" fill="currentColor"/><path d="M24 23v10M19 28h10" stroke="var(--g-bg)" stroke-width="3" stroke-linecap="round"/></svg></span>
+        <span class="gt"><b>Mưa Phép Tính</b><small>Giải phép tính trước khi giọt mưa chạm mặt nước</small><em id="hubRain"></em></span>
+        <span class="gchev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+      <button type="button" class="gamecard word" id="openWord">
+        <span class="gi" aria-hidden="true"><svg viewBox="0 0 48 48" focusable="false"><rect x="6" y="13" width="17" height="22" rx="4.5" fill="currentColor"/><rect x="25" y="13" width="17" height="22" rx="4.5" fill="currentColor" fill-opacity=".32"/><path d="M10.5 29L14.5 19l4 10M12 26h5" stroke="var(--g-bg)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>
+        <span class="gt"><b>Đoán Cụm Từ</b><small>Đoán cụm 2 từ tiếng Việt trong 6 lượt</small><em id="hubWord"></em></span>
+        <span class="gchev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+    </div>
+    <footer class="hub-foot">
+      <button type="button" class="btn alt" id="hubShare">
+        <svg class="btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.9l7.6-4.8M8.2 13.1l7.6 4.8"/></svg>
+        Chia sẻ kết quả
+      </button>
+      <p class="foot-note">Chạy ngoại tuyến sau lần mở đầu · Chế độ Sáng / Tối nằm trong Cài đặt.</p>
+    </footer>
   </div>
-</div>
+</main>
 
 <div id="settings" class="overlay hidden">
   <div class="card setcard">
     <h2>Cài đặt</h2>
+    <div class="setrow setrow-col">
+      <span>Giao diện<small class="setsub">Giấy Nắng, Gỗ Tối hoặc theo máy</small></span>
+      <div class="seg" role="group" aria-label="Chế độ giao diện">
+        <button type="button" data-theme="light" id="themeLightBtn" aria-pressed="false">Sáng</button>
+        <button type="button" data-theme="dark" id="themeDarkBtn" aria-pressed="false">Tối</button>
+        <button type="button" data-theme="light dark" id="themeAutoBtn" aria-pressed="true">Theo máy</button>
+      </div>
+    </div>
     <div class="setrow"><span>Âm thanh<small class="setsub">Tiếng chạm và hoàn thành</small></span><button type="button" class="switch" id="setSound" role="switch" aria-checked="true" aria-label="Âm thanh"><i></i></button></div>
     <div class="setrow" id="setHapticRow"><span>Rung khi chạm<small class="setsub">Phản hồi nhẹ trên điện thoại</small></span><button type="button" class="switch" id="setHaptic" role="switch" aria-checked="true" aria-label="Rung khi chạm"><i></i></button></div>
     <div class="setzone">
@@ -156,6 +216,47 @@
     <button type="button" class="btn" id="setClose">Xong</button>
   </div>
 </div>
+
+<dialog class="qr-dialog" id="qrDialog" closedby="any" aria-labelledby="qrTitle">
+  <div class="qr-sheet">
+    <div class="qr-head">
+      <div>
+        <h2 id="qrTitle">Quét để chơi trên máy khác</h2>
+        <p>Mở thẳng trang này trên điện thoại hoặc máy tính bảng.</p>
+      </div>
+      <button type="button" class="qr-close" id="qrCloseBtn" aria-label="Đóng">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="qr-paper">
+      <div class="qr-brand-row">
+        <svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+          <rect x="2" y="2" width="60" height="60" rx="15" fill="#192a21"/>
+          <path d="M14 13h16v17H14z" fill="#faf5ea"/>
+          <path d="M32 13h10a9 9 0 0 1 0 18H32z" fill="#e2632e"/>
+          <path d="M14 33h16v18H14z" fill="#ebb038"/>
+          <path d="M32 33h11a9 9 0 0 1 0 18H32z" fill="#5eb477"/>
+        </svg>
+        <span id="qrTargetName">Brainy Bits · Trang chủ</span>
+      </div>
+      <div class="qr-frame" id="qrMount"></div>
+      <div class="qr-url" id="qrUrlText">https://brainybits.thucanhtrantonnu.com/</div>
+    </div>
+    <div class="qr-targets" id="qrTargets" role="group" aria-label="Chọn đích của mã QR">
+      <button type="button" data-hash="" data-label="Brainy Bits · Trang chủ" aria-pressed="true">Trang chủ</button>
+      <button type="button" data-hash="#tau" data-label="Đường Ray Tư Duy" aria-pressed="false">Đường Ray</button>
+      <button type="button" data-hash="#koi" data-label="Cho Cá Koi Ăn" aria-pressed="false">Cá Koi</button>
+      <button type="button" data-hash="#nho" data-label="Ô Sáng Ghi Nhớ" aria-pressed="false">Ô Sáng</button>
+      <button type="button" data-hash="#mua" data-label="Mưa Phép Tính" aria-pressed="false">Mưa Phép Tính</button>
+      <button type="button" data-hash="#chu" data-label="Đoán Cụm Từ" aria-pressed="false">Đoán Từ</button>
+    </div>
+    <div class="qr-actions">
+      <button type="button" class="qr-btn-main" id="qrCopyBtn">Chép đường dẫn</button>
+      <button type="button" class="qr-btn-sub" id="qrSaveBtn">Lưu ảnh SVG</button>
+      <button type="button" class="qr-btn-sub" id="qrShareResultBtn">Chia sẻ kết quả</button>
+    </div>
+  </div>
+</dialog>
 
 <!-- ================= GAME CÁ KOI ================= -->
 <div id="koiApp" style="display:none">
@@ -393,6 +494,7 @@
 <script src="vendor/zzfx-micro.js"></script>
 <script src="vendor/confetti.js"></script>
 <script src="js/core.js"></script>
+<script src="js/qr.js"></script>
 <script src="js/train-map.js"></script>
 <script src="js/train.js"></script>
 <script src="js/koi.js"></script>

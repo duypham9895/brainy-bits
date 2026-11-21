@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="vi" data-tier="reference">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="text-scale" content="scale">
+<meta name="color-scheme" content="light dark">
+<script>
+try {
+  const s = localStorage.getItem('bb_mock_b_scheme');
+  if (s === 'light' || s === 'dark') {
+    document.querySelector('meta[name="color-scheme"]').content = s;
+  }
+} catch (e) {}
+</script>
+<title>Phương án B · Giấy Nắng &amp; Mực Rừng — Brainy Bits</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f0e4;
+    --surface: #fffdf8;
+    --surface-soft: #ebe3d3;
+    --ink: #192a21;
+    --sub: #485e52;
+    --muted: #52685b;
+    --accent: #b23c0e;
+    --accent-ink: #ffffff;
+    --brass: #855200;
+    --daily-bg: #fbf2dd;
+    --daily-bd: #c68d23;
+    --rule: rgba(25, 42, 33, 0.14);
+    --rule-ui: rgba(25, 42, 33, 0.36);
+    --focus: #b23c0e;
+    --qr-paper: #fffdf8;
+    --qr-ink: #192a21;
+    --t-train: #e4efe3; --t-koi: #e0eeec; --t-mem: #eae6f5; --t-rain: #e2ecf7; --t-word: #f3e7da;
+    --c-train: #1f5c35; --c-koi: #0e5a5a; --c-mem: #473680; --c-rain: #174c80; --c-word: #7a421d;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  :root:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+    --bg: #0e1712;
+    --surface: #16241d;
+    --surface-soft: #1e3027;
+    --ink: #f3efe6;
+    --sub: #afc3b6;
+    --muted: #93ab9c;
+    --accent: #f09248;
+    --accent-ink: #1c1005;
+    --brass: #f2c057;
+    --daily-bg: #262010;
+    --daily-bd: rgba(242, 192, 87, 0.45);
+    --rule: rgba(255, 255, 255, 0.12);
+    --rule-ui: rgba(255, 255, 255, 0.32);
+    --focus: #f2c057;
+    --qr-paper: #faf5ea;
+    --qr-ink: #102218;
+    --t-train: #1f3c2c; --t-koi: #164444; --t-mem: #2d2552; --t-rain: #183a5c; --t-word: #472e1f;
+    --c-train: #7fe08c; --c-koi: #7fe3d0; --c-mem: #c6b6ff; --c-rain: #73c2fb; --c-word: #f5cfa0;
+  }
+
+  :root:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not(:has(> head > meta[name="color-scheme"][content="light"])) {
+      --bg: #0e1712;
+      --surface: #16241d;
+      --surface-soft: #1e3027;
+      --ink: #f3efe6;
+      --sub: #afc3b6;
+      --muted: #93ab9c;
+      --accent: #f09248;
+      --accent-ink: #1c1005;
+      --brass: #f2c057;
+      --daily-bg: #262010;
+      --daily-bd: rgba(242, 192, 87, 0.45);
+      --rule: rgba(255, 255, 255, 0.12);
+      --rule-ui: rgba(255, 255, 255, 0.32);
+      --focus: #f2c057;
+      --qr-paper: #faf5ea;
+      --qr-ink: #102218;
+      --t-train: #1f3c2c; --t-koi: #164444; --t-mem: #2d2552; --t-rain: #183a5c; --t-word: #472e1f;
+      --c-train: #7fe08c; --c-koi: #7fe3d0; --c-mem: #c6b6ff; --c-rain: #73c2fb; --c-word: #f5cfa0;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: clip;
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: ui-rounded, "SF Pro Rounded", "Baloo 2", system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition-property: background-color, color;
+    transition-duration: 0.2s;
+    transition-timing-function: var(--ease);
+  }
+
+  body {
+    font-size: 1rem;
+    padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(48px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  }
+
+  button { font-family: inherit; cursor: pointer; color: inherit; }
+  :focus { outline: none; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  /* ---- Mockup toolbar ---- */
+  .mockbar {
+    max-width: 1020px;
+    margin: 0 auto 20px;
+    padding: 8px 12px;
+    border-radius: 18px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .mockbar-label {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--accent);
+    padding-inline: 4px;
+  }
+  .mockbar-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    padding: 3px;
+    border-radius: 14px;
+    background: var(--surface-soft);
+    border: 1px solid var(--rule);
+    gap: 2px;
+  }
+  .seg button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--sub);
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition-property: background-color, color;
+    transition-duration: 0.16s;
+    transition-timing-function: var(--ease);
+  }
+  .seg button[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .pill-action {
+    min-height: 44px;
+    padding: 6px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--rule-ui);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ---- 1. Hub-kiêm-Landing ---- */
+  .hubwrap {
+    max-width: 1020px;
+    margin: 0 auto;
+  }
+  .hubtop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .brand-mark { width: 44px; height: 44px; flex: none; display: block; border-radius: 12px; }
+  .brand h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .top-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+  .iconbtn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 14px;
+    border: 1px solid var(--rule-ui);
+    background: var(--surface);
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition-property: background-color, border-color, transform;
+    transition-duration: 0.16s;
+    transition-timing-function: var(--ease);
+  }
+  .iconbtn svg { width: 20px; height: 20px; flex: none; }
+  .iconbtn-text { display: none; }
+  @media (min-width: 600px) { .iconbtn-text { display: inline; } }
+
+  .hub-intro {
+    margin: 0 0 16px;
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.08rem);
+    line-height: 1.55;
+    color: var(--sub);
+    max-width: 56ch;
+    text-wrap: pretty;
+  }
+
+  .hubstrip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 16px;
+  }
+  .hstat {
+    flex: 1 1 160px;
+    max-width: 240px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+  }
+  .hstat svg { width: 22px; height: 22px; flex: none; }
+  .hstat b { font-size: 1.3rem; font-weight: 800; line-height: 1.1; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .hstat small { display: block; font-size: 0.82rem; color: var(--sub); line-height: 1.25; }
+
+  .dailycard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
+    text-align: left;
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    border: 1.5px solid var(--daily-bd);
+    background: var(--daily-bg);
+    color: var(--ink);
+    transition-property: transform, border-color;
+    transition-duration: 0.16s;
+    transition-timing-function: var(--ease);
+  }
+  .daily-k {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--brass);
+    margin-bottom: 2px;
+  }
+  .daily-title {
+    display: block;
+    font-size: clamp(1.0625rem, 1rem + 0.25vw, 1.18rem);
+    font-weight: 800;
+    line-height: 1.25;
+  }
+  .daily-go {
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 12px;
+    display: inline-grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 0.94rem;
+    background: var(--accent);
+    color: var(--accent-ink);
+    flex: none;
+  }
+
+  .section-kicker {
+    margin: 0 0 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Sunlit Paper Desk shelf: hairline list on mobile (anti card-itis), clean 2-3 col shelf on wide screens */
+  .shelf {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 22px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .shelf-item {
+    --g-bg: var(--t-train);
+    --g-ink: var(--c-train);
+    --pct: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 15px 16px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    color: var(--ink);
+    transition-property: background-color;
+    transition-duration: 0.14s;
+    transition-timing-function: var(--ease);
+  }
+  @media (max-width: 719px) {
+    .shelf-item:not(:last-child) { border-bottom: 1px solid var(--rule); }
+  }
+  .shelf-item.koi { --g-bg: var(--t-koi); --g-ink: var(--c-koi); }
+  .shelf-item.mem { --g-bg: var(--t-mem); --g-ink: var(--c-mem); }
+  .shelf-item.rain { --g-bg: var(--t-rain); --g-ink: var(--c-rain); }
+  .shelf-item.word { --g-bg: var(--t-word); --g-ink: var(--c-word); }
+
+  @media (min-width: 720px) {
+    .shelf {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      overflow: visible;
+    }
+    .shelf-item {
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .shelf-item.word { grid-column: span 2; }
+  }
+  @media (min-width: 960px) {
+    .shelf { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+    .shelf-item { grid-column: span 2; }
+    .shelf-item.rain { grid-column: 2 / span 2; }
+    .shelf-item.word { grid-column: 4 / span 2; }
+  }
+
+  .gi {
+    flex: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    background: var(--g-bg);
+    color: var(--g-ink);
+    display: grid;
+    place-items: center;
+  }
+  .gi svg { width: 32px; height: 32px; display: block; }
+  .gt { flex: 1; min-width: 0; }
+  .gt b { display: block; font-size: 1.12rem; font-weight: 800; line-height: 1.25; }
+  .gt small { display: block; font-size: 0.875rem; color: var(--sub); line-height: 1.4; margin-top: 2px; text-wrap: pretty; }
+  .gt em {
+    display: inline-block;
+    margin-top: 5px;
+    font-style: normal;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--g-ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .gt em.fresh { color: var(--muted); font-weight: 600; }
+  .gchev { flex: none; width: 18px; height: 18px; color: var(--muted); transition-property: transform, color; transition-duration: 0.16s; transition-timing-function: var(--ease); }
+
+  .hub-foot {
+    margin-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+  }
+  .btn-quiet {
+    min-height: 44px;
+    padding: 10px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--rule-ui);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.92rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-quiet svg { width: 18px; height: 18px; flex: none; }
+  .foot-note { margin: 0; font-size: 0.85rem; color: var(--muted); }
+
+  /* ---- Reference sections ---- */
+  .spec-block {
+    max-width: 1020px;
+    margin: 44px auto 0;
+    padding-top: 28px;
+    border-top: 1px solid var(--rule);
+  }
+  .spec-block h2 { margin: 0 0 6px; font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem); font-weight: 800; line-height: 1.25; }
+  .spec-lead { margin: 0 0 18px; font-size: 0.95rem; color: var(--sub); max-width: 64ch; text-wrap: pretty; }
+
+  .logo-shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    gap: 14px;
+  }
+  .swatch {
+    padding: 18px 16px;
+    border-radius: 18px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .swatch.dark-preview {
+    background: #101e17;
+    color: #f3efe6;
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+  .swatch.dark-preview small { color: #afc3b6; }
+  .swatch small { display: block; font-size: 0.82rem; color: var(--sub); font-weight: 600; }
+
+  .og-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (min-width: 820px) { .og-grid { grid-template-columns: 1.05fr 0.95fr; } }
+  .chat-bubble {
+    padding: 14px;
+    border-radius: 20px;
+    background: var(--surface-soft);
+    border: 1px solid var(--rule);
+  }
+  .chat-sender { font-size: 0.8rem; font-weight: 700; color: var(--muted); margin: 0 0 8px; }
+  .link-card {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .og-svg { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 630; }
+  .link-meta { padding: 12px 14px; }
+  .link-domain { font-size: 0.75rem; font-weight: 800; color: var(--accent); text-transform: uppercase; }
+  .link-meta b { display: block; margin-top: 2px; font-size: 1rem; line-height: 1.3; color: var(--ink); }
+  .link-meta p { margin: 4px 0 0; font-size: 0.875rem; line-height: 1.45; color: var(--sub); }
+
+  .meta-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+  .meta-list li { padding: 11px 0; border-bottom: 1px solid var(--rule); display: grid; gap: 3px; }
+  .meta-list code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.78rem; color: var(--accent); word-break: break-word; }
+  .meta-list span { font-size: 0.9rem; color: var(--ink); line-height: 1.45; }
+
+  /* ---- Native Modal <dialog> ---- */
+  dialog.qr-dialog {
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--rule-ui);
+    border-radius: 24px;
+    width: min(420px, calc(100% - 24px));
+    max-height: min(88dvh, 720px);
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 26px 64px rgba(0, 0, 0, 0.35);
+    overflow: auto;
+    overscroll-behavior: contain;
+    opacity: 0;
+    transition-property: opacity, transform, display, overlay;
+    transition-duration: 0.28s;
+    transition-timing-function: var(--ease);
+    transition-behavior: allow-discrete;
+  }
+  dialog.qr-dialog:modal { overscroll-behavior: contain; }
+  @media (prefers-reduced-motion: no-preference) {
+    dialog.qr-dialog { transform: scale(0.95) translateY(8px); }
+  }
+  dialog.qr-dialog:is([open]):where(:not([data-closing])) {
+    opacity: 1;
+    @starting-style { opacity: 0; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    dialog.qr-dialog:is([open]):where(:not([data-closing])) {
+      transform: scale(1) translateY(0);
+      @starting-style { transform: scale(0.95) translateY(8px); }
+    }
+  }
+  dialog.qr-dialog::backdrop {
+    background-color: rgba(15, 25, 20, 0);
+    overflow: hidden;
+    overscroll-behavior: contain;
+    transition-property: background-color, display, overlay;
+    transition-duration: 0.28s;
+    transition-timing-function: var(--ease);
+    transition-behavior: allow-discrete;
+  }
+  dialog.qr-dialog:is([open]):where(:not([data-closing]))::backdrop {
+    background-color: rgba(15, 25, 20, 0.62);
+    @starting-style { background-color: rgba(15, 25, 20, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    dialog.qr-dialog, dialog.qr-dialog::backdrop { transition-duration: 0.12s; }
+  }
+
+  .qr-sheet { padding: 20px 18px; display: grid; gap: 14px; }
+  .qr-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .qr-head h2 { margin: 0; font-size: 1.25rem; font-weight: 800; line-height: 1.25; }
+  .qr-head p { margin: 3px 0 0; font-size: 0.875rem; color: var(--sub); line-height: 1.4; }
+  .qr-close {
+    flex: none; min-width: 44px; min-height: 44px; border-radius: 12px;
+    border: 1px solid var(--rule-ui); background: var(--surface-soft); color: var(--ink);
+    display: grid; place-items: center;
+  }
+  .qr-close svg { width: 20px; height: 20px; }
+  .qr-paper {
+    background: var(--qr-paper);
+    color: var(--qr-ink);
+    border: 1px solid var(--rule);
+    border-radius: 18px;
+    padding: 16px;
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+  }
+  .qr-brand-row { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.95rem; color: var(--qr-ink); }
+  .qr-frame { width: min(224px, 100%); aspect-ratio: 1; border-radius: 10px; overflow: hidden; }
+  .qr-frame svg { display: block; width: 100%; height: 100%; }
+  .qr-url { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.7rem; font-weight: 600; color: #365242; word-break: normal; overflow-wrap: break-word; text-align: center; }
+
+  .qr-targets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .qr-targets button {
+    min-height: 44px; padding: 6px 12px; border-radius: 12px;
+    border: 1px solid var(--rule); background: var(--surface-soft); color: var(--sub);
+    font-size: 0.85rem; font-weight: 700;
+  }
+  .qr-targets button[aria-pressed="true"] {
+    background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+  }
+  .qr-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .qr-btn-main {
+    grid-column: 1 / -1; min-height: 46px; padding: 10px 16px; border: 0; border-radius: 14px;
+    background: var(--accent); color: var(--accent-ink); font-size: 0.95rem; font-weight: 800;
+  }
+  .qr-btn-sub {
+    min-height: 44px; padding: 8px 12px; border-radius: 14px;
+    border: 1px solid var(--rule-ui); background: var(--surface-soft); color: var(--ink);
+    font-size: 0.875rem; font-weight: 700;
+  }
+
+  #mockToast {
+    position: fixed; left: 50%; top: max(14px, env(safe-area-inset-top));
+    transform: translate(-50%, -14px); max-width: min(360px, calc(100% - 32px));
+    padding: 10px 16px; border-radius: 14px; background: #192a21; color: #fffdf8;
+    border: 1px solid #f09248; font-size: 0.9rem; font-weight: 700;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35); opacity: 0; pointer-events: none; z-index: 90;
+    transition-property: opacity, transform; transition-duration: 0.2s; transition-timing-function: var(--ease);
+  }
+  #mockToast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (hover: hover) and (pointer: fine) {
+    .shelf-item:hover { background: var(--surface-soft); }
+    @media (min-width: 720px) {
+      .shelf-item:hover { background: var(--surface); border-color: var(--accent); }
+    }
+    .shelf-item:hover .gchev { transform: translateX(3px); color: var(--ink); }
+    .dailycard:hover { transform: translateY(-2px); }
+    .iconbtn:hover, .btn-quiet:hover, .pill-action:hover, .qr-btn-sub:hover { background: var(--surface-soft); }
+  }
+</style>
+</head>
+<body>
+  <div class="mockbar" role="region" aria-label="Tuỳ chỉnh xem mẫu Phương án B">
+    <span class="mockbar-label">Phương án B · Giấy Nắng &amp; Mực Rừng</span>
+    <div class="mockbar-controls">
+      <div class="seg" role="group" aria-label="Trạng thái người chơi">
+        <button type="button" id="stateNew" aria-pressed="true">Người mới</button>
+        <button type="button" id="stateReturning" aria-pressed="false">Đã chơi</button>
+      </div>
+      <div class="seg" role="group" aria-label="Chế độ giao diện (đặt trong Cài đặt)">
+        <button type="button" data-scheme="light" aria-pressed="false">Sáng</button>
+        <button type="button" data-scheme="dark" aria-pressed="false">Tối</button>
+        <button type="button" data-scheme="light dark" id="schemeAutoBtn" aria-pressed="true">Theo máy</button>
+      </div>
+      <button type="button" class="pill-action" id="openQrQuick">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v4M14 20h6"/></svg>
+        Mã QR
+      </button>
+    </div>
+  </div>
+
+  <main class="hubwrap">
+    <header class="hubtop">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+          <rect x="2" y="2" width="60" height="60" rx="15" fill="#192a21"/>
+          <path d="M14 13h16v17H14z" fill="#faf5ea"/>
+          <path d="M32 13h10a9 9 0 0 1 0 18H32z" fill="#e2632e"/>
+          <path d="M14 33h16v18H14z" fill="#ebb038"/>
+          <path d="M32 33h11a9 9 0 0 1 0 18H32z" fill="#5eb477"/>
+          <circle cx="49" cy="18" r="4.5" fill="#5a9bd4"/>
+        </svg>
+        <h1>Brainy Bits</h1>
+      </div>
+      <div class="top-actions">
+        <button type="button" class="iconbtn" id="hubQrBtn" aria-label="Mở mã QR chia sẻ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v4M14 20h6"/></svg>
+          <span class="iconbtn-text">Mã QR</span>
+        </button>
+        <button type="button" class="iconbtn" id="hubSetBtn" aria-label="Cài đặt (bao gồm Sáng / Tối / Theo máy)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.5" fill="currentColor"/><circle cx="15" cy="17" r="2.5" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <p class="hub-intro" id="hubIntro">Trò ngắn luyện nhớ, tính nhẩm và chữ Việt. Mở lên là chơi, không quảng cáo.</p>
+
+    <div class="hubstrip" id="hubStrip" hidden>
+      <div class="hstat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2 3.5 5 5.5 5 10a5 5 0 1 1-10 0c0-2.4 1.2-4.4 2.5-6 .2 1.6 1.2 2.5 2.5 2.5-.4-1.8-.3-4 0-6.5z"/></svg>
+        <div><b>4</b><small>ngày liên tiếp</small></div>
+      </div>
+      <div class="hstat">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>
+        <div><b>18</b><small>sao đã có</small></div>
+      </div>
+    </div>
+
+    <button type="button" class="dailycard" data-preview="Thử thách hôm nay · Cá Koi Level 4">
+      <span>
+        <span class="daily-k">Thử thách hôm nay #2</span>
+        <span class="daily-title">Cho Cá Koi Ăn · Level 4</span>
+      </span>
+      <span class="daily-go">Chơi ngay</span>
+    </button>
+
+    <p class="section-kicker">Chọn một trò để chơi</p>
+
+    <div class="shelf">
+      <button type="button" class="shelf-item" data-url="https://brainybits.thucanhtrantonnu.com/#tau">
+        <span class="gi" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path d="M8 38h32" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="12" y="10" width="24" height="24" rx="7" fill="currentColor"/><rect x="17" y="15" width="14" height="8" rx="2.5" fill="#fffdf8"/><circle cx="18.5" cy="28" r="2" fill="#fffdf8"/><circle cx="29.5" cy="28" r="2" fill="#fffdf8"/></svg>
+        </span>
+        <span class="gt">
+          <b>Đường Ray Tư Duy</b>
+          <small>Đổi ngã rẽ, đưa tàu về đúng ga cùng màu, cùng hình</small>
+          <em class="fresh" data-new="11 level, chưa chơi" data-old="Đã qua 4/11 level · 10 sao">11 level, chưa chơi</em>
+        </span>
+        <svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+
+      <button type="button" class="shelf-item koi" data-url="https://brainybits.thucanhtrantonnu.com/#koi">
+        <span class="gi" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path d="M8 24c6-9 19-11 27-4l6-5v18l-6-5c-8 7-21 5-27-4z" fill="currentColor"/><circle cx="14" cy="22.5" r="2" fill="#fffdf8"/></svg>
+        </span>
+        <span class="gt">
+          <b>Cho Cá Koi Ăn</b>
+          <small>Mỗi con cá chỉ được cho ăn một lần, nhớ kỹ nhé</small>
+          <em class="fresh" data-new="10 level, chưa chơi" data-old="Đã qua 3/10 level · 8 sao">10 level, chưa chơi</em>
+        </span>
+        <svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+
+      <button type="button" class="shelf-item mem" data-url="https://brainybits.thucanhtrantonnu.com/#nho">
+        <span class="gi" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><rect x="7" y="7" width="14" height="14" rx="4" fill="currentColor" fill-opacity="0.35"/><rect x="27" y="7" width="14" height="14" rx="4" fill="currentColor"/><rect x="7" y="27" width="14" height="14" rx="4" fill="currentColor"/><rect x="27" y="27" width="14" height="14" rx="4" fill="currentColor" fill-opacity="0.35"/></svg>
+        </span>
+        <span class="gt">
+          <b>Ô Sáng Ghi Nhớ</b>
+          <small>Nhớ vị trí các ô vừa sáng rồi chạm lại đúng</small>
+          <em class="fresh" data-new="13 level, chưa chơi" data-old="13 level, chưa chơi">13 level, chưa chơi</em>
+        </span>
+        <svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+
+      <button type="button" class="shelf-item rain" data-url="https://brainybits.thucanhtrantonnu.com/#mua">
+        <span class="gi" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path d="M24 7c6.5 9.5 12 16 12 22.5a12 12 0 0 1-24 0C12 23 17.5 16.5 24 7z" fill="currentColor"/><path d="M24 23v10M19 28h10" stroke="#fffdf8" stroke-width="3" stroke-linecap="round"/></svg>
+        </span>
+        <span class="gt">
+          <b>Mưa Phép Tính</b>
+          <small>Giải phép tính trước khi giọt mưa chạm mặt nước</small>
+          <em class="fresh" data-new="10 level, chưa chơi" data-old="10 level, chưa chơi">10 level, chưa chơi</em>
+        </span>
+        <svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+
+      <button type="button" class="shelf-item word" data-url="https://brainybits.thucanhtrantonnu.com/#chu">
+        <span class="gi" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><rect x="6" y="13" width="17" height="22" rx="4.5" fill="currentColor"/><rect x="25" y="13" width="17" height="22" rx="4.5" fill="currentColor" fill-opacity="0.32"/><path d="M10.5 29L14.5 19l4 10M12 26h5" stroke="#fffdf8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        </span>
+        <span class="gt">
+          <b>Đoán Cụm Từ</b>
+          <small>Đoán cụm 2 từ tiếng Việt trong 6 lượt</small>
+          <em class="fresh" data-new="49 level, chưa chơi" data-old="49 level, chưa chơi">49 level, chưa chơi</em>
+        </span>
+        <svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+
+    <div class="hub-foot">
+      <button type="button" class="btn-quiet" id="hubShareCardBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.9l7.6-4.8M8.2 13.1l7.6 4.8"/></svg>
+        Chia sẻ kết quả
+      </button>
+      <p class="foot-note">Giao diện sáng/tối chọn trong Cài đặt · Chơi được khi mất mạng.</p>
+    </div>
+  </main>
+
+  <section class="spec-block" aria-labelledby="logoHeadingB">
+    <h2 id="logoHeadingB">Biểu tượng mới · Dấu Triện Tangram</h2>
+    <p class="spec-lead">Mảnh ghép giấy thủ công xếp thành chữ B cân đối trên nền mực rừng, hợp cả ấn phẩm sáng ban ngày lẫn chế độ tối.</p>
+    <div class="logo-shelf">
+      <div class="swatch">
+        <svg width="72" height="72" viewBox="0 0 64 64" role="img" aria-label="App icon Tangram 72px">
+          <rect x="2" y="2" width="60" height="60" rx="15" fill="#192a21"/>
+          <path d="M14 13h16v17H14z" fill="#faf5ea"/>
+          <path d="M32 13h10a9 9 0 0 1 0 18H32z" fill="#e2632e"/>
+          <path d="M14 33h16v18H14z" fill="#ebb038"/>
+          <path d="M32 33h11a9 9 0 0 1 0 18H32z" fill="#5eb477"/>
+          <circle cx="49" cy="18" r="4.5" fill="#5a9bd4"/>
+        </svg>
+        <div><strong>App Icon 72px</strong><small>Nền mực rừng trên giấy ấm</small></div>
+      </div>
+      <div class="swatch">
+        <svg width="32" height="32" viewBox="0 0 64 64" role="img" aria-label="Favicon 32px">
+          <rect x="2" y="2" width="60" height="60" rx="15" fill="#192a21"/>
+          <path d="M14 13h16v17H14z" fill="#faf5ea"/>
+          <path d="M32 13h10a9 9 0 0 1 0 18H32z" fill="#e2632e"/>
+          <path d="M14 33h16v18H14z" fill="#ebb038"/>
+          <path d="M32 33h11a9 9 0 0 1 0 18H32z" fill="#5eb477"/>
+          <circle cx="49" cy="18" r="4.5" fill="#5a9bd4"/>
+        </svg>
+        <svg width="16" height="16" viewBox="0 0 64 64" role="img" aria-label="Tab icon 16px">
+          <rect x="2" y="2" width="60" height="60" rx="15" fill="#192a21"/>
+          <path d="M14 13h16v17H14z" fill="#faf5ea"/>
+          <path d="M32 13h10a9 9 0 0 1 0 18H32z" fill="#e2632e"/>
+          <path d="M14 33h16v18H14z" fill="#ebb038"/>
+          <path d="M32 33h11a9 9 0 0 1 0 18H32z" fill="#5eb477"/>
+        </svg>
+        <div><strong>32px &amp; 16px</strong><small>Rõ nét chữ B ở tab nhỏ</small></div>
+      </div>
+      <div class="swatch dark-preview">
+        <svg width="44" height="44" viewBox="0 0 64 64" role="img" aria-label="Logo trên nền tối">
+          <rect x="2" y="2" width="60" height="60" rx="15" fill="#192a21" stroke="#faf5ea" stroke-opacity="0.24" stroke-width="1.5"/>
+          <path d="M14 13h16v17H14z" fill="#faf5ea"/>
+          <path d="M32 13h10a9 9 0 0 1 0 18H32z" fill="#e2632e"/>
+          <path d="M14 33h16v18H14z" fill="#ebb038"/>
+          <path d="M32 33h11a9 9 0 0 1 0 18H32z" fill="#5eb477"/>
+          <circle cx="49" cy="18" r="4.5" fill="#5a9bd4"/>
+        </svg>
+        <div><strong>Trên nền tối</strong><small>Viền mảnh giữ biên triện</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="spec-block" aria-labelledby="metaHeadingB">
+    <h2 id="metaHeadingB">Metadata &amp; Thẻ chia sẻ Giấy Nắng</h2>
+    <p class="spec-lead">Thẻ OG nền giấy ấm nổi bật rõ trong luồng chat tối hay sáng của Zalo và Messenger.</p>
+    <div class="og-grid">
+      <div class="chat-bubble">
+        <p class="chat-sender">Xem trước trong tin nhắn Zalo / Messenger</p>
+        <div class="link-card">
+          <svg class="og-svg" viewBox="0 0 1200 630" role="img" aria-label="Ảnh Open Graph Brainy Bits phong cách Giấy Nắng">
+            <rect width="1200" height="630" fill="#f6f0e4"/>
+            <rect x="34" y="34" width="1132" height="562" rx="28" fill="#fffdf8" stroke="#d8cdb8" stroke-width="2"/>
+            <g transform="translate(82 110) scale(1.65)">
+              <rect x="2" y="2" width="60" height="60" rx="15" fill="#192a21"/>
+              <path d="M14 13h16v17H14z" fill="#faf5ea"/>
+              <path d="M32 13h10a9 9 0 0 1 0 18H32z" fill="#e2632e"/>
+              <path d="M14 33h16v18H14z" fill="#ebb038"/>
+              <path d="M32 33h11a9 9 0 0 1 0 18H32z" fill="#5eb477"/>
+              <circle cx="49" cy="18" r="4.5" fill="#5a9bd4"/>
+            </g>
+            <text x="82" y="298" fill="#192a21" font-family="ui-rounded, system-ui, sans-serif" font-size="74" font-weight="800" letter-spacing="-1.5">Brainy Bits</text>
+            <text x="82" y="362" fill="#485e52" font-family="ui-rounded, system-ui, sans-serif" font-size="31" font-weight="600">Trò ngắn luyện nhớ, tính nhẩm và chữ Việt</text>
+            <text x="82" y="410" fill="#52685b" font-family="ui-rounded, system-ui, sans-serif" font-size="25" font-weight="600">Mở chơi ngay · Hỗ trợ Sáng / Tối · Chạy khi mất mạng</text>
+            <rect x="82" y="476" width="460" height="48" rx="14" fill="#ebe3d3"/>
+            <text x="312" y="508" text-anchor="middle" fill="#b23c0e" font-family="ui-monospace, monospace" font-size="20" font-weight="700">brainybits.thucanhtrantonnu.com</text>
+            <g transform="translate(790 120)">
+              <rect x="0" y="0" width="144" height="144" rx="28" fill="#e4efe3"/>
+              <rect x="40" y="36" width="64" height="56" rx="14" fill="#1f5c35"/>
+              <rect x="53" y="47" width="38" height="20" rx="5" fill="#fffdf8"/>
+              <path d="M34 106h76" stroke="#1f5c35" stroke-width="6" stroke-linecap="round"/>
+
+              <rect x="166" y="0" width="144" height="144" rx="28" fill="#e0eeec"/>
+              <path d="M196 72c18-26 50-28 70-8l16-12v40l-16-12c-20 20-52 18-70-8z" fill="#0e5a5a"/>
+
+              <rect x="0" y="166" width="144" height="144" rx="28" fill="#eae6f5"/>
+              <rect x="34" y="200" width="32" height="32" rx="8" fill="#473680" fill-opacity="0.35"/>
+              <rect x="78" y="200" width="32" height="32" rx="8" fill="#473680"/>
+              <rect x="34" y="244" width="32" height="32" rx="8" fill="#473680"/>
+              <rect x="78" y="244" width="32" height="32" rx="8" fill="#473680" fill-opacity="0.35"/>
+
+              <rect x="166" y="166" width="144" height="144" rx="28" fill="#e2ecf7"/>
+              <path d="M238 194c18 24 30 40 30 56a30 30 0 0 1-60 0c0-16 12-32 30-56z" fill="#174c80"/>
+              <path d="M238 236v24M226 248h24" stroke="#fffdf8" stroke-width="7" stroke-linecap="round"/>
+
+              <rect x="76" y="332" width="158" height="78" rx="22" fill="#f3e7da"/>
+              <rect x="102" y="348" width="44" height="44" rx="10" fill="#7a421d"/>
+              <rect x="162" y="348" width="44" height="44" rx="10" fill="#7a421d" fill-opacity="0.3"/>
+              <text x="124" y="379" text-anchor="middle" fill="#fffdf8" font-family="ui-rounded, sans-serif" font-size="25" font-weight="800">A</text>
+              <text x="184" y="379" text-anchor="middle" fill="#7a421d" font-family="ui-rounded, sans-serif" font-size="25" font-weight="800">L</text>
+            </g>
+          </svg>
+          <div class="link-meta">
+            <span class="link-domain">brainybits.thucanhtrantonnu.com</span>
+            <b>Brainy Bits — Trò ngắn luyện não bằng tiếng Việt</b>
+            <p>Đổi ray tàu, cho cá koi ăn, nhớ ô sáng, giải mưa phép tính và đoán cụm từ tiếng Việt. Chơi ngay trên web, không cần cài.</p>
+          </div>
+        </div>
+      </div>
+
+      <ul class="meta-list">
+        <li><code>meta[name="color-scheme"]</code><span>light dark (đặt ở &lt;head&gt;; công tắc Sáng / Tối / Theo máy cập nhật đồng bộ trước khi sơn CSS)</span></li>
+        <li><code>theme-color</code><span>Khai 2 thẻ media="(prefers-color-scheme: light)" (#f6f0e4) và dark (#0e1712)</span></li>
+        <li><code>&lt;title&gt; · og:title</code><span>Brainy Bits — Trò ngắn luyện nhớ, tính nhẩm và chữ Việt</span></li>
+        <li><code>og:description</code><span>Đổi ray tàu, cho cá koi ăn, nhớ ô sáng, giải mưa phép tính và đoán cụm từ tiếng Việt. Chơi ngay trên web, không cần cài.</span></li>
+        <li><code>JSON-LD WebApplication</code><span>Schema.org chuẩn GameApplication, inLanguage: "vi", isAccessibleForFree: true</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <dialog class="qr-dialog" id="qrDialog" closedby="any" aria-labelledby="qrTitle">
+    <div class="qr-sheet">
+      <div class="qr-head">
+        <div>
+          <h2 id="qrTitle">Quét để chơi trên máy khác</h2>
+          <p>Đưa camera điện thoại vào mã này để mở thẳng Brainy Bits.</p>
+        </div>
+        <button type="button" class="qr-close" id="qrCloseBtn" aria-label="Đóng">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div class="qr-paper">
+        <div class="qr-brand-row">
+          <svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true">
+            <rect x="2" y="2" width="60" height="60" rx="15" fill="#192a21"/>
+            <path d="M14 13h16v17H14z" fill="#faf5ea"/>
+            <path d="M32 13h10a9 9 0 0 1 0 18H32z" fill="#e2632e"/>
+            <path d="M14 33h16v18H14z" fill="#ebb038"/>
+            <path d="M32 33h11a9 9 0 0 1 0 18H32z" fill="#5eb477"/>
+          </svg>
+          <span id="qrTargetName">Brainy Bits · Trang chủ</span>
+        </div>
+        <div class="qr-frame" id="qrMount"></div>
+        <div class="qr-url" id="qrUrlText">https://brainybits.thucanhtrantonnu.com/</div>
+      </div>
+      <div class="qr-targets" role="group" aria-label="Chọn đích của mã QR">
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/" data-label="Brainy Bits · Trang chủ" aria-pressed="true">Trang chủ</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#tau" data-label="Đường Ray Tư Duy" aria-pressed="false">Đường Ray</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#koi" data-label="Cho Cá Koi Ăn" aria-pressed="false">Cá Koi</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#nho" data-label="Ô Sáng Ghi Nhớ" aria-pressed="false">Ô Sáng</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#mua" data-label="Mưa Phép Tính" aria-pressed="false">Mưa Phép Tính</button>
+        <button type="button" data-url="https://brainybits.thucanhtrantonnu.com/#chu" data-label="Đoán Cụm Từ" aria-pressed="false">Đoán Từ</button>
+      </div>
+      <div class="qr-actions">
+        <button type="button" class="qr-btn-main" id="qrCopyBtn">Chép đường dẫn</button>
+        <button type="button" class="qr-btn-sub" id="qrSaveBtn">Lưu mã QR</button>
+        <button type="button" class="qr-btn-sub" id="qrShareResultBtn">Gửi kết quả hôm nay</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="mockToast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const renderQrSvg = (() => {
+    const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+    for (let i = 0, x = 1; i < 255; i++) {
+      EXP[i] = EXP[i + 255] = x; LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11D;
+    }
+    const mul = (a, b) => (a && b ? EXP[LOG[a] + LOG[b]] : 0);
+    const rsEc = (data, ecLen) => {
+      let g = [1];
+      for (let i = 0; i < ecLen; i++) {
+        const next = new Array(g.length + 1).fill(0);
+        for (let j = 0; j < g.length; j++) { next[j] ^= g[j]; next[j + 1] ^= mul(g[j], EXP[i]); }
+        g = next;
+      }
+      const rem = new Uint8Array(data.length + ecLen); rem.set(data);
+      for (let i = 0; i < data.length; i++) {
+        const c = rem[i]; if (!c) continue;
+        for (let j = 0; j < g.length; j++) rem[i + j] ^= mul(g[j], c);
+      }
+      return rem.slice(data.length);
+    };
+    const SPECS = [[1,1,16,10,[]],[2,1,28,16,[6,18]],[3,1,44,26,[6,22]],[4,2,32,18,[6,26]],[5,2,43,24,[6,30]],[6,4,27,16,[6,34]]];
+    const maskFn = [
+      (r, c) => ((r + c) & 1) === 0, (r, c) => (r & 1) === 0, (r, c) => c % 3 === 0, (r, c) => (r + c) % 3 === 0,
+      (r, c) => ((r >> 1) + Math.floor(c / 3)) % 2 === 0, (r, c) => ((r * c) % 2) + ((r * c) % 3) === 0,
+      (r, c) => (((r * c) % 2) + ((r * c) % 3)) % 2 === 0, (r, c) => (((r + c) & 1) + ((r * c) % 3)) % 2 === 0,
+    ];
+    const penalty = (m, n) => {
+      let score = 0, dark = 0;
+      const p1 = [1,0,1,1,1,0,1,0,0,0,0], p2 = [0,0,0,0,1,0,1,1,1,0,1];
+      for (let r = 0; r < n; r++) {
+        let rr = 0, rp = -1, cr = 0, cp = -1;
+        for (let c = 0; c < n; c++) {
+          const rv = m[r][c], cv = m[c][r]; dark += rv;
+          if (rv === rp) { rr++; if (rr === 5) score += 3; else if (rr > 5) score += 1; } else { rp = rv; rr = 1; }
+          if (cv === cp) { cr++; if (cr === 5) score += 3; else if (cr > 5) score += 1; } else { cp = cv; cr = 1; }
+          if (r < n - 1 && c < n - 1 && rv === m[r][c + 1] && rv === m[r + 1][c] && rv === m[r + 1][c + 1]) score += 3;
+          if (c <= n - 11) {
+            let mr1 = true, mr2 = true, mc1 = true, mc2 = true;
+            for (let k = 0; k < 11; k++) {
+              if (m[r][c+k] !== p1[k]) mr1 = false; if (m[r][c+k] !== p2[k]) mr2 = false;
+              if (m[c+k][r] !== p1[k]) mc1 = false; if (m[c+k][r] !== p2[k]) mc2 = false;
+            }
+            if (mr1 || mr2) score += 40; if (mc1 || mc2) score += 40;
+          }
+        }
+      }
+      return score + Math.floor(Math.abs((dark * 100) / (n * n) - 50) / 5) * 10;
+    };
+    const encode = text => {
+      const bytes = new TextEncoder().encode(text);
+      const [ver, numBlocks, dpb, epb, aligns] = SPECS.find(s => bytes.length <= s[1] * s[2] - 2);
+      const totalData = numBlocks * dpb, bits = [];
+      const push = (v, l) => { for (let i = l - 1; i >= 0; i--) bits.push((v >> i) & 1); };
+      push(0b0100, 4); push(bytes.length, 8);
+      for (const b of bytes) push(b, 8);
+      for (let i = 0, t = Math.min(4, totalData * 8 - bits.length); i < t; i++) bits.push(0);
+      while (bits.length % 8) bits.push(0);
+      const code = [];
+      for (let i = 0; i < bits.length; i += 8) {
+        let v = 0; for (let j = 0; j < 8; j++) v = (v << 1) | bits[i + j]; code.push(v);
+      }
+      for (let i = 0; code.length < totalData; i++) code.push(i & 1 ? 0x11 : 0xEC);
+      const blocks = [];
+      for (let b = 0; b < numBlocks; b++) { const d = code.slice(b * dpb, (b + 1) * dpb); blocks.push({ d, ec: rsEc(d, epb) }); }
+      const stream = [];
+      for (let i = 0; i < dpb; i++) for (const b of blocks) stream.push(b.d[i]);
+      for (let i = 0; i < epb; i++) for (const b of blocks) stream.push(b.ec[i]);
+      const allBits = [];
+      for (const byte of stream) for (let i = 7; i >= 0; i--) allBits.push((byte >> i) & 1);
+      const n = 17 + 4 * ver, base = Array.from({ length: n }, () => new Uint8Array(n)), func = Array.from({ length: n }, () => new Uint8Array(n));
+      const setF = (r, c, v) => { if (r >= 0 && r < n && c >= 0 && c < n) { base[r][c] = v ? 1 : 0; func[r][c] = 1; } };
+      const finder = (r0, c0) => {
+        for (let dr = -1; dr <= 7; dr++) for (let dc = -1; dc <= 7; dc++) {
+          const inF = dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6;
+          setF(r0 + dr, c0 + dc, inF && (dr === 0 || dr === 6 || dc === 0 || dc === 6 || (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4)));
+        }
+      };
+      finder(0, 0); finder(0, n - 7); finder(n - 7, 0);
+      for (let i = 8; i < n - 8; i++) { setF(6, i, (i & 1) === 0); setF(i, 6, (i & 1) === 0); }
+      for (const ar of aligns) for (const ac of aligns) {
+        if (func[ar][ac]) continue;
+        for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) setF(ar + dr, ac + dc, Math.abs(dr) === 2 || Math.abs(dc) === 2 || (!dr && !dc));
+      }
+      setF(4 * ver + 9, 8, 1);
+      for (let i = 0; i < 9; i++) { func[8][i] = 1; func[i][8] = 1; }
+      for (let i = 0; i < 8; i++) { func[8][n - 1 - i] = 1; if (i < 7) func[n - 1 - i][8] = 1; }
+      let bitIdx = 0, upward = true;
+      for (let right = n - 1; right >= 1; right -= 2) {
+        if (right === 6) right = 5;
+        for (let step = 0; step < n; step++) {
+          const r = upward ? n - 1 - step : step;
+          for (let dc = 0; dc < 2; dc++) { const c = right - dc; if (!func[r][c]) base[r][c] = bitIdx < allBits.length ? allBits[bitIdx++] : 0; }
+        }
+        upward = !upward;
+      }
+      const c1 = [[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[7,8],[8,8],[8,7],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0]];
+      const c2 = [[8,n-1],[8,n-2],[8,n-3],[8,n-4],[8,n-5],[8,n-6],[8,n-7],[8,n-8],[n-7,8],[n-6,8],[n-5,8],[n-4,8],[n-3,8],[n-2,8],[n-1,8]];
+      let bestScore = Infinity, bestMat = null;
+      for (let mask = 0; mask < 8; mask++) {
+        const m = base.map(row => row.slice()), fn = maskFn[mask];
+        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (!func[r][c] && fn(r, c)) m[r][c] ^= 1;
+        let rem = mask << 10;
+        for (let i = 4; i >= 0; i--) if (rem & (1 << (i + 10))) rem ^= 0x537 << i;
+        const fmt = ((mask << 10) | rem) ^ 0x5412;
+        for (let i = 0; i < 15; i++) { const b = (fmt >> i) & 1; m[c1[i][0]][c1[i][1]] = b; m[c2[i][0]][c2[i][1]] = b; }
+        const sc = penalty(m, n);
+        if (sc < bestScore) { bestScore = sc; bestMat = m; }
+      }
+      return { size: n, mat: bestMat };
+    };
+    return (text, fg = '#192a21', bg = '#fffdf8', qz = 4) => {
+      const { size, mat } = encode(text), total = size + qz * 2;
+      let d = '';
+      for (let r = 0; r < size; r++) {
+        let c = 0;
+        while (c < size) {
+          if (!mat[r][c]) { c++; continue; }
+          let run = 1; while (c + run < size && mat[r][c + run]) run++;
+          d += `M${c + qz},${r + qz}h${run}v1h-${run}z`; c += run;
+        }
+      }
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges" role="img" aria-label="Mã QR mở ${text}"><rect width="${total}" height="${total}" fill="${bg}"/><path fill="${fg}" d="${d}"/></svg>`;
+    };
+  })();
+
+  let toastTimer = null;
+  const toast = msg => {
+    const el = document.getElementById('mockToast');
+    el.textContent = msg; el.classList.add('on');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 2200);
+  };
+
+  // Theme selector (3-state settings pattern per modern-web-guidance: dark-mode-toggle)
+  const metaScheme = document.querySelector('meta[name="color-scheme"]');
+  const schemeBtns = [...document.querySelectorAll('[data-scheme]')];
+  const autoBtn = document.getElementById('schemeAutoBtn');
+  const osDarkMq = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function syncSchemeUI() {
+    let stored = null;
+    try { stored = localStorage.getItem('bb_mock_b_scheme'); } catch (e) {}
+    const current = (stored === 'light' || stored === 'dark') ? stored : 'light dark';
+    metaScheme.content = current;
+    autoBtn.textContent = `Theo máy (${osDarkMq.matches ? 'Tối' : 'Sáng'})`;
+    schemeBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scheme === current)));
+  }
+  schemeBtns.forEach(btn => btn.addEventListener('click', () => {
+    const val = btn.dataset.scheme;
+    try {
+      if (val === 'light dark') localStorage.removeItem('bb_mock_b_scheme');
+      else localStorage.setItem('bb_mock_b_scheme', val);
+    } catch (e) {}
+    syncSchemeUI();
+  }));
+  osDarkMq.addEventListener('change', syncSchemeUI);
+  window.addEventListener('storage', syncSchemeUI);
+  syncSchemeUI();
+
+  // Top-layer dialog helpers
+  let supportsDisplayTransition;
+  function canTransitionDisplay() {
+    if (supportsDisplayTransition !== undefined) return supportsDisplayTransition;
+    if (!window.CSS?.supports?.('transition-behavior', 'allow-discrete') || !document.body) return false;
+    const probe = document.createElement('div');
+    probe.style.cssText = 'transition: display 1s allow-discrete !important; display: block;';
+    document.body.appendChild(probe); getComputedStyle(probe).display; probe.style.display = 'none';
+    supportsDisplayTransition = getComputedStyle(probe).display === 'block'; probe.remove();
+    return supportsDisplayTransition;
+  }
+  const supportsTopLayerExit = () => window.CSS?.supports?.('overlay', 'auto') && canTransitionDisplay();
+
+  const dialog = document.getElementById('qrDialog');
+  async function closeTopLayer(el) {
+    if (!el.open) return;
+    if (!supportsTopLayerExit()) {
+      el.setAttribute('data-closing', '');
+      const anims = el.getAnimations({ subtree: true });
+      if (anims.length > 0) await Promise.race([Promise.allSettled(anims.map(a => a.finished)), new Promise(r => setTimeout(r, 1200))]);
+      if (!el.hasAttribute('data-closing')) return;
+      el.removeAttribute('data-closing');
+    }
+    el.close();
+  }
+  dialog.addEventListener('cancel', e => { e.preventDefault(); closeTopLayer(dialog); });
+  if (!('closedBy' in HTMLDialogElement.prototype)) {
+    dialog.addEventListener('click', event => {
+      if (event.target !== dialog) return;
+      const r = dialog.getBoundingClientRect();
+      const inside = r.top <= event.clientY && event.clientY <= r.top + r.height && r.left <= event.clientX && event.clientX <= r.left + r.width;
+      if (!inside) closeTopLayer(dialog);
+    });
+  }
+
+  let currentUrl = 'https://brainybits.thucanhtrantonnu.com/';
+  let currentSvg = '';
+  const qrMount = document.getElementById('qrMount');
+  const qrUrlText = document.getElementById('qrUrlText');
+  const qrTargetName = document.getElementById('qrTargetName');
+  const targetBtns = [...document.querySelectorAll('.qr-targets button')];
+
+  function setQrTarget(url, label) {
+    currentUrl = url;
+    currentSvg = renderQrSvg(url, '#102218', '#faf5ea');
+    qrMount.innerHTML = currentSvg;
+    qrUrlText.innerHTML = url.replace('https://', 'https://<wbr>').replace('#', '<wbr>#');
+    qrTargetName.textContent = label;
+    targetBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.url === url)));
+  }
+  setQrTarget(currentUrl, 'Brainy Bits · Trang chủ');
+  targetBtns.forEach(b => b.addEventListener('click', () => setQrTarget(b.dataset.url, b.dataset.label)));
+
+  const openQr = () => { dialog.removeAttribute('data-closing'); if (!dialog.open) dialog.showModal(); };
+  document.getElementById('hubQrBtn').addEventListener('click', openQr);
+  document.getElementById('openQrQuick').addEventListener('click', openQr);
+  document.getElementById('qrCloseBtn').addEventListener('click', () => closeTopLayer(dialog));
+
+  document.getElementById('qrCopyBtn').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(currentUrl); } catch (e) {}
+    toast('Đã chép đường dẫn: ' + currentUrl.replace('https://', ''));
+  });
+  document.getElementById('qrSaveBtn').addEventListener('click', () => {
+    const blob = new Blob([currentSvg], { type: 'image/svg+xml;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'brainy-bits-qr.svg'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('Đã lưu tệp mã QR (SVG)');
+  });
+  document.getElementById('qrShareResultBtn').addEventListener('click', () => toast('Đã chép kết quả hôm nay để gửi vào tin nhắn'));
+  document.getElementById('hubShareCardBtn').addEventListener('click', () => toast('Đã chép kết quả hôm nay để gửi vào tin nhắn'));
+  document.getElementById('hubSetBtn').addEventListener('click', () => toast('Cài đặt: Âm thanh · Rung · Sáng/Tối/Theo máy · Xoá tiến độ'));
+  document.querySelectorAll('.shelf-item').forEach(item => item.addEventListener('click', () => toast('Đích mở: ' + item.dataset.url.replace('https://', ''))));
+  document.querySelector('.dailycard').addEventListener('click', e => toast('Mở ngay: ' + e.currentTarget.dataset.preview));
+
+  const btnNew = document.getElementById('stateNew'), btnOld = document.getElementById('stateReturning');
+  const strip = document.getElementById('hubStrip'), intro = document.getElementById('hubIntro');
+  const setContext = returning => {
+    btnNew.setAttribute('aria-pressed', String(!returning));
+    btnOld.setAttribute('aria-pressed', String(returning));
+    strip.hidden = !returning; intro.hidden = returning;
+    document.querySelectorAll('.shelf-item').forEach((item, i) => {
+      const em = item.querySelector('.gt em');
+      em.textContent = returning ? em.dataset.old : em.dataset.new;
+      em.classList.toggle('fresh', !returning || i > 1);
+    });
+  };
+  btnNew.addEventListener('click', () => setContext(false));
+  btnOld.addEventListener('click', () => setContext(true));
+})();
+</script>
+</body>
+</html>
