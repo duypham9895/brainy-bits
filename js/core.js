@@ -82,8 +82,13 @@ function sfx(name, { combo = 0, delay = 0 } = {}) {
   const q = p.slice();
   q[2] *= Math.pow(2, Math.min(Math.max(combo, 0), 12) / 12);
   const play = () => { try { zzfx(...q); } catch (e) {} };
-  delay > 0 ? setTimeout(play, delay * 1000) : play();
+  if (!(delay > 0)) { play(); return; }
+  // Delayed sounds are tracked so BB.leave() can cancel them: no ticks or stars after leaving a game.
+  const id = setTimeout(() => { sfxTimers.delete(id); play(); }, delay * 1000);
+  sfxTimers.add(id);
 }
+const sfxTimers = new Set();
+function cancelSfx() { sfxTimers.forEach(clearTimeout); sfxTimers.clear(); }
 
 // ---------- haptics (Android/Chrome; iOS Safari ignores navigator.vibrate) ----------
 const HAPTIC = { tap: 8, success: [12, 40, 18], error: [30, 40, 30, 40, 30], levelUp: [20, 60, 20, 60, 40] };
@@ -200,7 +205,15 @@ function mulberry32(a) {
 // bb_stats: { [g]: { best: highest level passed, stars: { [lv]: 0..3 } } }
 const GAMES = ['train', 'koi', 'mem', 'rain', 'word'];
 const GAME_NAME = { train: 'Đường Ray', koi: 'Cá Koi', mem: 'Ô Sáng', rain: 'Mưa Phép Tính', word: 'Đoán Cụm Từ' };
-const LV_MAX = { train: 11, koi: 10, mem: 13, rain: 10, word: 12 };
+// Level count per game. These are defaults so the hub can render before any game script runs;
+// each game should call BB.setLvMax(key, n) with its real count (e.g. word: PHRASES.length).
+// The object stays the same reference, so BB.LV_MAX[key] always reads the registered value.
+const LV_MAX = { train: 11, koi: 10, mem: 13, rain: 10, word: 49 };
+function setLvMax(key, n) {
+  n = Math.floor(Number(n));
+  if (GAMES.includes(key) && Number.isFinite(n) && n > 0) LV_MAX[key] = n;
+  return LV_MAX[key];
+}
 const LOG_MAX = 1000;
 
 function stats() { return store.json('bb_stats', {}); }
@@ -283,8 +296,16 @@ async function share() {
 
 // Wipe every Brainy Bits key, the old per-game ones included.
 const LEGACY_KEYS = ['rtd_best3', 'koi_lv2', 'koi_best', 'mem_lv', 'rain_lv', 'word_lv'];
+// One-time seed flags (bb_seeded_v1 in hub.js, bb_seed_mem / bb_seed_rain in the games, any later
+// version): all start with "bb_seed", so they are found by prefix instead of a list that can go stale.
+const SEED_PREFIX = 'bb_seed';
+function seedKeys() {
+  const ks = new Set([...mem.keys()].filter(k => k.startsWith(SEED_PREFIX)));
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(SEED_PREFIX)) ks.add(k); } } catch (e) {}
+  return [...ks];
+}
 function resetAll() {
-  ['bb_log', 'bb_stats', 'bb_streak_cache', 'bb_daily_done', 'bb_daily_pin', ...LEGACY_KEYS].forEach(store.del);
+  ['bb_log', 'bb_stats', 'bb_streak_cache', 'bb_daily_done', 'bb_daily_pin', ...LEGACY_KEYS, ...seedKeys()].forEach(store.del);
 }
 
 // ---------- accessible overlays ----------
@@ -317,7 +338,12 @@ function wireOverlays() {
 // Each game registers what leaving means for it: pause the round, cancel timers, stop sounds.
 const leaveFns = {};
 const onLeave = (key, fn) => { leaveFns[key] = fn; };
-const leave = key => { try { leaveFns[key] && leaveFns[key](); } catch (e) { console.error(e); } };
+// Core also stops what it owns: delayed sounds and the confetti animation loop.
+const leave = key => {
+  try { leaveFns[key] && leaveFns[key](); } catch (e) { console.error(e); }
+  cancelSfx();
+  try { if (confettiFn) confettiFn.reset(); } catch (e) {}
+};
 
 // Hub -> game hand-off: "open game X straight at level N" (daily challenge). The game's enter()
 // calls BB.takeRequest(key) and, if it gets a level, starts that level instead of showing its menu.
@@ -328,7 +354,8 @@ const takeRequest = key => { if (pending && pending.key === key) { const l = pen
 window.BB = {
   store, settings, motion, EASE, tone, sfx, haptic, countUp, shake, pop, trauma, hitStop, frozen,
   celebrate, toast, record, gameStats, stats, totalStars, dayStreak, daily, shareText, share, resetAll,
-  dayKey, mulberry32, onLeave, leave, request, takeRequest, LV_MAX, GAME_NAME, GAMES, wireOverlays,
+  dayKey, mulberry32, onLeave, leave, request, takeRequest, LV_MAX, setLvMax, GAME_NAME, GAMES, wireOverlays,
+  get pendingSfx() { return sfxTimers.size; },
 };
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', wireOverlays) : wireOverlays();
 })();
