@@ -235,6 +235,8 @@ test.describe('hub layout uses the screen width', () => {
       await page.setViewportSize({ width: w, height: h });
       await page.goto('/');
       await expect(page.locator('#hub')).toBeVisible();
+      // Cards slide in with a staggered entrance; measure once it settles (slow CI caught them mid-slide).
+      await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));
       const l = await page.evaluate(layout);
       expect(l.cols).toBe(cols);
       expect(l.headerRow).toBe(header);
