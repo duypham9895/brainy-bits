@@ -214,7 +214,9 @@ function mulberry32(a) {
 // ---------- progress ----------
 // Source of truth = an append-only log of finished levels; everything else is derived or cached.
 // bb_log: [{g, lv, won, stars, score, d, ms}]   g = train|koi|mem|rain|word, d = YYYY-MM-DD
-// bb_stats: { [g]: { best: highest level passed, stars: { [lv]: 0..3 } } }
+// bb_stats: { [g]: { best: highest level passed, stars: { [id]: 0..3 } } }   id = level number, or the
+//   table's stable id when it gives one (BBD.levelId; word: "p<phrase>"), so a reorder never moves a star.
+// bb_tablev_<g>: level-table version the stored stars belong to (BB.migrateProgress).
 const GAMES = ['train', 'koi', 'mem', 'rain', 'word'];
 const GAME_NAME = { train: 'Đường Ray', koi: 'Cá Koi', mem: 'Ô Sáng', rain: 'Mưa Phép Tính', word: 'Đoán Cụm Từ' };
 // Level count per game. These are defaults so the hub can render before any game script runs;
@@ -228,22 +230,45 @@ function setLvMax(key, n) {
 }
 const LOG_MAX = 1000;
 
-function stats() { return store.json('bb_stats', {}); }
-function gameStats(g) { const s = stats()[g] || {}; return { best: s.best || 0, stars: s.stars || {} }; }
+const isObj = x => Object.prototype.toString.call(x) === '[object Object]';
+// Corrupt bb_stats ("[]", "5", a string) reads as empty instead of crashing record() in strict mode.
+function stats() { const v = store.json('bb_stats', {}); return isObj(v) ? v : {}; }
+function gameStats(g) {
+  const s = isObj(stats()[g]) ? stats()[g] : {};
+  return { best: Number(s.best) > 0 ? Math.floor(s.best) : 0, stars: isObj(s.stars) ? s.stars : {} };
+}
+// Star key for a level: the table's stable id when BBD has one, else the level number.
+function levelKey(game, level) {
+  try { const B = window.BBD; if (B && B.levelId && B.games().includes(game)) return B.levelId(game, level); } catch (e) {}
+  return level;
+}
+const starsAt = (game, level) => gameStats(game).stars[levelKey(game, level)] || 0;
+// Run once at game load, after js/levels/<g>.js: moves stored progress to the current table version.
+// Idempotent (marker bb_tablev_<g>), never lowers levels passed, never throws. Logic: BBD.progress.run.
+const bbStorage = { getItem: k => store.get(k, null), setItem: (k, v) => store.set(k, v) };
+function migrateProgress(game, opts = {}) {
+  const B = window.BBD;
+  if (!B || !B.progress) return { ran: false, reason: 'no-engine', game };
+  try { return B.progress.run(bbStorage, game, opts); } catch (e) { return { ran: false, reason: 'error', game }; }
+}
 
 // record() returns what changed, so a result screen can celebrate only real news.
-function record({ game, level, won, stars = 0, score = 0, ms = 0 }) {
+// id: stable star key (default BBD.levelId(game, level), which is the level number unless the table sets ids).
+function record({ game, level, won, stars = 0, score = 0, ms = 0, id }) {
+  const key = (typeof id === 'string' && id) || (Number.isInteger(id) && id > 0) ? id : levelKey(game, level);
   const d = dayKey();
   const dl = daily(d);                                       // read before stats change: today's target is fixed
   const log = store.json('bb_log', []);
-  log.push({ g: game, lv: level, won: !!won, stars, score, d, ms: Math.round(ms) });
+  const row = { g: game, lv: level, won: !!won, stars, score, d, ms: Math.round(ms) };
+  if (key !== level) row.id = key;
+  log.push(row);
   if (log.length > LOG_MAX) log.splice(0, log.length - LOG_MAX);
   store.setJson('bb_log', log);
 
-  const all = stats(); const s = all[game] || (all[game] = { best: 0, stars: {} });
-  s.stars = s.stars || {};
-  const prevStars = s.stars[level] || 0, prevBest = s.best || 0;
-  if (won && stars > prevStars) s.stars[level] = stars;
+  const all = stats(); const s = isObj(all[game]) ? all[game] : (all[game] = { best: 0, stars: {} });
+  if (!isObj(s.stars)) s.stars = {};
+  const prevStars = s.stars[key] || 0, prevBest = s.best || 0;
+  if (won && stars > prevStars) s.stars[key] = stars;
   if (won && level > prevBest) s.best = level;
   store.setJson('bb_stats', all);
 
@@ -291,7 +316,7 @@ function shareText() {
   const lines = [`Brainy Bits #${dl.idx}`, `Chuỗi ${dayStreak()} ngày · ${totalStars()} sao`];
   for (const g of GAMES) {
     const s = gameStats(g); if (!s.best) continue;
-    const st = s.stars[s.best] || 0;
+    const st = starsAt(g, s.best);
     lines.push(`${GAME_NAME[g]}: Lv ${s.best} (${st}/3 ★)`);
   }
   if (dl.done) lines.push('Đã xong thử thách hôm nay');
@@ -365,7 +390,7 @@ const takeRequest = key => { if (pending && pending.key === key) { const l = pen
 
 window.BB = {
   store, settings, motion, EASE, tone, sfx, haptic, countUp, shake, pop, trauma, hitStop, frozen,
-  celebrate, toast, record, gameStats, stats, totalStars, dayStreak, daily, shareText, share, resetAll,
+  celebrate, toast, record, gameStats, stats, starsAt, levelKey, migrateProgress, totalStars, dayStreak, daily, shareText, share, resetAll,
   dayKey, mulberry32, onLeave, leave, request, takeRequest, LV_MAX, setLvMax, GAME_NAME, GAMES, wireOverlays,
   get pendingSfx() { return sfxTimers.size; },
 };

@@ -130,7 +130,7 @@ test('pointer tap counts once (no double fire from pointerdown + click)', async 
 test('HUD level pill follows the level chosen in the menu', async ({ page }) => {
   await open(page);
   await page.locator('#mlvgrid .lv').nth(4).click();
-  await expect(page.locator('#mLevel')).toHaveText('Level 5 · 7 ô');
+  await expect(page.locator('#mLevel')).toHaveText('Level 5 · 4 ô');   // table v2: L5 peak = 4 tiles (v1 had 7)
 });
 
 test('daily challenge hand-off starts the requested level directly', async ({ page }) => {

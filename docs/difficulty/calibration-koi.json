@@ -7,8 +7,9 @@
  "generatedOn": "2026-11-21",
  "config": {
   "E1": "A",
-  "E3": true,
+  "E3": false,
   "E5": true,
+  "tableVersion": 2,
   "l30Peak": 0.69,
   "floor": 0.65,
   "skilledL30": 0.5
@@ -16,11 +17,11 @@
  "seed": "mulberry32(cyrb53(\"camp|game|L|profile|i\"))",
  "note": "bL = logit(1 − p_median) with θ_median = 0, a = 1; 2PL fit not run yet",
  "adapterOpts": {},
- "ok": true,
+ "ok": false,
  "gates": [
   {
    "id": "B",
-   "name": "generated levels: |p_median − p*| ≤ 0.05 (legacy: measured only, E3)",
+   "name": "every level: |p_median − p*| ≤ 0.05",
    "pass": true,
    "fails": [],
    "note": ""
@@ -28,8 +29,10 @@
   {
    "id": "G1",
    "name": "weak ≥ 85% on L1–5",
-   "pass": true,
-   "fails": [],
+   "pass": false,
+   "fails": [
+    "L5 weak 0.7695"
+   ],
    "note": ""
   },
   {
@@ -86,46 +89,47 @@
   {
    "L": 1,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.92,
    "D": 0,
-   "bL": -5.806,
+   "bL": -2.769,
    "knobs": {
-    "koi": 6,
-    "cd": 1.45,
+    "koi": 12,
     "decoys": 0,
+    "cd": 1.45,
     "spdMul": 1,
-    "turnMul": 1
+    "turnMul": 1,
+    "scatter": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.9985,
+     "p": 0.9285,
      "ci": [
-      0.9956,
-      0.9995
+      0.9164,
+      0.939
      ],
-     "acc": 0.979,
-     "msMedian": 13062,
-     "p3": 1
+     "acc": 0.957,
+     "msMedian": 26681,
+     "p3": 0.9995
     },
     "median": {
-     "p": 0.997,
+     "p": 0.941,
      "ci": [
-      0.9935,
-      0.9986
+      0.9298,
+      0.9505
      ],
-     "acc": 0.9818,
-     "msMedian": 11716,
-     "p3": 1
+     "acc": 0.961,
+     "msMedian": 23963,
+     "p3": 0.9995
     },
     "skilled": {
-     "p": 1,
+     "p": 0.9605,
      "ci": [
-      0.9981,
-      1
+      0.951,
+      0.9682
      ],
-     "acc": 0.9886,
-     "msMedian": 11003,
+     "acc": 0.9677,
+     "msMedian": 22585,
      "p3": 1
     }
    }
@@ -133,234 +137,239 @@
   {
    "L": 2,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8884,
    "D": 0.1857,
-   "bL": -5.029,
+   "bL": -2.527,
    "knobs": {
-    "koi": 7,
-    "cd": 1.6,
+    "koi": 13,
     "decoys": 0,
+    "cd": 1.6,
     "spdMul": 1,
-    "turnMul": 1
+    "turnMul": 1,
+    "scatter": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.991,
+     "p": 0.907,
      "ci": [
-      0.9858,
-      0.9943
+      0.8935,
+      0.919
      ],
-     "acc": 0.9697,
-     "msMedian": 16208,
-     "p3": 1
+     "acc": 0.9553,
+     "msMedian": 30710,
+     "p3": 0.999
     },
     "median": {
-     "p": 0.9935,
+     "p": 0.926,
      "ci": [
-      0.9889,
-      0.9962
+      0.9137,
+      0.9367
      ],
-     "acc": 0.9772,
-     "msMedian": 14649,
+     "acc": 0.9602,
+     "msMedian": 27818,
      "p3": 1
     },
     "skilled": {
-     "p": 0.999,
+     "p": 0.9345,
      "ci": [
-      0.9964,
-      0.9997
+      0.9228,
+      0.9445
      ],
-     "acc": 0.9824,
-     "msMedian": 13811,
-     "p3": 1
+     "acc": 0.9649,
+     "msMedian": 26272,
+     "p3": 0.9995
     }
    }
   },
   {
    "L": 3,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8754,
    "D": 0.2626,
-   "bL": -3.892,
+   "bL": -2.208,
    "knobs": {
-    "koi": 8,
+    "koi": 14,
+    "decoys": 0,
     "cd": 1.75,
-    "decoys": 1,
     "spdMul": 1,
-    "turnMul": 1
+    "turnMul": 1,
+    "scatter": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.9675,
+     "p": 0.887,
      "ci": [
-      0.9588,
-      0.9744
+      0.8724,
+      0.9001
      ],
-     "acc": 0.9579,
-     "msMedian": 19765,
-     "p3": 1
+     "acc": 0.9549,
+     "msMedian": 35060,
+     "p3": 0.9995
     },
     "median": {
-     "p": 0.98,
+     "p": 0.901,
      "ci": [
-      0.9729,
-      0.9853
+      0.8871,
+      0.9133
      ],
-     "acc": 0.9683,
-     "msMedian": 17902,
-     "p3": 1
+     "acc": 0.9587,
+     "msMedian": 31913,
+     "p3": 0.9985
     },
     "skilled": {
-     "p": 0.9905,
+     "p": 0.924,
      "ci": [
-      0.9852,
-      0.9939
+      0.9116,
+      0.9348
      ],
-     "acc": 0.9761,
-     "msMedian": 16971,
-     "p3": 1
+     "acc": 0.9632,
+     "msMedian": 30342,
+     "p3": 0.9995
     }
    }
   },
   {
    "L": 4,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8653,
    "D": 0.3216,
-   "bL": -3.178,
+   "bL": -1.932,
    "knobs": {
-    "koi": 9,
+    "koi": 15,
+    "decoys": 0,
     "cd": 1.9,
-    "decoys": 1,
     "spdMul": 1,
-    "turnMul": 1
+    "turnMul": 1,
+    "scatter": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.9575,
+     "p": 0.861,
      "ci": [
-      0.9477,
-      0.9655
+      0.8451,
+      0.8755
      ],
-     "acc": 0.9575,
-     "msMedian": 23490,
-     "p3": 1
+     "acc": 0.9524,
+     "msMedian": 39734,
+     "p3": 0.9985
     },
     "median": {
-     "p": 0.96,
+     "p": 0.8735,
      "ci": [
-      0.9505,
-      0.9677
+      0.8582,
+      0.8874
      ],
-     "acc": 0.9635,
-     "msMedian": 21460,
-     "p3": 1
+     "acc": 0.9559,
+     "msMedian": 36345,
+     "p3": 0.997
     },
     "skilled": {
-     "p": 0.977,
+     "p": 0.8915,
      "ci": [
-      0.9695,
-      0.9827
+      0.8771,
+      0.9044
      ],
-     "acc": 0.9712,
-     "msMedian": 20401,
-     "p3": 1
+     "acc": 0.9606,
+     "msMedian": 34608,
+     "p3": 0.9995
     }
    }
   },
   {
    "L": 5,
    "kind": "peak",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7969,
    "D": 0.3714,
-   "bL": -2.658,
+   "bL": -1.45,
    "knobs": {
-    "koi": 10,
-    "cd": 2.05,
+    "koi": 15,
     "decoys": 2,
+    "cd": 2.05,
     "spdMul": 1,
-    "turnMul": 1
+    "turnMul": 1,
+    "scatter": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.9055,
+     "p": 0.7695,
      "ci": [
-      0.8919,
-      0.9176
+      0.7505,
+      0.7874
      ],
-     "acc": 0.9463,
-     "msMedian": 27671,
-     "p3": 0.9995
+     "acc": 0.9357,
+     "msMedian": 41876,
+     "p3": 0.993
     },
     "median": {
-     "p": 0.9345,
+     "p": 0.81,
      "ci": [
-      0.9228,
-      0.9445
+      0.7922,
+      0.8266
      ],
-     "acc": 0.9549,
-     "msMedian": 25280,
-     "p3": 1
+     "acc": 0.9433,
+     "msMedian": 38434,
+     "p3": 0.998
     },
     "skilled": {
-     "p": 0.962,
+     "p": 0.868,
      "ci": [
-      0.9527,
-      0.9695
+      0.8525,
+      0.8821
      ],
-     "acc": 0.9658,
-     "msMedian": 24138,
-     "p3": 0.9995
+     "acc": 0.9538,
+     "msMedian": 36753,
+     "p3": 0.998
     }
    }
   },
   {
    "L": 6,
    "kind": "breather",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8494,
    "D": 0.4152,
-   "bL": -2.477,
+   "bL": -2.016,
    "knobs": {
-    "koi": 11,
+    "koi": 12,
+    "decoys": 3,
     "cd": 2.2,
-    "decoys": 2,
     "spdMul": 1,
-    "turnMul": 1
+    "turnMul": 1,
+    "scatter": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.893,
+     "p": 0.825,
      "ci": [
-      0.8787,
-      0.9058
+      0.8077,
+      0.841
      ],
-     "acc": 0.9457,
-     "msMedian": 32024,
-     "p3": 0.999
+     "acc": 0.9339,
+     "msMedian": 35081,
+     "p3": 0.9965
     },
     "median": {
-     "p": 0.9225,
+     "p": 0.8825,
      "ci": [
-      0.91,
-      0.9334
+      0.8676,
+      0.8959
      ],
-     "acc": 0.9557,
-     "msMedian": 29448,
-     "p3": 1
+     "acc": 0.9464,
+     "msMedian": 32264,
+     "p3": 0.9985
     },
     "skilled": {
-     "p": 0.9385,
+     "p": 0.911,
      "ci": [
-      0.9271,
-      0.9482
+      0.8977,
+      0.9227
      ],
-     "acc": 0.9601,
-     "msMedian": 28153,
+     "acc": 0.9546,
+     "msMedian": 30826,
      "p3": 1
     }
    }
@@ -368,157 +377,161 @@
   {
    "L": 7,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8427,
    "D": 0.4549,
-   "bL": -1.96,
+   "bL": -1.774,
    "knobs": {
-    "koi": 12,
-    "cd": 2.35,
+    "koi": 13,
     "decoys": 3,
+    "cd": 2.35,
     "spdMul": 1,
-    "turnMul": 1
+    "turnMul": 1,
+    "scatter": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.8215,
+     "p": 0.79,
      "ci": [
-      0.8041,
-      0.8377
+      0.7716,
+      0.8073
      ],
-     "acc": 0.93,
-     "msMedian": 36651,
+     "acc": 0.9278,
+     "msMedian": 39756,
      "p3": 0.9955
     },
     "median": {
-     "p": 0.8765,
+     "p": 0.855,
      "ci": [
-      0.8614,
-      0.8902
+      0.8389,
+      0.8698
      ],
-     "acc": 0.9441,
-     "msMedian": 33912,
-     "p3": 0.9975
+     "acc": 0.9429,
+     "msMedian": 36843,
+     "p3": 0.9965
     },
     "skilled": {
-     "p": 0.91,
+     "p": 0.8895,
      "ci": [
-      0.8967,
-      0.9218
+      0.875,
+      0.9025
      ],
-     "acc": 0.9555,
-     "msMedian": 32479,
-     "p3": 1
+     "acc": 0.9536,
+     "msMedian": 35322,
+     "p3": 0.9995
     }
    }
   },
   {
    "L": 8,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8365,
    "D": 0.4913,
-   "bL": -1.681,
+   "bL": -1.513,
    "knobs": {
-    "koi": 13,
-    "cd": 2.5,
+    "koi": 14,
     "decoys": 3,
+    "cd": 2.5,
     "spdMul": 1,
-    "turnMul": 1
+    "turnMul": 1,
+    "scatter": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.8025,
+     "p": 0.7725,
      "ci": [
-      0.7845,
-      0.8194
+      0.7536,
+      0.7903
      ],
-     "acc": 0.9316,
-     "msMedian": 41618,
-     "p3": 0.9925
+     "acc": 0.9299,
+     "msMedian": 44866,
+     "p3": 0.9915
     },
     "median": {
-     "p": 0.843,
+     "p": 0.8195,
      "ci": [
-      0.8264,
-      0.8583
+      0.802,
+      0.8357
      ],
-     "acc": 0.943,
-     "msMedian": 38641,
-     "p3": 0.9965
+     "acc": 0.9419,
+     "msMedian": 41721,
+     "p3": 0.9955
     },
     "skilled": {
-     "p": 0.905,
+     "p": 0.876,
      "ci": [
-      0.8914,
-      0.9171
+      0.8608,
+      0.8897
      ],
-     "acc": 0.9563,
-     "msMedian": 37094,
-     "p3": 0.999
+     "acc": 0.9539,
+     "msMedian": 40058,
+     "p3": 0.9975
     }
    }
   },
   {
    "L": 9,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8307,
    "D": 0.5252,
-   "bL": -1.334,
+   "bL": -1.365,
    "knobs": {
-    "koi": 14,
+    "koi": 15,
+    "decoys": 3,
     "cd": 2.65,
-    "decoys": 4,
     "spdMul": 1,
-    "turnMul": 1
+    "turnMul": 1,
+    "scatter": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.733,
+     "p": 0.7395,
      "ci": [
-      0.7132,
-      0.7519
+      0.7198,
+      0.7583
      ],
-     "acc": 0.9185,
-     "msMedian": 46795,
-     "p3": 0.9855
+     "acc": 0.9269,
+     "msMedian": 50212,
+     "p3": 0.988
     },
     "median": {
-     "p": 0.7915,
+     "p": 0.7965,
      "ci": [
-      0.7731,
-      0.8087
+      0.7783,
+      0.8136
      ],
-     "acc": 0.9348,
-     "msMedian": 43635,
-     "p3": 0.991
+     "acc": 0.9402,
+     "msMedian": 46845,
+     "p3": 0.9895
     },
     "skilled": {
-     "p": 0.8545,
+     "p": 0.8515,
      "ci": [
-      0.8384,
-      0.8693
+      0.8352,
+      0.8664
      ],
-     "acc": 0.9478,
-     "msMedian": 42007,
-     "p3": 0.995
+     "acc": 0.9495,
+     "msMedian": 45119,
+     "p3": 0.996
     }
    }
   },
   {
    "L": 10,
    "kind": "peak",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7653,
    "D": 0.5571,
    "bL": -1.131,
    "knobs": {
     "koi": 15,
-    "cd": 2.8,
     "decoys": 4,
+    "cd": 2.8,
     "spdMul": 1,
-    "turnMul": 1
+    "turnMul": 1,
+    "scatter": 0
    },
    "profiles": {
     "weak": {

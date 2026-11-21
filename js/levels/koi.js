@@ -1,5 +1,9 @@
 // Cá Koi — difficulty table. Load after js/difficulty.js. Spec: MERGED-SPEC §4.2 "koi".
-// Legacy L1..10 = js/koi.js params(d) with d = level. Frozen (E3).
+// Table v2 (E3 lifted, Duy 2026-11-21): L1..10 retuned to the shared sawtooth. legacyLevels = the old
+// js/koi.js params(d) curve (table v1), kept for parity tests and progress migration.
+// Template, the same before and after L10: a step adds one koi (up to 15), a peak adds grey fish, a breather
+// drops 3 koi (15 → 12) and grey fish only change on peaks and breathers. Same level numbers, so stars and
+// koi_lv2 keep their keys: no mapper needed (identity), only the version marker moves.
 (function (root) {
   'use strict';
   const BBD = root.BBD;
@@ -12,8 +16,16 @@
       spdMul: 1, turnMul: 1,
     });
   }
+  // [koi, decoys] per level; cd keeps the v1 formula (1.3 + 0.15·L), spdMul and turnMul stay 1 until L11.
+  // Pass rates vs p* (calibrate koi --n 2000): docs/difficulty/calibration-koi.json.
+  const V2 = [[12, 0], [13, 0], [14, 0], [15, 0], [15, 2], [12, 3], [13, 3], [14, 3], [15, 3], [15, 4]];
+  const levels = V2.map(([koi, decoys], i) => ({
+    koi, decoys, cd: +Math.min(1.3 + 0.15 * (i + 1), 3.2).toFixed(2), spdMul: 1, turnMul: 1,
+  }));
   if (BBD && BBD.register) BBD.register('koi', {
+    version: 2,
     legacyLevels,
+    levels,
     knobs: [
       { name: 'koi', int: true, max: 15, hardCap: 15, source: 'code: koi.js params()' },
       { name: 'cd', max: 3.2, hardCap: 3.2, step: 0.05, source: 'code: koi.js:48 cap' },

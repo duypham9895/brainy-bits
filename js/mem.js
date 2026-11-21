@@ -2,11 +2,14 @@
 (() => {
 const $ = id => document.getElementById(id);
 const BB = window.BB;
-// Level parameters come from the shared difficulty engine (js/difficulty.js + js/levels/mem.js).
-// L1..13 are the frozen legacy values (E3); L14..30 are generated and calibrated offline.
-// Without BBD on the page the game falls back to the legacy 13 levels, so it never breaks.
+// Level parameters come from the shared difficulty engine (js/difficulty.js + js/levels/mem.js, table v2):
+// L1..30 follow one sawtooth template and are calibrated offline (docs/difficulty/calibration-mem.json).
+// Without BBD on the page the game falls back to the 13 levels of table v1, so it never breaks.
 const BBD = window.BBD && window.BBD.games().includes('mem') ? window.BBD : null;
 const ROUNDS = 3, NEED = 2, LV_MAX = BBD ? BB.setLvMax('mem', BBD.maxLevel('mem')) : BB.LV_MAX.mem;   // 30 | 13
+// Table v1 → v2 keeps level numbers, so stars and mem_lv keep their keys: the engine only moves the marker
+// bb_tablev_mem (identity mapper, best never drops). Runs before any gameStats read; a rerun is a no-op.
+if (BB.migrateProgress) BB.migrateProgress('mem');
 let level = 1, round = 0, perfect = 0, totalOk = 0;
 let phase = 'idle';            // idle | show | input | wait | paused
 let targets = new Set(), found = 0, n = 3;
@@ -22,7 +25,7 @@ const getLv = () => Math.min(LV_MAX + 1, Math.max(legacyLv(), BB.gameStats('mem'
 const setLv = v => BB.store.set('mem_lv', Math.min(LV_MAX + 1, v));
 // BB stats are seeded from mem_lv once by hub.js (seedFromLegacy, flag bb_seeded_v1); getLv() reads both.
 
-// level 1 = 3 ô sáng, mỗi level thêm 1 ô tới 15 ô ở L13; sau đó thời gian nhìn ngắn dần và ô rải xa nhau (disp).
+// Table v1 (fallback without BBD): level 1 = 3 ô sáng, mỗi level thêm 1 ô tới 15 ô ở L13.
 // Never more targets than cells - 1 (MEM-1 guard).
 function legacySpec(L){
   const t0 = 2 + L;
@@ -236,6 +239,7 @@ const DISP_SHOWN = 0.2;
 function nextTxt(){
   const a = spec(level), b = spec(level + 1);
   if (b.t !== a.t) return `Level ${level+1} có ${b.t} ô sáng.`;
+  if (b.size > a.size) return `Level ${level+1} vẫn ${b.t} ô, trên lưới ${b.size}×${b.size}.`;
   if (b.show < a.show) return `Level ${level+1} vẫn ${b.t} ô, chỉ được nhìn ${secTxt(b.show)} giây.`;
   if (b.disp > a.disp && b.disp >= DISP_SHOWN) return `Level ${level+1} vẫn ${b.t} ô, nằm rải xa nhau hơn.`;
   return `Level ${level+1} có ${b.t} ô sáng.`;
@@ -270,14 +274,14 @@ function showStars(k){
 
 // ---------- menu ----------
 function renderLevels(){
-  const done = getLv() - 1, grid = $('mlvgrid'), st = BB.gameStats('mem').stars;
+  const done = getLv() - 1, grid = $('mlvgrid');
   grid.innerHTML = '';
   for (let L=1; L<=LV_MAX; L++){
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'lv' + (L <= done ? ' done' : '') + (L === chosen ? ' on' : '');
     el.innerHTML = `${L}<small>${spec(L).t} ô</small>`;
-    const k = st[L] || 0;
+    const k = BB.starsAt('mem', L);
     if (L <= done && k) el.dataset.st = '★'.repeat(k);
     el.setAttribute('aria-label', `Level ${L}, ${spec(L).t} ô${L <= done ? ', đã qua' : ''}${k ? `, ${k} sao` : ''}`);
     el.setAttribute('aria-pressed', L === chosen ? 'true' : 'false');
@@ -331,6 +335,14 @@ function resume(){
   loop();
 }
 
+// index.html states the v1 rule ("mỗi level thêm 1 ô"). Table v2 does not add a tile every level, so the
+// menu line is rewritten to a rule that holds for every table.
+if (BBD) {
+  const rule = $('mmenu').querySelector('.how > div:last-child > span:last-child');
+  if (rule && /mỗi level thêm 1 ô/.test(rule.textContent)) {
+    rule.innerHTML = 'Mỗi level 3 lượt, đúng hoàn toàn <b>ít nhất 2 lượt</b> là qua. Level sau thường nhiều ô hơn hoặc ô nằm xa nhau hơn.';
+  }
+}
 $('mStart').onclick = () => startLevel(chosen);
 $('mrNext').onclick = () => startLevel(passed && level < LV_MAX ? level + 1 : level);
 $('mrMenu').onclick = toMenu;

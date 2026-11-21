@@ -1,19 +1,33 @@
 // Đoán Cụm Từ — level table. Load after js/difficulty.js. Spec: MERGED-SPEC §4.2 "word".
-// Content-only game: level L = the L-th phrase of js/word.js PHRASES after its stable sort by letter count.
-// Stars are stored by level index (word.js:88), so this order is frozen (E3). New phrases (50+) are
-// appended and sorted by D_word. E2 decides whether players see 49 or 30 levels.
+// Content-only game (no knobs): level L = one phrase of js/word.js PHRASES, by source index.
+// Version 2 (2026-11-21, E3 lifted): the 49 phrases are reordered by measured difficulty, and every row has a
+// stable id "p<source index>", so stars follow the phrase, not the level number. Version 1 (legacyLevels) was the
+// order by letter count; `migrate` moves old stars (keyed by level number) to the phrase they were earned on.
+// New phrases (50+) get a new id and go where calibrate.mjs puts them; never reuse an id. E2 decides 49 or 30.
 (function (root) {
   'use strict';
   const BBD = root.BBD;
-  // [source index in PHRASES, letters] in play order; generated from js/word.js on 2026-11-21.
+  // Version 1 play order: [source index in PHRASES] after word.js's stable sort by letter count.
   const ORDER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
     26, 27, 29, 30, 31, 32, 33, 34, 36, 28, 35, 37, 38, 39, 40, 42, 41, 43, 44, 45, 46, 47, 48];
   const LETTERS = [5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
     7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 11];
+  const lettersOf = src => LETTERS[ORDER.indexOf(src)];
+  // Version 2 play order. Bot estimate per phrase (scripts/sim/adapters/word.mjs, 4000 players per profile,
+  // seeds independent of the slot), then rank-matched to p*(L): the easiest phrase goes to the highest p*,
+  // so peaks (5k) get a harder phrase than the breather after them. L1–5 need weak ≥ 85% (G1) and
+  // breathers weak ≥ 60% (G4). Gate results: docs/difficulty/calibration-word.json.
+  const PLAY = [18, 46, 48, 45, 40, 32, 20, 37, 41, 6, 36, 43, 42, 11, 19, 27, 17, 47, 44, 25, 39, 16, 31, 34, 26,
+    5, 2, 3, 21, 0, 24, 22, 35, 15, 33, 14, 13, 23, 7, 10, 38, 1, 4, 8, 29, 28, 30, 12, 9];
+  const row = src => ({ id: 'p' + src, phrase: src, letters: lettersOf(src), maxTries: 6 });
   if (BBD && BBD.register) BBD.register('word', {
-    legacyLevels: ORDER.map((src, i) => ({ phrase: src, letters: LETTERS[i], maxTries: 6 })),
+    version: 2,
+    legacyLevels: ORDER.map(row),             // ids here too, so E3_FREEZE_LEGACY = true keeps stars on their phrase
+    levels: PLAY.map(row),
     knobs: [],
-    maxLevel: cfg => Math.min(cfg.E2_WORD_LEVELS, ORDER.length),
+    // v1 → v2: old star key L (level number) = phrase ORDER[L − 1]. Keys past 49 or already ids stay as they are.
+    migrate: ({ best, stars, remapLevels }) => ({ best, stars: remapLevels(stars, L => (L <= ORDER.length ? 'p' + ORDER[L - 1] : null)) }),
+    maxLevel: cfg => Math.min(cfg.E2_WORD_LEVELS, PLAY.length),
     meta: { table: 'js/levels/word.js', game: 'js/word.js (PHRASES)' },
   });
 })(typeof globalThis !== 'undefined' ? globalThis : this);

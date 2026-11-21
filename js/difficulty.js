@@ -14,7 +14,9 @@
 const CONFIG = {
   E1: 'A',                 // L30 peak median pass: 'A' ≈ 0.69 (default) | 'B' ≈ 0.58. Presets in E1_PRESETS.
   E2_WORD_LEVELS: 49,      // Đoán Cụm Từ: keep all 49 (default) or cut to 30.
-  E3_FREEZE_LEGACY: true,  // true = existing levels keep their exact values; bot only measures them.
+  // E3 lifted by Duy 2026-11-21: a table plays its `levels` rows (L1..n, retuned to the template) and keeps
+  // `legacyLevels` as reference data for parity tests and progress migration. true = play legacy rows again.
+  E3_FREEZE_LEGACY: false,
   E4: { maxStars: 1, unlocksNext: true, slowTempo: 0.85 },  // win on "lighter": star cap, unlock L+1, slow tempo (null = off)
   E5_KNOBS_ONLY: true,     // true = knobs only; knobs flagged rule:true (new mechanics) stay off.
 
@@ -35,7 +37,7 @@ const E1_PRESETS = {
 const e1 = () => E1_PRESETS[CONFIG.E1] || E1_PRESETS.A;
 
 // ---------- curve ----------
-const RESERVED = new Set(['L', 'kind', 'legacy', 'D', 'pStar', 'exhausted', 'assist']);
+const RESERVED = new Set(['L', 'kind', 'legacy', 'authored', 'id', 'D', 'pStar', 'exhausted', 'assist']);
 function D(L) { return Math.sqrt(Math.max(0, L - 1) / (CONFIG.REF_L - 1)); }          // A, R:dda (abagames, MIT)
 function kind(L) {
   const P = CONFIG.PERIOD;
@@ -60,7 +62,12 @@ function register(gameKey, spec) {
   if (typeof gameKey !== 'string' || !gameKey) throw new TypeError('BBD.register: gameKey must be a string');
   if (!spec || typeof spec !== 'object') throw new TypeError(`BBD.register(${gameKey}): spec missing`);
   const legacy = (spec.legacyLevels || []).map(r => Object.freeze({ ...r }));
-  const knobs = (spec.knobs || []).map(k => normKnob(gameKey, k, legacy));
+  const authored = (spec.levels || []).map(r => ({ ...r }));
+  const version = spec.version === undefined ? 1 : spec.version;
+  if (!isInt(version)) throw new Error(`BBD.register(${gameKey}): version must be an integer ≥ 1`);
+  if (spec.migrate != null && typeof spec.migrate !== 'function') throw new Error(`BBD.register(${gameKey}): migrate must be a function`);
+  const knobs = (spec.knobs || []).map(k => normKnob(gameKey, k, authored.length ? authored : legacy));
+  checkLevels(gameKey, authored, knobs);
   const names = new Set(knobs.map(k => k.name));
   const priority = (spec.priority || knobs.map(k => k.name)).slice();
   priority.forEach(n => { if (!names.has(n)) throw new Error(`BBD.register(${gameKey}): priority names unknown knob "${n}"`); });
@@ -69,7 +76,8 @@ function register(gameKey, spec) {
     return Object.freeze({ knob: r.knob, by: r.by });
   });
   const s = Object.freeze({
-    key: gameKey, legacy: Object.freeze(legacy), knobs: Object.freeze(knobs), priority: Object.freeze(priority),
+    key: gameKey, version, migrate: spec.migrate || null,
+    legacy: Object.freeze(legacy), levels: Object.freeze(authored.map(r => Object.freeze(r))), knobs: Object.freeze(knobs), priority: Object.freeze(priority),
     relief: Object.freeze(fx(spec.relief)), peak: Object.freeze(fx(spec.peak)),
     lighterKnobs: Object.freeze((spec.lighterKnobs || priority).slice()),
     derive: typeof spec.derive === 'function' ? spec.derive : null,
@@ -96,6 +104,22 @@ function normKnob(g, k, legacy) {
     source: k.source || '',
   });
 }
+// `levels` rows are authored L1..n: every live knob must be there (rule knobs default to off), and an `id`,
+// when given, is a stable star key: a non-numeric string, unique, so it never collides with level-number keys.
+function checkLevels(g, rows, knobs) {
+  const ids = new Set();
+  rows.forEach((r, i) => {
+    knobs.forEach(k => {
+      if (typeof r[k.name] === 'number') return;
+      if (k.rule) { r[k.name] = k.off; return; }
+      throw new Error(`BBD.register(${g}): levels[${i}] (L${i + 1}) misses knob "${k.name}"`);
+    });
+    if (r.id === undefined) return;
+    if (typeof r.id !== 'string' || !r.id || /^\d+$/.test(r.id)) throw new Error(`BBD.register(${g}): L${i + 1} id must be a non-numeric string`);
+    if (ids.has(r.id)) throw new Error(`BBD.register(${g}): duplicate level id "${r.id}"`);
+    ids.add(r.id);
+  });
+}
 function get(gameKey) {
   const s = specs.get(gameKey);
   if (!s) throw new Error(`BBD: unknown game "${gameKey}". Load js/levels/${gameKey}.js after js/difficulty.js.`);
@@ -117,14 +141,17 @@ function curveOf(name, u) {
   if (name === 'quad') return u * u;
   return Math.sqrt(u);                                   // 'sqrt' (default): steep early, flat late
 }
-const legacyN = s => (CONFIG.E3_FREEZE_LEGACY ? s.legacy.length : 0);
+// Rows played as written before the formula takes over: `levels` (E3 lifted), else `legacyLevels`.
+// A table without `levels` keeps playing its legacy rows, gated like any other level, until its owner retunes it.
+const seedOf = s => (CONFIG.E3_FREEZE_LEGACY || !s.levels.length ? s.legacy : s.levels);
+const legacyN = s => seedOf(s).length;
 
 // Where a knob starts moving: [anchorL, anchorV]. Reserve knobs wait for the previous knob in
 // `priority` to reach its hardCap, then start at the next breather (spec §4.6 step 3).
 function anchor(s, k) {
-  const n = legacyN(s);
-  const fromLegacy = n && typeof s.legacy[n - 1][k.name] === 'number';
-  let aL = fromLegacy ? n : 1, aV = fromLegacy ? s.legacy[n - 1][k.name] : k.min;
+  const seed = seedOf(s), n = seed.length;
+  const fromLegacy = n && typeof seed[n - 1][k.name] === 'number';
+  let aL = fromLegacy ? n : 1, aV = fromLegacy ? seed[n - 1][k.name] : k.min;
   if (typeof k.start === 'number' && fromLegacy) aV = k.start;   // first generated level jumps here (harder side only)
   if (k.unlockAt && k.unlockAt - 1 > aL) { aL = k.unlockAt - 1; aV = k.off; }
   if (k.reserve) {
@@ -142,8 +169,8 @@ function anchor(s, k) {
 // Knob value from the formula alone (no peak/breather shaping).
 function raw(s, k, L) {
   if (k.rule && CONFIG.E5_KNOBS_ONLY) return k.off;
-  const n = legacyN(s);
-  if (L <= n && typeof s.legacy[L - 1][k.name] === 'number') return s.legacy[L - 1][k.name];
+  const seed = seedOf(s), n = seed.length;
+  if (L <= n && typeof seed[L - 1][k.name] === 'number') return seed[L - 1][k.name];
   const [aL, aV] = anchor(s, k);
   if (L <= aL) return aV;
   let Le = L;
@@ -168,8 +195,13 @@ function raw(s, k, L) {
 
 // ---------- level ----------
 function compute(s, L) {
-  const n = legacyN(s);
-  if (L <= n) return { ...s.legacy[L - 1], L, kind: kind(L), legacy: true };
+  const seed = seedOf(s), n = seed.length;
+  if (L <= n && seed === s.legacy) return { ...s.legacy[L - 1], L, kind: kind(L), legacy: true };   // bit-exact
+  if (L <= n) {
+    const row = { ...seed[L - 1], ...(s.overrides[L] || {}) };
+    const derived = s.derive ? s.derive({ ...row }, L) : null;
+    return { ...row, ...(derived || {}), L, kind: kind(L), legacy: false, authored: true };
+  }
   if (!s.knobs.length) throw new RangeError(`BBD.level(${s.key}, ${L}): content-only game ends at L${n}; add content rows first`);
   const row = {};
   s.knobs.forEach(k => { row[k.name] = raw(s, k, L); });
@@ -204,10 +236,19 @@ function level(gameKey, L) {
 }
 function maxLevel(gameKey) {
   const s = get(gameKey);
-  if (typeof s.maxLevel === 'function') return s.maxLevel(CONFIG);
+  if (typeof s.maxLevel === 'function') return s.maxLevel(CONFIG, legacyN(s));
   if (typeof s.maxLevel === 'number') return s.maxLevel;
-  return s.knobs.length ? Math.max(CONFIG.REF_L, s.legacy.length) : s.legacy.length;
+  return s.knobs.length ? Math.max(CONFIG.REF_L, legacyN(s)) : legacyN(s);
 }
+// Stable star key for level L: the row's `id` when the table gives one (word: phrase id), else L itself,
+// so data saved before ids existed (stars[L]) keeps reading the same way.
+function levelId(gameKey, L) {
+  const r = level(gameKey, L);
+  return r.id !== undefined ? r.id : L;
+}
+const version = gameKey => get(gameKey).version;
+// Number of levels read from a written table (levels or legacyLevels) before the formula takes over.
+const authoredCount = gameKey => legacyN(get(gameKey));
 // True when every non-rule knob sits at its hardCap: the "+10 levels" rule must STOP and ask Duy.
 function exhausted(gameKey, L) {
   const s = get(gameKey);
@@ -274,8 +315,84 @@ const elo = {
   suggestPrev: failsInRow => failsInRow >= CONFIG.LIGHTER.suggestPrevAfter,
 };
 
+// ---------- progress migration when a table changes version (storage injected, pure otherwise) ----------
+// bb_stats[g] = { best, stars } is written by BB.record in js/core.js. When a game ships a new table
+// (spec.version + 1) it calls BB.migrateProgress(g) once at load; that runs progress.run() below.
+// Contract: idempotent (marker bb_tablev_<g>), never lowers `best` (levels passed), never throws on corrupt data.
+const isObj = x => Object.prototype.toString.call(x) === '[object Object]';
+const LEVEL_KEY = /^[1-9]\d*$/;
+const progress = {
+  STATS_KEY: 'bb_stats',
+  markerKey: g => `bb_tablev_${g}`,
+  // Sanitised copy of one game's stats: best = whole number ≥ 0, stars = { key: 1..3 } (0, junk and NaN dropped).
+  clean(entry) {
+    const e = isObj(entry) ? entry : {};
+    const b = Math.floor(Number(e.best));
+    const stars = {};
+    if (isObj(e.stars)) Object.keys(e.stars).forEach(k => {
+      const v = Math.floor(Number(e.stars[k]));
+      if (Number.isFinite(v) && v > 0) stars[k] = Math.min(3, v);
+    });
+    return { best: Number.isFinite(b) && b > 0 ? b : 0, stars };
+  },
+  // Move level-number keys ("7") to new keys with mapL(7); other keys (stable ids) pass through untouched,
+  // so running the same remap twice changes nothing. Two keys landing on one keep the higher star count.
+  remapLevels(stars, mapL) {
+    const out = {};
+    const put = (k, v) => { out[k] = Math.max(out[k] || 0, v); };
+    Object.keys(stars || {}).forEach(k => {
+      const v = stars[k];
+      if (!LEVEL_KEY.test(k)) { put(k, v); return; }
+      const nk = mapL(Number(k));
+      put(nk === undefined || nk === null || nk === '' ? k : String(nk), v);   // no mapping: keep, never drop a star
+    });
+    return out;
+  },
+  // Stored table version: integer ≥ 1, or null when the marker is missing or corrupt.
+  readVersion(storage, g) {
+    let raw = null;
+    try { raw = storage.getItem(progress.markerKey(g)); } catch (e) { return null; }
+    return typeof raw === 'string' && LEVEL_KEY.test(raw) ? Number(raw) : null;
+  },
+  // Pure step: old entry → new entry. A missing mapper keeps the data as is (same level numbers, new content).
+  apply(entry, from, to, mapper, g) {
+    const before = progress.clean(entry);
+    const mapped = mapper ? mapper({ game: g, from, to, best: before.best, stars: { ...before.stars }, remapLevels: progress.remapLevels }) : before;
+    const after = progress.clean(mapped);
+    after.best = Math.max(before.best, after.best);                  // levels passed never go down
+    return { before, after };
+  },
+  // Read bb_stats + marker, migrate one game, write both. Returns what happened; never throws.
+  //   opts.version: target version (default BBD.version(g)); opts.mapper: default spec.migrate, else identity.
+  // No marker = data from version 1 (every table before versions existed). A corrupt marker is treated the same:
+  // the mapper only moves stars and `best` can only rise, so re-running from 1 cannot cost a level.
+  run(storage, g, opts = {}) {
+    let s = null;
+    try { s = get(g); } catch (e) { /* game not registered: opts must carry the version */ }
+    const to = opts.version !== undefined ? opts.version : s ? s.version : undefined;
+    if (!isInt(to)) return { ran: false, reason: 'no-version', game: g };
+    const mapper = opts.mapper || (s && s.migrate) || null;
+    const stored = progress.readVersion(storage, g);
+    const from = stored || 1;
+    const mark = () => { try { storage.setItem(progress.markerKey(g), String(to)); return true; } catch (e) { return false; } };
+    if (from > to) return { ran: false, reason: 'newer', game: g, from, to };   // older build after a newer one: leave data alone
+    if (from === to) { if (stored !== to) mark(); return { ran: false, reason: 'current', game: g, from, to }; }
+    let all = {};
+    try { const v = JSON.parse(storage.getItem(progress.STATS_KEY)); if (isObj(v)) all = v; } catch (e) { /* corrupt → start clean */ }
+    let res;
+    try { res = progress.apply(all[g], from, to, mapper, g); }
+    catch (e) { return { ran: false, reason: 'mapper-error', game: g, from, to, error: String(e && e.message || e) }; }
+    all[g] = { ...(isObj(all[g]) ? all[g] : {}), best: res.after.best, stars: res.after.stars };
+    try { storage.setItem(progress.STATS_KEY, JSON.stringify(all)); }
+    catch (e) { return { ran: false, reason: 'storage-error', game: g, from, to }; }
+    mark();
+    return { ran: true, reason: 'migrated', game: g, from, to, before: res.before, after: res.after };
+  },
+};
+
 return Object.freeze({
   CONFIG, E1_PRESETS, e1, D, kind, pStar, register, level, maxLevel, exhausted, lighter, elo,
+  levelId, version, authoredCount, progress,
   games: () => [...specs.keys()],
   spec: gameKey => get(gameKey),
   clearCache: () => cache.clear(),

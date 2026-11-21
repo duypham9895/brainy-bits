@@ -275,7 +275,8 @@ test('Result cards place stars above the big hero number across Train, Koi, Rain
 
   await page.goto('/#koi');
   await page.click('#kStartBtn');
-  for (let i = 0; i < 6; i++) {
+  const koiN = await page.evaluate(() => window.__koi.fish.filter(x => !x.decoy).length);   // L1 = 12 in table v2 (was 6)
+  for (let i = 0; i < koiN; i++) {
     await page.evaluate(() => {
       const K = window.__koi; K.cooldown = 0;
       const f = K.fish.find(x => !x.decoy && !x.fed);
@@ -301,7 +302,7 @@ test('Result cards place stars above the big hero number across Train, Koi, Rain
   expect(rPos.stars).toBeLessThan(rPos.big);
 
   await page.goto('/#chu');
-  await page.locator('#wlvgrid .lv').nth(0).click();
+  await page.locator('#wlvgrid .lv').nth(29).click();   // "bà nội" moved L1 → L30 in table v2
   await page.click('#wStart');
   for (const ch of 'ba2noi65') await page.keyboard.press(ch);
   await page.keyboard.press('Enter');

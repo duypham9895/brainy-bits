@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 import { loadBBD, ROOT } from './load-bbd.mjs';
 import { PROFILES, PROFILE_NAMES, rngFor, samplePlayer } from './human.mjs';
 
-export const BAND = 0.05;        // §4.4 step 4: |p_median − p*| ≤ 5 points on generated levels
+export const BAND = 0.05;        // §4.4 step 4: |p_median − p*| ≤ 5 points, every level (E3 lifted 2026-11-21)
 export const G1_WEAK = 0.85;     // weak ≥ 85% on L1–5 (Roohi 2020 churn lesson)
 export const G4_WEAK = 0.60;     // weak ≥ 60% on every breather (A, R:simulation proposal)
 export const TOUCH_PX = 44;      // Parhi 2006 ≈ 9.2–9.6 mm
@@ -55,8 +55,8 @@ export function checkGates(rows, BBD, game, adapter, n) {
   const out = [];
   const gate = (id, name, fails, note = '') => out.push({ id, name, pass: fails.length === 0, fails, note });
 
-  gate('B', 'generated levels: |p_median − p*| ≤ 0.05 (legacy: measured only, E3)',
-    rows.filter(r => !r.legacy && Math.abs(r.profiles.median.p - r.pStar) > BAND)
+  gate('B', 'every level: |p_median − p*| ≤ 0.05',
+    rows.filter(r => Math.abs(r.profiles.median.p - r.pStar) > BAND)
       .map(r => `L${r.L} median ${r.profiles.median.p} vs p* ${r.pStar.toFixed(3)}`));
   gate('G1', 'weak ≥ 85% on L1–5',
     rows.filter(r => r.L <= 5 && r.profiles.weak.p < G1_WEAK).map(r => `L${r.L} weak ${r.profiles.weak.p}`));
@@ -82,7 +82,7 @@ export function checkGates(rows, BBD, game, adapter, n) {
   gate('G6', `knobs within hardCap; targets ≥ ${TOUCH_PX} px at 320 and 390 px`,
     rows.flatMap(r => {
       const f = [];
-      if (!r.legacy) spec.knobs.forEach(k => {
+      spec.knobs.forEach(k => {
         const v = r.knobs[k.name];
         if (typeof v === 'number' && (k.dir > 0 ? v > k.hardCap + 1e-9 : v < k.hardCap - 1e-9)) f.push(`L${r.L} ${k.name}=${v} past cap ${k.hardCap}`);
       });
@@ -106,7 +106,7 @@ export async function calibrate(game, { n = 400, from = 1, to, write = true, qui
   const rows = [];
   for (let L = from; L <= to; L++) {
     const spec = BBD.level(game, L);
-    const knobs = Object.fromEntries(Object.entries(spec).filter(([k]) => !['L', 'kind', 'legacy'].includes(k)));
+    const knobs = Object.fromEntries(Object.entries(spec).filter(([k]) => !['L', 'kind', 'legacy', 'authored'].includes(k)));
     const profiles = Object.fromEntries(PROFILE_NAMES.map(pn => [pn, measure(adapter, BBD, game, L, pn, n, adapterOpts)]));
     rows.push({ L, kind: spec.kind, legacy: spec.legacy, pStar: +BBD.pStar(L).toFixed(4), D: +BBD.D(L).toFixed(4),
       bL: +BBD.elo.bFromP(Math.min(0.999, Math.max(0.001, profiles.median.p))).toFixed(3), knobs, profiles });
@@ -115,7 +115,7 @@ export async function calibrate(game, { n = 400, from = 1, to, write = true, qui
   const ok = gates.every(g => g.pass !== false);
   const report = {
     game, n, from, to, simVersion: 1, generatedOn: new Date().toISOString().slice(0, 10),
-    config: { E1: BBD.CONFIG.E1, E3: BBD.CONFIG.E3_FREEZE_LEGACY, E5: BBD.CONFIG.E5_KNOBS_ONLY, ...BBD.e1() },
+    config: { E1: BBD.CONFIG.E1, E3: BBD.CONFIG.E3_FREEZE_LEGACY, E5: BBD.CONFIG.E5_KNOBS_ONLY, tableVersion: BBD.version(game), ...BBD.e1() },
     seed: 'mulberry32(cyrb53("camp|game|L|profile|i"))', note: 'bL = logit(1 − p_median) with θ_median = 0, a = 1; 2PL fit not run yet',
     adapterOpts, ok, gates, levels: rows,
   };
@@ -131,7 +131,7 @@ function print({ game, n, levels, gates, ok }) {
   for (const r of levels) {
     const c = pn => `${pct(r.profiles[pn].p)} [${pct(r.profiles[pn].p3)}]`;
     const d = r.profiles.median.p - r.pStar;
-    console.log(`${String(r.L).padStart(3)} ${r.kind.padEnd(8).slice(0, 5)} ${r.legacy ? 'L' : ' '}  ${pct(r.pStar)} | ${c('weak')}  ${c('median')}  ${c('skilled')}  | ${(d >= 0 ? '+' : '') + (d * 100).toFixed(0)}${!r.legacy && Math.abs(d) > BAND ? ' ✗' : ''}`);
+    console.log(`${String(r.L).padStart(3)} ${r.kind.padEnd(8).slice(0, 5)} ${r.legacy ? 'L' : ' '}  ${pct(r.pStar)} | ${c('weak')}  ${c('median')}  ${c('skilled')}  | ${(d >= 0 ? '+' : '') + (d * 100).toFixed(0)}${Math.abs(d) > BAND ? ' ✗' : ''}`);
   }
   console.log('\nGates:');
   for (const g of gates) {

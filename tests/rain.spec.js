@@ -70,17 +70,20 @@ test('RAIN-2: a digit that matches nothing clears the input instead of piling up
   expect((await dbg(page)).solved).toBe(1);
 });
 
-test('RAIN-4 + missed L10: levels ramp monotonically and match LVINFO', async ({ page }) => {
+// Was "L1..10 ramp monotonically, level L = tier L". Table v2 (2026-11-21): L7..9 replay tier 5 faster and L10
+// opens tier 10, so the per-tier checks read tiers 1..10 straight from the generator, and the ramp check is
+// "rain never slows down while the tier stays the same" (a new tier may come with slower rain).
+test('RAIN-4 + missed L10: tiers 1..10 keep their operations; rain never slows inside a tier', async ({ page }) => {
   await openRain(page);
   const r = await page.evaluate(() => {
     const t = window.__rainTest, out = {};
     for (let L = 1; L <= 10; L++) {
       const ops = new Set(); let max = 0;
       for (let i = 0; i < 600; i++) {
-        const [eq, ans] = t.makeEq(L);
+        const [eq, ans] = window.BBRain.makeEq(L, Math.random);
         ops.add(eq.match(/[+−×÷]/)[0]); max = Math.max(max, ans);
       }
-      out[L] = { ops: [...ops].sort().join(''), max, fall: t.spec(L).fall, every: t.spec(L).every, name: t.LVINFO[L].name };
+      out[L] = { ops: [...ops].sort().join(''), max };
     }
     return out;
   });
@@ -96,13 +99,16 @@ test('RAIN-4 + missed L10: levels ramp monotonically and match LVINFO', async ({
   expect(r[5].max).toBeGreaterThan(50);
   // L10 "số lớn hơn": thương phép chia vượt 9
   const big = await page.evaluate(() => {
-    for (let i = 0; i < 4000; i++) { const [eq, a] = window.__rainTest.makeEq(10); if (eq.includes('÷') && a > 9) return true; }
+    for (let i = 0; i < 4000; i++) { const [eq, a] = window.__rainTest.makeEq(10); if (eq.includes('÷') && a > 9) return true; }   // L10 plays tier 10
     return false;
   });
   expect(big).toBe(true);
-  for (let L = 2; L <= 10; L++) {
-    expect(r[L].fall).toBeLessThanOrEqual(r[L - 1].fall);
-    expect(r[L].every).toBeLessThanOrEqual(r[L - 1].every);
+  const sp = await page.evaluate(() => Array.from({ length: 31 }, (_, L) => (L ? window.__rainTest.spec(L) : null)));
+  expect(sp.slice(1, 11).map(x => x.ops)).toEqual([1, 2, 3, 4, 5, 6, 5, 5, 5, 10]);
+  for (let L = 2; L <= 30; L++) {
+    if (sp[L].ops !== sp[L - 1].ops || sp[L].kind === 'breather' || sp[L - 1].kind === 'breather') continue;
+    expect(sp[L].fall, `L${L}`).toBeLessThanOrEqual(sp[L - 1].fall);
+    expect(sp[L].every, `L${L}`).toBeLessThanOrEqual(sp[L - 1].every);
   }
 });
 

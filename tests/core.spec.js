@@ -161,7 +161,7 @@ test('service worker shows a new deploy despite max-age=600, drops old caches an
     await page.reload();
     await page.evaluate(() => navigator.serviceWorker.ready);
     await expect.poll(() => page.evaluate(() => caches.keys())).not.toContain('bb-v4');
-    expect(await page.evaluate(() => caches.keys())).toContain('bb-v5');
+    expect(await page.evaluate(() => caches.keys())).toContain('bb-v6');
 
     // Offline: the cached app shell still opens.
     if (!(await page.evaluate(() => !!navigator.serviceWorker.controller))) await page.reload();

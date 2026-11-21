@@ -1,5 +1,5 @@
 // Mưa Phép Tính — difficulty table + pure equation generator. Load after js/difficulty.js, before js/rain.js.
-// Spec: MERGED-SPEC §4.2 "rain". Legacy L1..10 = the old js/rain.js spec(L), unrounded, frozen (E3).
+// Spec: MERGED-SPEC §4.2 "rain". Table version 2 = `levels` below; legacyLevels = the old js/rain.js spec(L).
 // ops = equation tier: 1..9 = the old makeEq `case L`, 10 = its default branch, 11..14 = O11..O14 below.
 // The generator is shared by the game (rng = Math.random) and the simulator (seeded rng): window.BBRain.
 (function (root) {
@@ -82,7 +82,8 @@
     'Nhân, chia (bảng 2–9)', 'Đủ 4 phép tính', 'Đủ 4 phép tính, số lớn hơn',
     'Thêm cộng, trừ có nhớ', 'Thêm tìm số còn thiếu', 'Thêm phép tính hai bước', 'Thêm nhân số có hai chữ số'];
 
-  // Legacy rows: the exact old formulas (no rounding), so BBD.level('rain', L) === old spec(L) bit for bit.
+  // Legacy rows (table version 1, shipped before 2026-11-21): the exact old formulas, no rounding.
+  // Kept as reference data for parity tests; the game plays `levels` below (E3 lifted 2026-11-21).
   const legacyLevels = [];
   for (let L = 1; L <= 10; L++) {
     legacyLevels.push({
@@ -92,39 +93,54 @@
       target: 10 + L,
     });
   }
-  // L11..L30, calibrated with scripts/sim/calibrate.mjs rain (2026-11-21, adapter rain.mjs).
-  // The O11..O14 tiers carry most of the climb, so the rain itself speeds up only a little: the old L10
-  // already runs at 2.8 s per drop, and the simulated median player has little speed left past it.
-  // Each block = breather (new tier, slower rain) → 3 steps → peak. Columns: every (s), fall (s), target.
+  // Table version 2 (2026-11-21): one sawtooth from L1, calibrated with scripts/sim/calibrate.mjs rain --n 1200.
+  // L1..6 = the old rows: gate G1 (weak ≥ 85% on L1–5) keeps them at ~100% median. In the simulator no knob mix
+  // gives weak ≥ 85% with median ≤ p* + 5 on L2–5, so gate B stays red there (decision for Duy, see the report).
+  // L7..30: rain runs near its speed cap from L7, so the climb is carried by the equation tier and the chain
+  // length. Tiers 6..9 (times tables) stay at ~100% even at the speed cap, so only tier 6 is played (L6);
+  // L7..9 replay tier 5 faster. Breathers (11, 16, 21, 26) open a new tier with the E4 safety net as knobs:
+  // a short chain (10 drops), one extra life (4) and slower rain, so weak players pass ≥ 60% (gate G4).
+  // That makes them easier than p* (gate B) and than L−4 (gate G3): in rain no breather can hold weak ≥ 60%
+  // with median ≤ p* + 5. Columns: ops, every (s), fall (s), target, lives.
   const TABLE = {
-    11: [2.95, 8.50, 20], 12: [2.80, 8.10, 21], 13: [2.80, 8.05, 21], 14: [2.75, 8.05, 22], 15: [2.65, 7.85, 22],
-    16: [2.70, 8.00, 22], 17: [2.65, 7.85, 23], 18: [2.60, 7.85, 23], 19: [2.60, 7.80, 23], 20: [2.55, 7.60, 24],
-    21: [2.70, 8.10, 24], 22: [2.65, 8.05, 25], 23: [2.65, 8.00, 25], 24: [2.65, 7.95, 25], 25: [2.55, 7.70, 25],
-    26: [2.65, 8.15, 25], 27: [2.60, 8.05, 25], 28: [2.60, 8.00, 25], 29: [2.60, 7.95, 25], 30: [2.55, 7.90, 25],
+    7: [5, 2.35, 7.00, 17, 3], 8: [5, 2.35, 6.90, 18, 3], 9: [5, 2.35, 6.90, 19, 3], 10: [10, 2.40, 7.05, 20, 3],
+    11: [11, 3.40, 9.00, 10, 4], 12: [11, 2.80, 8.15, 20, 3], 13: [11, 2.80, 8.15, 21, 3], 14: [11, 2.80, 8.15, 22, 3], 15: [11, 2.65, 7.85, 22, 3],
+    16: [12, 3.20, 8.60, 10, 4], 17: [12, 2.70, 7.85, 22, 3], 18: [12, 2.70, 7.85, 23, 3], 19: [12, 2.65, 7.85, 23, 3], 20: [12, 2.55, 7.55, 24, 3],
+    21: [13, 3.20, 8.60, 10, 4], 22: [13, 2.70, 7.90, 24, 3], 23: [13, 2.70, 7.90, 25, 3], 24: [13, 2.70, 7.85, 25, 3], 25: [13, 2.55, 7.55, 25, 3],
+    26: [14, 3.30, 8.80, 10, 4], 27: [14, 2.65, 7.85, 25, 3], 28: [14, 2.65, 7.80, 25, 3], 29: [14, 2.65, 7.75, 25, 3], 30: [14, 2.55, 7.45, 25, 3],
   };
-  const overrides = {};
-  Object.keys(TABLE).forEach(L => { const [every, fall, target] = TABLE[L]; overrides[L] = { every, fall, target }; });
-  const L30 = TABLE[30];
+  const LIVES = 3;                                           // old game: 3 misses lose on every level
+  const levels = legacyLevels.slice(0, 6).map(r => ({ ...r, lives: LIVES }));
+  for (let L = 7; L <= 30; L++) { const [ops, every, fall, target, lives] = TABLE[L]; levels.push({ ops, fall, every, target, lives }); }
   // register(BBD) is idempotent and exported: js/rain.js calls it again when this file ran before
   // difficulty.js, or when a second copy of difficulty.js replaced window.BBD and dropped the table.
   function register(BBD) {
     if (!BBD || typeof BBD.register !== 'function' || BBD.games().includes('rain')) return false;
     BBD.register('rain', {
+      version: 2,
       legacyLevels,
-      overrides,
+      levels,
+      // Same level numbers, same order of play: stars and rain_lv stay where they are (no mapper).
       knobs: [
         { name: 'ops', int: true, hardCap: 14, changeOn: 'breather', source: 'A+B tiers O11–O14' },
         // fall and every move as a pair: their ratio is the number of drops on screen (rain is exempt from 1-knob rule).
-        // max = the calibrated L30 value, so L31+ (engine, not shipped) continues from L30 and reaches hardCap by L120.
-        // fall `start` only shapes that continuation: every shipped level 11..30 comes from TABLE.
-        { name: 'fall', start: 8.6, max: L30[1], hardCap: 6.8, step: 0.05, notch: 0.5, curve: 'linear', source: 'A, cap is a guess; calibrated' },
-        { name: 'every', max: L30[0], hardCap: 2.2, step: 0.05, notch: 0.2, curve: 'linear', source: 'A, cap is a guess; calibrated' },
+        // L31+ (engine, not shipped): steps start at the L29 step value and `max` is the step value at L40, so steps
+        // follow the slow fall of p* (~0.03 per 10 levels); `peak` below adds most of the L29 → L30 gap on top.
+        { name: 'fall', start: 7.741, max: 7.636, hardCap: 6.8, step: 0.01, notch: 0.5, curve: 'linear', source: 'A, cap is a guess; calibrated' },
+        // 0.01 s grid on both: 0.05 s of every moves the median ~2.5 points, too coarse to follow p* level by level.
+        // every reaches hardCap at L120, so BBD.exhausted(rain, 120) stops the +10 rule there.
+        { name: 'every', start: 2.652, max: 2.602, hardCap: 2.2, step: 0.01, notch: 0.2, curve: 'linear', source: 'A, cap is a guess; calibrated' },
         { name: 'target', int: true, max: 25, hardCap: 25, source: 'A' },
+        // Misses allowed before losing. Fewer = harder (dir −1). Steps and peaks keep 3; breathers get +1 (E4 net).
+        { name: 'lives', int: true, min: LIVES, max: LIVES, hardCap: LIVES, dir: -1, source: 'E4 safety net, 2026-11-21' },
         { name: 'storm', off: 0, min: 0, rule: true, unlockAt: 31, max: 0.25, hardCap: 0.25, step: 0.05, source: 'B, [E5]' },
       ],
       priority: ['every', 'fall', 'target', 'ops'],
       lighterKnobs: ['every', 'fall'],
-      relief: [{ knob: 'fall', by: 0.5 }, { knob: 'every', by: 0.2 }],
+      // Peak = every −0.08 s, fall −0.30 s on top of the step: ~5 points of median pass, the p* peak dip (L35, L40, L45).
+      peak: [{ knob: 'every', by: 0.08 }, { knob: 'fall', by: 0.30 }],
+      // Breather = the E4 safety net, as at L11/16/21/26: short chain (25 → 10 drops), one extra life, slower rain.
+      relief: [{ knob: 'target', by: 15 }, { knob: 'lives', by: 1 }, { knob: 'fall', by: 0.95 }, { knob: 'every', by: 0.6 }],
       meta: { table: 'js/levels/rain.js', game: 'js/rain.js', maxDrops: 5, maxAnswer: 999 },
     });
     return true;

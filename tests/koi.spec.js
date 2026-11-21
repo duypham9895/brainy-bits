@@ -43,7 +43,7 @@ const skipCooldown = page => page.evaluate(() => { window.__koi.cooldown = 0; })
 
 test('KOI-02: double-tap on a grey fish counts one mistake, then the dial locks', async ({ page }) => {
   const errors = await openKoi(page);
-  await start(page, 3);
+  await start(page, 6);                                // bảng v2: cá xám có từ L5, L6 = 12 koi + 3 cá xám
   expect(await tapFish(page, 'decoy')).toBe(true);
   expect(await tapFish(page, 'decoy')).toBe(true);
   await expect(page.locator('#kLevel')).toHaveText('Nhầm 1/1');
@@ -53,7 +53,7 @@ test('KOI-02: double-tap on a grey fish counts one mistake, then the dial locks'
 
 test('missed: second finger and right click are ignored', async ({ page }) => {
   await openKoi(page);
-  await start(page, 3);
+  await start(page, 6);
   await tapFish(page, 'decoy', { isPrimary: false });
   await tapFish(page, 'decoy', { button: 2, pointerType: 'mouse' });
   await expect(page.locator('#kLevel')).toHaveText('Nhầm 0/1');
@@ -61,20 +61,20 @@ test('missed: second finger and right click are ignored', async ({ page }) => {
 
 test('KOI-03: a second mistake ends the pond early with pellets left', async ({ page }) => {
   await openKoi(page);
-  await start(page, 3);
+  await start(page, 6);
   await tapFish(page, 'decoy');
   await skipCooldown(page);
   await tapFish(page, 'decoy');
   await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
   expect(await page.evaluate(() => window.__koi.pellets)).toBeGreaterThan(0);
-  await expect(page.locator('#krTitle')).toContainText('Chưa qua Level 3');
+  await expect(page.locator('#krTitle')).toContainText('Chưa qua Level 6');
   await expect(page.locator('#krDetail')).toContainText('dừng sớm');
   await expect(page.locator('#krStars')).toBeHidden();
 });
 
 test('KOI-06: pause works during the end-of-pond delay', async ({ page }) => {
   await openKoi(page);
-  await start(page, 3);
+  await start(page, 6);
   await tapFish(page, 'decoy');
   await skipCooldown(page);
   await tapFish(page, 'decoy');
@@ -95,13 +95,13 @@ test('KOI-06: leaving mid-pond keeps the pond paused instead of wiping it', asyn
   await expect(page.locator('#hub')).toBeVisible();
   await page.click('#openKoi');
   await expect(page.locator('#kpaused')).toBeVisible();
-  await expect(page.locator('#kScore')).toHaveText('✓ 1/6');
+  await expect(page.locator('#kScore')).toHaveText('✓ 1/12');
 });
 
 test('perfect level 1: 3 stars shown, recorded, koi_best written (OPS-4)', async ({ page }) => {
   await openKoi(page);
   await start(page, 1);
-  for (let i = 0; i < 6; i++) { await skipCooldown(page); expect(await tapFish(page, 'fresh')).toBe(true); }
+  for (let i = 0; i < 12; i++) { await skipCooldown(page); expect(await tapFish(page, 'fresh')).toBe(true); }
   await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
   await expect(page.locator('#krTitle')).toContainText('Qua Level 1');
   await expect(page.locator('#krStars .s.on')).toHaveCount(3, { timeout: 3000 });
@@ -109,7 +109,7 @@ test('perfect level 1: 3 stars shown, recorded, koi_best written (OPS-4)', async
   const r = await page.evaluate(() => ({ st: BB.gameStats('koi'), kb: localStorage.getItem('koi_best'), lv: localStorage.getItem('koi_lv2') }));
   expect(r.st.best).toBe(1); expect(r.st.stars['1']).toBe(3);
   expect(r.kb).toBe('1'); expect(r.lv).toBe('2');
-  await expect(page.locator('#krNext')).toHaveText('Level 2 · 7 cá →');
+  await expect(page.locator('#krNext')).toHaveText('Level 2 · 13 cá →');
 });
 
 test('tapping during cooldown costs the third star, not a mistake', async ({ page }) => {
@@ -119,7 +119,7 @@ test('tapping during cooldown costs the third star, not a mistake', async ({ pag
   await page.waitForTimeout(350);                      // quá ngưỡng chạm đúp 300ms
   await tapFish(page, 'fresh');                        // vòng chưa đầy
   await expect(page.locator('#kLevel')).toHaveText('Nhầm 0/1');
-  for (let i = 0; i < 5; i++) { await skipCooldown(page); await tapFish(page, 'fresh'); }
+  for (let i = 0; i < 11; i++) { await skipCooldown(page); await tapFish(page, 'fresh'); }   // 12 cá ở L1, chạm vội không cho ăn
   await expect(page.locator('#krStars .s.on')).toHaveCount(2, { timeout: 3000 });
   await expect(page.locator('#krRule')).toHaveText('Chờ vòng đầy rồi mới chạm là được 3 sao.');
 });
@@ -150,7 +150,7 @@ test('HUD and pause button meet size and copy rules', async ({ page }) => {
   await start(page, 1);
   const box = await page.locator('#kPauseBtn').boundingBox();
   expect(box.width).toBeGreaterThanOrEqual(44); expect(box.height).toBeGreaterThanOrEqual(44);
-  await expect(page.locator('#kPond')).toHaveText('Level 1 · 6 cá');
+  await expect(page.locator('#kPond')).toHaveText('Level 1 · 12 cá');
 });
 
 test('review: accidental double-tap on a koi does not cost the third star, a later early tap does', async ({ page }) => {
@@ -192,15 +192,15 @@ test('review: HUD behind the menu shows the chosen level, not the last pond', as
   await page.click('#kQuitBtn');
   await expect(page.locator('#kmenu')).toBeVisible();
   await page.locator('#klvgrid .lv').nth(2).click();
-  await expect(page.locator('#kPond')).toHaveText('Level 3 · 8 cá');
-  await expect(page.locator('#kScore')).toHaveText('✓ 0/8');
+  await expect(page.locator('#kPond')).toHaveText('Level 3 · 14 cá');
+  await expect(page.locator('#kScore')).toHaveText('✓ 0/14');
 });
 
 // Neon review #13: câu báo trượt khi hết thức ăn, nhãn đọc màn hình không có "0 sao".
 test('neon-13: failing on the last pellet says "Chỉ được nhầm tối đa 1 lần"', async ({ page }) => {
   const errors = await openKoi(page);
-  await start(page, 1);                                // 6 cá, 6 viên thức ăn
-  for (let i = 0; i < 4; i++) { await skipCooldown(page); expect(await tapFish(page, 'fresh')).toBe(true); }
+  await start(page, 1);                                // bảng v2: 12 cá, 12 viên thức ăn
+  for (let i = 0; i < 10; i++) { await skipCooldown(page); expect(await tapFish(page, 'fresh')).toBe(true); }
   for (let i = 0; i < 2; i++) { await skipCooldown(page); expect(await tapFish(page, 'fed')).toBe(true); }
   expect(await page.evaluate(() => window.__koi.pellets)).toBe(0);
   await expect(page.locator('#kresult')).toBeVisible();
@@ -212,9 +212,9 @@ test('neon-13: failing on the last pellet says "Chỉ được nhầm tối đa 
 test('neon-13: level buttons never announce "0 sao" for legacy passes', async ({ page }) => {
   await openKoi(page, { koi_lv2: '4', bb_stats: JSON.stringify({ koi: { best: 3, stars: { 2: 2 } } }) });
   const lv = page.locator('#klvgrid .lv');
-  await expect(lv.nth(0)).toHaveAttribute('aria-label', 'Level 1, 6 cá, đã qua');
-  await expect(lv.nth(1)).toHaveAttribute('aria-label', 'Level 2, 7 cá, đã qua, 2 sao');
-  await expect(lv.nth(3)).toHaveAttribute('aria-label', 'Level 4, 9 cá');
+  await expect(lv.nth(0)).toHaveAttribute('aria-label', 'Level 1, 12 cá, đã qua');
+  await expect(lv.nth(1)).toHaveAttribute('aria-label', 'Level 2, 13 cá, đã qua, 2 sao');
+  await expect(lv.nth(3)).toHaveAttribute('aria-label', 'Level 4, 15 cá');
   for (let i = 0; i < 10; i++) expect(await lv.nth(i).getAttribute('aria-label')).not.toContain('0 sao');
 });
 
@@ -263,4 +263,20 @@ test('neon-14: quitting from pause to the menu restarts the swimming loop', asyn
   const c = await page.evaluate(() => window.__raf);
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => window.__raf) - c).toBeGreaterThan(5);
+});
+
+test('review 2026-11-21: menu copy matches the level table (fish at L1, first grey-fish level), no stale v1 rule', async ({ page }) => {
+  const errors = await openKoi(page);
+  const want = await page.evaluate(() => {
+    const K = window.__koi; let grey = 0;
+    for (let lv = 1; lv <= K.LV_MAX && !grey; lv++) if (K.params(lv).decoys) grey = lv;
+    return { koi1: K.params(1).koi, grey };
+  });
+  const how = page.locator('#kmenu .how');
+  await expect(how).toContainText(`Level 1 có ${want.koi1} cá koi.`);
+  await expect(how).toContainText(`Từ level ${want.grey} có cá xám`);
+  await expect(how).toContainText('Cứ 5 level có một màn khó, ngay sau là một màn nhẹ.');
+  await expect(how).not.toContainText('mỗi level tăng thêm 1 con');
+  expect(want).toEqual({ koi1: 12, grey: 5 });
+  expect(errors).toEqual([]);
 });

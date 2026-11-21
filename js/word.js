@@ -4,7 +4,8 @@ const $ = id => document.getElementById(id);
 const BB = window.BB;
 const MAX_TRIES = 6;
 // ---------- @pure-begin: không DOM, không BB. scripts/sim/adapters/word.mjs đọc nguyên khối này để bot dùng đúng luật game ----------
-// cụm 2 từ thông dụng + gợi ý chủ đề; được xếp theo tổng số chữ cái (ngắn → dài).
+// cụm 2 từ thông dụng + gợi ý chủ đề; được xếp theo tổng số chữ cái (ngắn → dài). Đây chỉ là thứ tự dự phòng
+// khi thiếu BBD; thứ tự chơi thật nằm ở js/levels/word.js (xếp theo độ khó đo được).
 // Gợi ý không được chứa từ nào của đáp án, cũng không được trùng một đáp án khác (kiểm trong tests/word.spec.js).
 const PHRASES = [
   ['bà nội','Người thân'], ['cà phê','Đồ uống'], ['áo dài','Trang phục'], ['phở bò','Món ăn'], ['ước mơ','Cảm xúc, khái niệm'],
@@ -96,8 +97,9 @@ function evaluateAgainst(T, guess){
 // ---------- @pure-end ----------
 
 // ---------- level ----------
-// Level L = cụm BBD.level('word', L).phrase (chỉ số trong danh sách gốc ở trên). Bảng js/levels/word.js giữ
-// đúng thứ tự cũ (xếp theo số chữ), nên sao đã lưu theo số level không lệch. Chưa nạp BBD thì dùng thứ tự cũ.
+// Level L = cụm BBD.level('word', L).phrase (chỉ số trong danh sách gốc ở trên). Bảng js/levels/word.js (version 2)
+// xếp lại 49 cụm theo độ khó đo bằng bot; sao lưu theo mã cụm "p<chỉ số>" (BB.starsAt), nên đổi thứ tự không làm
+// sao chạy sang cụm khác. Chưa nạp BBD thì dùng thứ tự cũ (xếp theo số chữ), sao theo số level như trước.
 const BBD = window.BBD && window.BBD.games && window.BBD.games().includes('word') ? window.BBD : null;
 const LV_MAX = BBD ? Math.min(BBD.maxLevel('word'), PHRASES.length) : PHRASES.length;
 // Một dòng BBD trỏ sai cụm thì bỏ cả bảng, quay về thứ tự cũ: sao lưu theo số level không được gắn nhầm cụm.
@@ -107,6 +109,8 @@ if (rowsBBD && !rowsBBD.every(Boolean)) console.warn('word: BBD table mismatch, 
 // Số level thật nằm ở đây, không phải hằng số trong core.js: đăng ký trước khi hub.js đọc
 // (word.js nạp trước hub.js), để hub, thử thách ngày và chia sẻ cùng đếm đúng số cụm.
 if (BB.setLvMax) BB.setLvMax('word', LV_MAX); else if (BB.LV_MAX) BB.LV_MAX.word = LV_MAX;
+// Bảng đổi phiên bản (thứ tự cụm mới) → dời sao cũ sang đúng cụm đã chơi, một lần, trước khi đọc gameStats.
+if (BB.migrateProgress) BB.migrateProgress('word');
 
 // ---------- trạng thái ----------
 // state: menu | play | reveal (đang lật ô, khoá nhập) | result
@@ -114,12 +118,20 @@ let level = 1, chosen = 1, puzzle = null, rows = [], cur = [], state = 'menu', p
 let inGame = false, flipRow = -1, popAt = -1, revealT = 0, startedAt = 0, starT = [], tickT = [];
 const keyState = {};
 
-// Tiến độ cũ: word_lv = "level cao nhất + 1". Chỉ đọc, không ghi nữa; ✓ mới lấy từ sao trong BB.
-// Không seed vào bb_stats ở đây: hub.js seed một lần (cờ bb_seeded_v1), còn game đọc thẳng word_lv.
-const legacyDone = () => BB.store.num('word_lv', 1, 1, LV_MAX + 1) - 1;
-const starsOf = L => BB.gameStats('word').stars[L] || 0;
-const isDone = L => starsOf(L) > 0 || L <= legacyDone();
+// Tiến độ cũ: word_lv = "level cao nhất + 1" theo thứ tự cũ. Chỉ đọc, không ghi nữa; ✓ mới lấy từ sao trong BB.
+// Không seed vào bb_stats ở đây: hub.js seed một lần (cờ bb_seeded_v2), còn game đọc thẳng word_lv.
+// k level cũ đã qua = k cụm đầu của thứ tự cũ (legacyLevels), nên ✓ đi theo cụm sang vị trí mới.
+const LEGACY_KEYS = BBD ? BBD.spec('word').legacy.map((r, k) => r.id || k + 1) : PHRASES.map((_, k) => k + 1);
+// Chặn theo số cụm của thứ tự cũ, không theo LV_MAX: nếu bảng mới ngắn hơn, ✓ của cụm cũ vẫn không mất.
+const legacyDone = () => BB.store.num('word_lv', 1, 1, LEGACY_KEYS.length + 1) - 1;
+const keyOf = L => (BB.levelKey ? BB.levelKey('word', L) : L);
+const starsOf = L => (BB.starsAt ? BB.starsAt('word', L) : BB.gameStats('word').stars[L] || 0);
+const isDone = L => starsOf(L) > 0 || LEGACY_KEYS.slice(0, legacyDone()).includes(keyOf(L));
+const doneCount = () => { let n = 0; for (let L = 1; L <= LV_MAX; L++) if (isDone(L)) n++; return n; };
 const bestLv = () => Math.min(LV_MAX, Math.max(BB.gameStats('word').best, legacyDone()));
+const nextOpen = () => { let L = 1; while (L < LV_MAX && isDone(L)) L++; return L; };
+// Hub và thử thách ngày đọc tiến độ theo màn đã qua, không theo best (thứ tự đã đổi). Chỉ chạy khi core có registry.
+if (BB.setProgress) BB.setProgress('word', () => ({ done: doneCount(), next: nextOpen() }));
 const starsFor = tries => tries <= 3 ? 3 : tries <= 5 ? 2 : 1;
 const STAR_RULE = '3 sao: tối đa 3 lượt · 2 sao: 4–5 lượt · 1 sao: 6 lượt';
 
@@ -424,11 +436,12 @@ function toMenu(){
   if (state === 'reveal') return;                       // đang lật ô: khoá ☰
   clearTimers();
   state = 'menu';
-  const next = bestLv() + 1;
-  chosen = inGame ? level : Math.min(next, LV_MAX);
+  // Gợi ý level đầu tiên chưa qua: sau khi xếp lại, các cụm đã qua không còn nằm liền nhau từ Level 1.
+  const next = nextOpen();
+  chosen = inGame ? level : next;
   renderLevels();
-  const done = bestLv();
-  $('wBestTxt').textContent = done ? (done >= LV_MAX ? `Đã qua hết ${LV_MAX} level` : `Đã qua tới Level ${done}/${LV_MAX}`) : '';
+  const done = doneCount();
+  $('wBestTxt').textContent = done ? (done >= LV_MAX ? `Đã qua hết ${LV_MAX} level` : `Đã qua ${done}/${LV_MAX} level`) : '';
   const rb = resumeBtn();
   rb.classList.toggle('hidden', !inGame);
   rb.textContent = `Chơi tiếp Level ${level} (lượt ${rows.length + 1}/${MAX_TRIES})`;

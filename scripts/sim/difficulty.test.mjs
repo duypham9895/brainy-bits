@@ -43,36 +43,89 @@ test('determinism: fresh loads give identical frozen tables', () => {
   assert.ok(exGauss(mulberry32(1), PROFILES.median.rt) >= 120);
 });
 
-test('legacy levels are frozen to the formulas in the game code (E3)', () => {
+// E3 lifted 2026-11-21: legacyLevels stay in every table as reference data (parity, progress migration).
+// Checked on spec.legacy, not on level(), so a game owner retuning `levels` does not break this test.
+test('legacyLevels keep the old game formulas; E3 = true plays them again', () => {
   const B = loadBBD();
-  for (let L = 1; L <= 13; L++) {                             // js/mem.js spec(L)
-    const t0 = 2 + L, size = t0 <= 4 ? 3 : t0 <= 7 ? 4 : t0 <= 11 ? 5 : 6, t = Math.min(t0, size * size - 1);
-    const r = B.level('mem', L);
-    assert.equal(r.legacy, true); assert.equal(r.t, t); assert.equal(r.size, size); close(r.show, 1 + 0.3 * t);
-  }
-  for (let L = 1; L <= 11; L++) {                             // js/train-map.js + js/train.js
-    const r = B.level('train', L);
+  assert.equal(B.CONFIG.E3_FREEZE_LEGACY, false);
+  const leg = g => B.spec(g).legacy;
+  assert.equal(leg('mem').length, 13);
+  leg('mem').forEach((r, i) => {                              // js/mem.js spec(L)
+    const L = i + 1, t0 = 2 + L, size = t0 <= 4 ? 3 : t0 <= 7 ? 4 : t0 <= 11 ? 5 : 6, t = Math.min(t0, size * size - 1);
+    assert.equal(r.t, t); assert.equal(r.size, size); close(r.show, 1 + 0.3 * t);
+  });
+  leg('train').forEach((r, i) => {                            // js/train-map.js + js/train.js
+    const L = i + 1;
     assert.equal(r.stations, Math.min(4 + L, 15)); close(r.base, Math.max(1.8, 2.6 - 0.075 * (L - 1)) * (0.75 / 0.45), 1e-3);
-  }
-  for (let d = 1; d <= 10; d++) {                             // js/koi.js params(d)
-    const r = B.level('koi', d);
+  });
+  leg('koi').forEach((r, i) => {                              // js/koi.js params(d)
+    const d = i + 1;
     assert.equal(r.koi, Math.min(5 + d, 15)); close(r.cd, Math.min(1.3 + 0.15 * d, 3.2));
     assert.equal(r.decoys, d >= 3 ? Math.min(1 + ((d - 3) / 2 | 0), 4) : 0);
-  }
-  for (let L = 1; L <= 10; L++) {                             // js/rain.js spec(L)
-    const r = B.level('rain', L);
+  });
+  leg('rain').forEach((r, i) => {                             // js/rain.js spec(L)
+    const L = i + 1;
     close(r.fall, Math.max(8, 13 - 0.55 * (L - 1))); close(r.every, Math.max(2.7, 4.6 - 0.2 * (L - 1))); assert.equal(r.target, 10 + L);
+  });
+  assert.equal(leg('word')[29].phrase, 30);                   // old L30 = "mưa phùn": reference for star migration
+  B.CONFIG.E3_FREEZE_LEGACY = true;                           // one-line switch really switches back
+  for (const g of [...KNOB_GAMES, 'word']) {
+    const n = leg(g).length;
+    assert.equal(B.authoredCount(g), n);
+    for (let L = 1; L <= n; L++) {
+      const r = B.level(g, L);
+      assert.equal(r.legacy, true, `${g} L${L}`);
+      for (const [k, v] of Object.entries(leg(g)[L - 1])) assert.equal(r[k], v, `${g} L${L} ${k}`);
+    }
   }
-  assert.equal(B.level('word', 30).phrase, 30);               // "mưa phùn" stays at L30
-  assert.equal(B.level('mem', 14).legacy, false);
-  B.CONFIG.E3_FREEZE_LEGACY = false;                          // one-line switch really switches
-  assert.equal(B.level('mem', 5).legacy, false);
+});
+
+test('levels: authored L1..n play as written (no legacy flag), formula continues from row n', () => {
+  const B = loadBBD({ games: [] });
+  const k = { name: 'a', int: true, max: 20, hardCap: 25 };
+  B.register('toy', { legacyLevels: [{ a: 1 }, { a: 2 }], levels: [{ a: 3 }, { a: 4 }, { a: 6 }], knobs: [k],
+    overrides: { 2: { a: 5 } }, derive: r => ({ twice: r.a * 2 }) });
+  assert.equal(B.authoredCount('toy'), 3);
+  const l1 = B.level('toy', 1);
+  assert.deepEqual([l1.a, l1.legacy, l1.authored, l1.twice], [3, false, true, 6]);
+  assert.equal(B.level('toy', 2).a, 5);                       // overrides still apply to authored rows
+  assert.equal(B.level('toy', 4).authored, undefined);
+  assert.ok(B.level('toy', 4).a >= 6 && B.level('toy', 30).a === 20);
+  B.CONFIG.E3_FREEZE_LEGACY = true;
+  assert.equal(B.level('toy', 1).a, 1); assert.equal(B.level('toy', 1).legacy, true);
+  // without `levels` a table keeps playing legacyLevels even with E3 lifted (gated like any level)
+  B.CONFIG.E3_FREEZE_LEGACY = false;
+  B.register('old', { legacyLevels: [{ a: 1 }, { a: 2 }], knobs: [k] });
+  assert.equal(B.level('old', 2).legacy, true); assert.equal(B.authoredCount('old'), 2);
+  // validation: every live knob present, rule knobs default to off, ids non-numeric and unique
+  assert.throws(() => B.register('bad', { levels: [{ b: 1 }], knobs: [{ ...k, min: 1 }] }), /misses knob "a"/);
+  B.register('rule', { levels: [{ a: 1 }], knobs: [k, { name: 'r', rule: true, off: 0, min: 0, max: 1, hardCap: 1 }] });
+  assert.equal(B.level('rule', 1).r, 0);
+  assert.throws(() => B.register('bad', { levels: [{ id: '7' }], knobs: [] }), /non-numeric/);
+  assert.throws(() => B.register('bad', { levels: [{ id: 'p1' }, { id: 'p1' }], knobs: [] }), /duplicate/);
+  assert.throws(() => B.register('bad', { levels: [], knobs: [{ name: 'id', min: 1, hardCap: 2 }] }), /reserved/);
+});
+
+test('stable level ids: levelId = row id when the table sets one, else L; reorder keeps the id with its content', () => {
+  const B = loadBBD({ games: [] });
+  B.register('cw', { version: 2, levels: [{ id: 'p4', phrase: 4 }, { id: 'p0', phrase: 0 }, { id: 'p9', phrase: 9 }], knobs: [] });
+  assert.equal(B.levelId('cw', 1), 'p4'); assert.equal(B.levelId('cw', 3), 'p9');
+  assert.equal(B.maxLevel('cw'), 3); assert.equal(B.version('cw'), 2);
+  B.register('cw2', { version: 3, levels: [{ id: 'p0', phrase: 0 }, { id: 'p4', phrase: 4 }, { id: 'p7', phrase: 7 }, { id: 'p9', phrase: 9 }], knobs: [] });
+  assert.equal(B.levelId('cw2', 2), 'p4');                    // phrase 4 moved L1 → L2, its star key did not
+  const real = loadBBD();
+  // Tables move to version 2 as their owners retune them (mem 2026-11-21): any integer ≥ 1 is valid.
+  for (const g of [...KNOB_GAMES, 'word']) assert.ok(Number.isInteger(real.version(g)) && real.version(g) >= 1, g);
+  for (const g of KNOB_GAMES) assert.equal(real.levelId(g, 3), 3, g);       // knob tables keep level-number keys
+  assert.match(String(real.levelId('word', 3)), /^p\d+$/);                   // word v2 keys stars by phrase id
+  assert.throws(() => B.register('v', { version: 0, knobs: [] }), /version/);
+  assert.throws(() => B.register('v', { version: 1.5, knobs: [] }), /version/);
 });
 
 test('generated levels are monotone except breathers, and breathers relieve', () => {
   const B = loadBBD();
   for (const g of KNOB_GAMES) {
-    const s = B.spec(g), n = s.legacy.length;
+    const s = B.spec(g), n = B.authoredCount(g);
     for (let L = n + 1; L <= 80; L++) {
       const cur = B.level(g, L), prev = B.level(g, L - 1);
       if (cur.kind === 'breather') continue;
@@ -92,7 +145,7 @@ test('hardCaps hold for every generated level up to L120; E5 rule knobs stay off
   const B = loadBBD();
   for (const g of KNOB_GAMES) {
     const s = B.spec(g);
-    for (let L = s.legacy.length + 1; L <= 120; L++) {
+    for (let L = B.authoredCount(g) + 1; L <= 120; L++) {
       const r = B.level(g, L);
       for (const k of s.knobs) {
         const v = r[k.name];
@@ -102,6 +155,153 @@ test('hardCaps hold for every generated level up to L120; E5 rule knobs stay off
     }
     assert.ok(B.exhausted(g, 120), `${g}: knobs never reach their caps — the +10 rule could run forever`);
   }
+});
+
+// ---------- progress migration (BBD.progress, called by BB.migrateProgress in js/core.js) ----------
+const memStorage = (init = {}) => {
+  const m = new Map(Object.entries(init));
+  return { m, getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)) };
+};
+const J = x => JSON.parse(JSON.stringify(x));                 // vm-realm objects → plain, for deepEqual
+const statsOf = st => JSON.parse(st.getItem('bb_stats'));
+
+test('progress.run: version bump maps stars, never lowers best, writes marker bb_tablev_<g>', () => {
+  const B = loadBBD({ games: [] });
+  // old table: level L = phrase OLD[L-1]; new table: ids 'p<phrase>' in a new order
+  const OLD = [4, 0, 9];
+  B.register('cw', { version: 2, knobs: [], levels: [{ id: 'p0' }, { id: 'p4' }, { id: 'p9' }],
+    migrate: ({ from, stars, best, remapLevels }) => ({ best, stars: from < 2 ? remapLevels(stars, L => `p${OLD[L - 1]}`) : stars }) });
+  const st = memStorage({ bb_stats: JSON.stringify({ cw: { best: 2, stars: { 1: 3, 2: 1 } }, koi: { best: 7, stars: { 3: 2 } } }) });
+  const r = B.progress.run(st, 'cw');
+  assert.deepEqual([r.ran, r.from, r.to, r.reason], [true, 1, 2, 'migrated']);
+  assert.deepEqual(statsOf(st).cw, { best: 2, stars: { p4: 3, p0: 1 } });
+  assert.deepEqual(statsOf(st).koi, { best: 7, stars: { 3: 2 } });   // other games untouched
+  assert.equal(st.getItem('bb_tablev_cw'), '2');
+  // idempotent: second run is a no-op, data identical
+  const snap = st.getItem('bb_stats');
+  assert.equal(B.progress.run(st, 'cw').reason, 'current');
+  assert.equal(st.getItem('bb_stats'), snap);
+  // even if the marker write had been lost, remapLevels only moves numeric keys: a re-run changes nothing
+  st.m.delete('bb_tablev_cw');
+  assert.equal(B.progress.run(st, 'cw').ran, true);
+  assert.equal(st.getItem('bb_stats'), snap);
+  // a mapper that tries to lower best cannot
+  B.register('low', { version: 2, knobs: [], migrate: () => ({ best: 1, stars: {} }) });
+  const s2 = memStorage({ bb_stats: JSON.stringify({ low: { best: 9, stars: { 9: 3 } } }) });
+  B.progress.run(s2, 'low');
+  assert.equal(statsOf(s2).low.best, 9);
+  // default mapper (none) = keep data as is, same level numbers
+  B.register('same', { version: 3, knobs: [] });
+  const s3 = memStorage({ bb_stats: JSON.stringify({ same: { best: 4, stars: { 1: 2, 4: 3 } } }), bb_tablev_same: '2' });
+  const r3 = B.progress.run(s3, 'same');
+  assert.deepEqual([r3.from, r3.to], [2, 3]); assert.deepEqual(statsOf(s3).same, { best: 4, stars: { 1: 2, 4: 3 } });
+});
+
+test('progress.run: corrupt or odd data never throws and never loses levels passed', () => {
+  const B = loadBBD({ games: [] });
+  B.register('g', { version: 2, knobs: [] });
+  const cases = [
+    {}, { bb_stats: '{bad json' }, { bb_stats: '[]' }, { bb_stats: '5' }, { bb_stats: 'null' },
+    { bb_stats: JSON.stringify({ g: 'x' }) }, { bb_stats: JSON.stringify({ g: { best: 'NaN', stars: [3, 2] } }) },
+    { bb_stats: JSON.stringify({ g: { best: -4, stars: { 1: 'abc', 2: 9, 3: 0, 4: 2.7 } } }) },
+    { bb_stats: JSON.stringify({ g: { best: 6.9 } }), bb_tablev_g: 'zz' },
+    { bb_stats: JSON.stringify({ g: { best: 3 } }), bb_tablev_g: '-1' },
+  ];
+  const out = cases.map(c => { const st = memStorage(c); const r = B.progress.run(st, 'g'); return [r, statsOf(st).g, st.getItem('bb_tablev_g')]; });
+  out.forEach(([r, g, mark], i) => { assert.equal(r.ran, true, `case ${i}`); assert.equal(mark, '2', `case ${i}`); });
+  assert.deepEqual(out[6][1], { best: 0, stars: {} });
+  assert.deepEqual(out[7][1], { best: 0, stars: { 2: 3, 4: 2 } });  // stars clamped to 1..3, junk dropped
+  assert.equal(out[8][1].best, 6);                            // corrupt marker = from version 1, best kept
+  assert.equal(out[9][1].best, 3);
+  // a newer marker (older build loaded after a newer one) leaves everything alone
+  const nw = memStorage({ bb_stats: JSON.stringify({ g: { best: 5, stars: { 5: 3 } } }), bb_tablev_g: '7' });
+  assert.equal(B.progress.run(nw, 'g').reason, 'newer'); assert.equal(nw.getItem('bb_tablev_g'), '7');
+  // mapper throws: data and marker untouched, next load retries
+  B.register('boom', { version: 2, knobs: [], migrate: () => { throw new Error('x'); } });
+  const bm = memStorage({ bb_stats: JSON.stringify({ boom: { best: 2 } }) });
+  assert.equal(B.progress.run(bm, 'boom').reason, 'mapper-error'); assert.equal(bm.getItem('bb_tablev_boom'), null);
+  // storage throws on write: no marker, no crash
+  const ro = { getItem: () => null, setItem: () => { throw new Error('quota'); } };
+  assert.equal(B.progress.run(ro, 'g').reason, 'storage-error');
+  assert.equal(B.progress.run({ getItem: () => { throw new Error('denied'); }, setItem: () => {} }, 'g').ran, true);
+  // unknown game without a version: refused, not thrown; with opts.version: runs
+  assert.equal(B.progress.run(memStorage(), 'nope').reason, 'no-version');
+  assert.equal(B.progress.run(memStorage(), 'nope', { version: 2 }).ran, true);
+  // fresh install: version 1 tables just write the marker
+  B.register('one', { knobs: [] });
+  const f = memStorage();
+  assert.equal(B.progress.run(f, 'one').reason, 'current'); assert.equal(f.getItem('bb_tablev_one'), '1');
+});
+
+test('progress.remapLevels: numeric keys move, ids pass through, collisions keep the higher star', () => {
+  const { progress } = loadBBD({ games: [] });
+  const once = progress.remapLevels({ 1: 2, 2: 3, p7: 1, 3: 1 }, L => (L === 3 ? null : `p${L === 1 ? 7 : 8}`));
+  assert.deepEqual(J(once), { p7: 2, p8: 3, 3: 1 });              // L3 unmapped: kept, never dropped
+  assert.deepEqual(J(progress.remapLevels(once, L => `q${L}`)), { p7: 2, p8: 3, q3: 1 });
+  const ids = progress.remapLevels({ p7: 2, p8: 3 }, () => 'zz');
+  assert.deepEqual(J(ids), { p7: 2, p8: 3 });
+});
+
+// js/core.js in a vm with a fake browser: record/gameStats keep working on old data, ids and migration wire through.
+function loadCore({ init = {}, withBBD = true, games } = {}) {
+  const ls = new Map(Object.entries(init));
+  const localStorage = { getItem: k => (ls.has(k) ? ls.get(k) : null), setItem: (k, v) => ls.set(k, String(v)), removeItem: k => ls.delete(k),
+    key: i => [...ls.keys()][i] ?? null, get length() { return ls.size; } };
+  const noop = () => {};
+  const document = { readyState: 'complete', addEventListener: noop, querySelectorAll: () => [], getElementById: () => null, hidden: false };
+  const ctx = vm.createContext({ console, localStorage, document, addEventListener: noop, setTimeout, clearTimeout,
+    navigator: {}, performance: { now: () => 0 }, location: { origin: 'x', pathname: '/' } });
+  ctx.window = ctx;
+  if (withBBD) {
+    vm.runInContext(readFileSync(join(ROOT, 'js/difficulty.js'), 'utf8'), ctx);
+    (games || ['train', 'koi', 'mem', 'rain', 'word']).forEach(g => vm.runInContext(readFileSync(join(ROOT, `js/levels/${g}.js`), 'utf8'), ctx));
+  }
+  vm.runInContext(readFileSync(join(ROOT, 'js/core.js'), 'utf8'), ctx);
+  return { BB: ctx.BB, BBD: ctx.BBD, ls };
+}
+
+test('core: BB.record / gameStats keep old data; stable ids; corrupt bb_stats does not crash', () => {
+  const old = { bb_stats: JSON.stringify({ mem: { best: 5, stars: { 1: 3, 5: 2 } } }) };
+  const { BB, BBD, ls } = loadCore({ init: old });
+  assert.deepEqual(J(BB.gameStats('mem')), { best: 5, stars: { 1: 3, 5: 2 } });
+  assert.equal(BB.starsAt('mem', 5), 2);
+  const r = BB.record({ game: 'mem', level: 6, won: true, stars: 1 });
+  assert.equal(r.newBest, true); assert.equal(BB.gameStats('mem').stars[6], 1);
+  assert.equal(JSON.parse(ls.get('bb_log')).at(-1).id, undefined);   // default id = level, not repeated in the log
+  // explicit id (word will pass phrase ids): star goes under the id, best still counts levels
+  BB.record({ game: 'word', level: 3, won: true, stars: 3, id: 'p17' });
+  assert.deepEqual(J(BB.gameStats('word')), { best: 3, stars: { p17: 3 } });
+  assert.equal(JSON.parse(ls.get('bb_log')).at(-1).id, 'p17');
+  // a table that sets ids: record and starsAt resolve them without the game passing id
+  BBD.register('idg', { levels: [{ id: 'a1' }, { id: 'b2' }], knobs: [] });
+  assert.equal(BB.levelKey('idg', 2), 'b2');
+  for (const bad of ['[]', '5', '"str"', '{x', JSON.stringify({ mem: 'x' }), JSON.stringify({ mem: { stars: [1] } })]) {
+    const c = loadCore({ init: { bb_stats: bad } });
+    assert.deepEqual(J(c.BB.gameStats('mem')), { best: 0, stars: {} }, bad);
+    const rr = c.BB.record({ game: 'mem', level: 1, won: true, stars: 2 });
+    assert.equal(rr.newBest, true, bad); assert.equal(c.BB.starsAt('mem', 1), 2, bad);
+  }
+});
+
+test('core: BB.migrateProgress runs once per table version, keeps levels passed, works without BBD', () => {
+  const { BB, BBD, ls } = loadCore({ init: { bb_stats: JSON.stringify({ mem: { best: 13, stars: { 13: 3 } } }) } });
+  // mem ships table v2 (same level numbers, identity mapper): data without a marker is v1 and moves once.
+  assert.deepEqual(J(BB.migrateProgress('mem')), { ran: true, reason: 'migrated', game: 'mem', from: 1, to: 2,
+    before: { best: 13, stars: { 13: 3 } }, after: { best: 13, stars: { 13: 3 } } });
+  assert.equal(ls.get('bb_tablev_mem'), '2');
+  assert.equal(BB.migrateProgress('mem').reason, 'current');
+  assert.deepEqual(J(BB.gameStats('mem')), { best: 13, stars: { 13: 3 } });
+  // a game whose new table (version 2) reorders content and sets ids
+  ls.set('bb_stats', JSON.stringify({ ...JSON.parse(ls.get('bb_stats')), cw: { best: 2, stars: { 1: 3, 2: 2 } } }));
+  BBD.register('cw', { version: 2, knobs: [], levels: [{ id: 'p1' }, { id: 'p0' }, { id: 'p2' }],
+    migrate: ({ stars, best, remapLevels }) => ({ best, stars: remapLevels(stars, L => `p${L - 1}`) }) });
+  const r = BB.migrateProgress('cw');
+  assert.deepEqual([r.ran, r.from, r.to], [true, 1, 2]);
+  assert.deepEqual(J(BB.gameStats('cw')), { best: 2, stars: { p0: 3, p1: 2 } });
+  assert.equal(BB.starsAt('cw', 1), 2); assert.equal(BB.starsAt('cw', 2), 3);   // stars follow content, not position
+  assert.equal(BB.migrateProgress('cw').reason, 'current');
+  assert.deepEqual(J(BB.gameStats('mem')), { best: 13, stars: { 13: 3 } });
+  assert.equal(loadCore({ withBBD: false }).BB.migrateProgress('mem').reason, 'no-engine');
 });
 
 test('maxLevel follows E2 and content-only games refuse to invent levels', () => {
@@ -116,7 +316,7 @@ test('maxLevel follows E2 and content-only games refuse to invent levels', () =>
 
 test('lighter(): one notch easier, ≤ 15%, carries the E4 config', () => {
   const B = loadBBD();
-  const base = B.level('mem', 20), lt = B.lighter('mem', 20);
+  const base = B.level('mem', 30), lt = B.lighter('mem', 30);   // t = 7: one tile is 14% ≤ 15% (table v2)
   assert.equal(lt.lighterKnob, 't'); assert.equal(lt.t, base.t - 1);
   assert.ok(Math.abs(lt.t - base.t) / base.t <= 0.15 + 1e-9);
   assert.equal(lt.assist, true); assert.equal(lt.maxStars, 1); assert.equal(lt.unlocksNext, true); assert.equal(lt.slowTempo, 0.85);
@@ -168,13 +368,29 @@ test('register() validates specs; UMD exports for CommonJS', () => {
   assert.equal(ctx.module.exports, ctx.BBD);
 });
 
-// Smoke only: N=400 is a fast wiring check, NOT the gate verdict. At full N=1200 (CI, report-only)
-// mem still misses G2 L7→L8 and G3 at L6, both in legacy levels, pending the E3 retune.
-test('mem calibration wiring smoke at N=400 (not the full-N gate verdict)', async () => {
-  const r = await calibrate('mem', { n: 400, write: false, quiet: true });
-  const failed = r.gates.filter(g => g.pass === false).map(g => `${g.id}: ${g.fails.join('; ')}`);
-  assert.deepEqual(failed, []);
+// Failed gates → the level numbers they name, e.g. { B: [1, 2], G3: [11] }.
+const failsByGate = r => Object.fromEntries(r.gates.filter(g => g.pass === false)
+  .map(g => [g.id, [...new Set(g.fails.map(f => +/^L(\d+)/.exec(f)[1]))]]));
+const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+
+test('calibrate gates every level now (E3 lifted): B and G6 read legacy rows too', async () => {
+  const r = await calibrate('mem', { n: 60, to: 6, write: false, quiet: true });
+  const B = r.gates.find(g => g.id === 'B');
+  assert.match(B.name, /every level/); assert.doesNotMatch(B.name, /legacy/);
+  // mem plays authored `levels` (table v2) since 2026-11-21; B judges these rows like generated ones.
+  assert.ok(r.levels.every(l => l.legacy === false && typeof l.knobs.t === 'number'));
+  assert.deepEqual(r.levels.map(l => l.L), range(1, 6));
   assert.equal(r.gates.find(g => g.id === 'G7').pass, null);  // parity is reported as skipped, not passed
+  assert.equal(r.config.tableVersion, 2);
+});
+
+// KNOWN-FAIL mem table v2 at full N=1200: every gate passes except the B/G1 conflict the engine owner raised
+// for Duy (L5: B needs median ≤ 0.847, G1 needs weak ≥ 0.85, and weak never beats median in the sim; L4 sits
+// on the same frontier: 945 rows searched at L4, none had weak ≥ 0.85 with median ≤ 0.915).
+// Pinned so any new miss shows up. Replace with deepEqual(failsByGate(r), {}) once Duy picks a way out.
+test('KNOWN-FAIL mem v2 (B L4 + G1 L5, waiting on Duy): calibrate at N=1200', async () => {
+  const r = await calibrate('mem', { n: 1200, write: false, quiet: true });
+  assert.deepEqual(failsByGate(r), { B: [4], G1: [5] });
 });
 
 test('TODO adapters fail loudly instead of passing', async () => {
@@ -187,7 +403,7 @@ test('TODO adapters fail loudly instead of passing', async () => {
 
 // ---------- mem integration (owner: mem). The game (js/mem.js) reads BBD.level('mem', L). ----------
 import { describe } from 'node:test';   // ES imports hoist; kept here so this block stays self-contained
-describe('mem: game reads BBD, legacy unchanged', () => {
+describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels', () => {
   // Verbatim copy of js/mem.js spec(L) and pickTargets before the BBD integration (main @ 2b9c5f4).
   const oldSpec = L => {
     const t0 = 2 + L;
@@ -204,14 +420,17 @@ describe('mem: game reads BBD, legacy unchanged', () => {
     return cells.slice(0, t);
   };
 
-  test('L1..13: BBD gives exactly the old spec (t, size, show bit-for-bit, disp 0)', () => {
+  test('legacyLevels = table v1 = the old spec bit-for-bit; E3 = true plays them again', () => {
     const B = loadBBD();
-    for (let L = 1; L <= 13; L++) {
-      const r = B.level('mem', L), o = oldSpec(L);
-      assert.equal(r.legacy, true, `L${L}`);
-      assert.equal(r.t, o.t, `L${L} t`); assert.equal(r.size, o.size, `L${L} size`);
-      assert.equal(r.show, o.show, `L${L} show`); assert.equal(r.disp, 0, `L${L} disp`);
-    }
+    assert.equal(B.spec('mem').legacy.length, 13);
+    const check = r => (L) => {
+      const o = oldSpec(L);
+      assert.equal(r(L).t, o.t, `L${L} t`); assert.equal(r(L).size, o.size, `L${L} size`);
+      assert.equal(r(L).show, o.show, `L${L} show`); assert.equal(r(L).disp, 0, `L${L} disp`);
+    };
+    for (let L = 1; L <= 13; L++) check(L => B.spec('mem').legacy[L - 1])(L);
+    B.CONFIG.E3_FREEZE_LEGACY = true; B.clearCache();
+    for (let L = 1; L <= 13; L++) { assert.equal(B.level('mem', L).legacy, true); check(L => B.level('mem', L))(L); }
   });
 
   test('shared picker with disp 0 = old Fisher–Yates, same rng → same tiles', () => {
@@ -234,204 +453,104 @@ describe('mem: game reads BBD, legacy unchanged', () => {
     assert.ok(p3 < p0, `disp 0.3 should give fewer adjacent pairs (${p3} vs ${p0})`);
   });
 
-  test('L14..30: max 30, every step/peak level is harder to see (more tiles or less time), tiles fit', () => {
+  // Template v2: a step spreads the tiles more (disp) or adds a tile, a peak adds a tile, a breather has fewer
+  // tiles or gathers them again. At t ≤ 7 disp is a real step in the sim (s6 t4: median 87% at disp 0 → 82%
+  // at 0.35); the 2026-11-21 review that disp is "not a step" measured t = 15, where tiles chunk anyway.
+  const harder = (a, b) => a.t > b.t || (a.t === b.t && (a.size > b.size || a.disp > b.disp + 1e-9));
+  test('v2: L1..30 authored, max 30, version 2, show = 1 + 0.3·t, tiles fit, size ≤ 6', () => {
     const B = loadBBD();
-    assert.equal(B.maxLevel('mem'), 30);
-    for (let L = 14; L <= 30; L++) {
-      const r = B.level('mem', L), p = B.level('mem', L - 1);
-      assert.equal(r.legacy, false);
-      assert.ok(r.t < r.size * r.size, `L${L}`);
-      // disp alone is not a step: it barely moves chunk load in the sim (review 2026-11-21).
-      if (r.kind !== 'breather') assert.ok(r.t > p.t || r.show < p.show, `L${L}: no more tiles and no less time than L${L - 1}`);
+    assert.equal(B.maxLevel('mem'), 30); assert.equal(B.version('mem'), 2); assert.equal(B.authoredCount('mem'), 30);
+    for (let L = 1; L <= 30; L++) {
+      const r = B.level('mem', L);
+      assert.equal(r.legacy, false, `L${L}`); assert.equal(r.authored, true, `L${L}`);
+      assert.ok(r.t < r.size * r.size && r.size <= 6 && r.t >= 3, `L${L}`);
+      close(r.show, 1 + 0.3 * r.t, 1e-9); assert.equal(B.levelId('mem', L), L);   // no ids: stars stay keyed by L
     }
+  });
+  test('v2 follows the sawtooth: steps (L7+) and peaks harder than the level before, breathers lighter than their peak', () => {
+    const B = loadBBD();
+    for (let L = 2; L <= 30; L++) {
+      const r = B.level('mem', L), p = B.level('mem', L - 1);
+      if (r.kind === 'peak') assert.equal(r.t, p.t + 1, `L${L} peak adds one tile`);
+      else if (r.kind === 'breather') assert.ok(harder(p, r), `L${L} breather lighter than peak L${L - 1}`);
+      else if (L >= 7) assert.ok(harder(r, p), `L${L} step harder than L${L - 1}`);
+    }
+    // L1–4: three tiles while the grid grows. L4 gathers the tiles again (disp 0): the B/G1 frontier, see KNOWN-FAIL mem v2.
+    assert.deepEqual([1, 2, 3, 4].map(L => B.level('mem', L).t), [3, 3, 3, 3]);
+    assert.deepEqual([1, 2, 3, 4].map(L => B.level('mem', L).size), [4, 5, 6, 6]);
+  });
+  // L31+ follows the table template, anchored at the last step row (L29), not at the L30 peak.
+  // Pinned rows = the ones calibrated green at N=1200 (calibrate mem --from 26 --to 45, 2026-11-21).
+  test('L31–45: same template as the table (t 6 steps, peak +1 tile, breather −1 tile and gathered)', () => {
+    const B = loadBBD();
+    const got = []; for (let L = 31; L <= 45; L++) { const r = B.level('mem', L); got.push([r.t, r.disp]); }
+    assert.deepEqual(got, [[5, 0], [6, 0.05], [6, 0.05], [6, 0.1], [7, 0.1], [5, 0.05], [6, 0.1], [6, 0.1], [6, 0.1], [7, 0.1],
+      [5, 0.1], [6, 0.15], [6, 0.15], [6, 0.15], [7, 0.15]]);
+    for (let L = 31; L <= 45; L++) {
+      const r = B.level('mem', L), p = B.level('mem', L - 1);
+      assert.equal(r.authored, undefined); assert.equal(r.size, 6); assert.ok(r.k >= 0.29, `L${L} k`);
+      if (r.kind === 'peak') assert.equal(r.t, p.t + 1, `L${L} peak adds one tile`);
+      if (r.kind === 'breather') assert.ok(harder(p, r), `L${L} breather lighter than peak`);
+    }
+  });
+  test('L46..120 stays within hardCaps and reaches them by L120 (the +10 rule ends)', () => {
+    const B = loadBBD();
+    for (let L = 46; L <= 120; L++) {
+      const r = B.level('mem', L);
+      assert.ok(r.t >= 5 && r.t <= 15 && r.size === 6 && r.k >= 0.18 && r.disp <= 0.5, `L${L}`);
+    }
+    assert.ok(B.exhausted('mem', 120));
+  });
+  // Migration v1 → v2, seeded with keys real players have (mem_lv, bb_stats, bb_log, hub seed flag).
+  test('migration v1 → v2 keeps levels passed and stars, runs once, leaves old keys alone', () => {
+    const old = { mem_lv: '14', bb_seeded_v1: '1', bb_stats: JSON.stringify({ mem: { best: 13, stars: { 13: 2, 5: 3, 1: 1 } }, koi: { best: 4, stars: { 4: 3 } } }),
+      bb_log: JSON.stringify([{ g: 'mem', lv: 13, won: true, stars: 2, score: 2, d: '2026-11-20', ms: 9000 }]) };
+    const { BB, ls } = loadCore({ init: old });
+    const r = BB.migrateProgress('mem');
+    assert.deepEqual([r.ran, r.reason, r.from, r.to], [true, 'migrated', 1, 2]);
+    assert.deepEqual(J(BB.gameStats('mem')), { best: 13, stars: { 1: 1, 5: 3, 13: 2 } });
+    assert.equal(BB.starsAt('mem', 5), 3); assert.equal(BB.starsAt('mem', 13), 2);
+    assert.equal(ls.get('bb_tablev_mem'), '2');
+    const after = ls.get('bb_stats');
+    assert.equal(BB.migrateProgress('mem').reason, 'current'); assert.equal(ls.get('bb_stats'), after);   // second load: no-op
+    for (const k of ['mem_lv', 'bb_log', 'bb_seeded_v1']) assert.equal(ls.get(k), old[k], k);
+    assert.deepEqual(J(BB.gameStats('koi')), { best: 4, stars: { 4: 3 } });
+  });
+  test('migration survives corrupt or odd data: bad JSON, junk stars, bad marker, newer marker', () => {
+    const run = init => { const c = loadCore({ init }); return { r: c.BB.migrateProgress('mem'), st: J(c.BB.gameStats('mem')), ls: c.ls }; };
+    let x = run({ bb_stats: '{bad', bb_tablev_mem: 'zz' });
+    assert.equal(x.r.reason, 'migrated'); assert.deepEqual(x.st, { best: 0, stars: {} }); assert.equal(x.ls.get('bb_tablev_mem'), '2');
+    x = run({ bb_stats: JSON.stringify({ mem: { best: '7', stars: { 1: 'abc', 2: 9, 3: 0, 4: 2.7 } } }) });
+    assert.deepEqual(x.st, { best: 7, stars: { 2: 3, 4: 2 } });
+    x = run({ bb_stats: JSON.stringify({ mem: { best: 9, stars: { 9: 3 } } }), bb_tablev_mem: '3' });   // a newer build ran first
+    assert.equal(x.r.reason, 'newer'); assert.deepEqual(x.st, { best: 9, stars: { 9: 3 } }); assert.equal(x.ls.get('bb_tablev_mem'), '3');
+    x = run({ mem_lv: '6' });                                     // only the v1 key, no stats yet
+    assert.equal(x.r.reason, 'migrated'); assert.equal(x.ls.get('mem_lv'), '6');
   });
 });
 
-// ---------- koi (owner: koi levels branch) ----------
-test('koi legacy L1–10: BBD.level equals js/koi.js params(d) for every knob', async () => {
-  const B = loadBBD();
-  const { legacyParams, LEGACY_N } = await import('./adapters/koi.mjs');
-  assert.equal(B.spec('koi').legacy.length, LEGACY_N);
-  for (let d = 1; d <= LEGACY_N; d++) {
-    const old = legacyParams(d), r = B.level('koi', d);
-    assert.equal(r.legacy, true);
-    assert.equal(r.koi, old.koi, `L${d} koi`); assert.equal(r.decoys, old.decoys, `L${d} decoys`);
-    assert.ok(Math.abs(r.cd - old.cd) < 1e-9, `L${d} cd ${r.cd} vs ${old.cd}`);
-    assert.equal(r.cd.toFixed(1), old.cd.toFixed(1), `L${d} cd as shown on the menu`);
-    assert.equal(r.spdMul, 1); assert.equal(r.turnMul, 1);
-  }
-});
-test('koi: 30 levels, new levels stay inside the tracking limits', () => {
-  const B = loadBBD();
-  assert.equal(B.maxLevel('koi'), 30);
-  for (let L = 11; L <= 30; L++) {
-    const r = B.level('koi', L);
-    assert.ok(r.koi >= 12 && r.koi <= 15, `L${L} koi ${r.koi}`);
-    if (r.kind === 'breather') assert.equal(r.koi, 12, `L${L} breather drops to 12 fish`);
-    assert.ok(r.spdMul <= 1.4 && r.turnMul <= 1.5 && r.decoys <= 6, `L${L} ${JSON.stringify(r)}`);
-    if (r.spdMul > 1.25) assert.ok(r.koi <= 14, `L${L}: fast fish never come with a full pond`);
-    const p = B.level('koi', L - 1);
-    // A step must change something the player sees (count, grey fish, speed, turning); a +0.05 s wait alone is not felt.
-    if (r.kind !== 'breather') assert.ok(['koi', 'decoys', 'spdMul', 'turnMul'].some(k => r[k] !== p[k]), `koi L${L}: no visible change from L${L - 1}`);
-  }
-});
-// N=2000 (≈2 s): at N=400 the sampling error (±2 points) is close to the B band, so a pass there can be luck.
-test('koi calibration passes its gates (N=2000, seeded)', async () => {
-  const r = await calibrate('koi', { n: 2000, write: false, quiet: true });
-  const failed = r.gates.filter(g => g.pass === false).map(g => `${g.id}: ${g.fails.join('; ')}`);
-  assert.deepEqual(failed, []);
-});
+// ---------- koi (owner: koi levels branch). Table v2: L1..10 retuned to the sawtooth (E3 lifted 2026-11-21). ----------
+// Tests live in difficulty.koi.test.mjs (file-size rule); registered here so test:sim keeps one entry point.
+(await import('./difficulty.koi.test.mjs')).registerKoi({ loadCore, J, failsByGate });
 
 // ---------- word (owner: word levels branch). js/word.js reads BBD.level('word', L).phrase. ----------
-describe('word: 49 frozen phrases read through BBD (E2, E3)', () => {
-  test('word legacy L1..49: BBD row = old word.js order (sort by letter count, then source index)', async () => {
-    const B = loadBBD();
-    const { W, legacyOrder } = await import('./adapters/word.mjs');
-    const old = legacyOrder();                                // the sort word.js used before BBD, on the live PHRASES
-    assert.equal(old.length, 49);
-    assert.equal(B.spec('word').legacy.length, 49);
-    for (let L = 1; L <= 49; L++) {
-      const r = B.level('word', L), p = W.PHRASES.find(x => x.i === old[L - 1]);
-      assert.equal(r.legacy, true, `L${L}`);
-      assert.equal(r.phrase, old[L - 1], `L${L} phrase`);
-      assert.equal(r.letters, p.n, `L${L} letters`);
-      assert.equal(r.maxTries, 6, `L${L} tries`);
-    }
-    assert.equal(B.maxLevel('word'), 49);
-  });
-  test('word adapter scores with the game\'s own evaluate, deterministic, skill-ordered', async () => {
-    const B = loadBBD();
-    const { W, simulate } = await import('./adapters/word.mjs');
-    const ans = [...'càphê'];
-    assert.deepEqual([...W.evaluateAgainst(ans, [...'càphê'])], Array(5).fill('green'));
-    assert.deepEqual([...W.evaluateAgainst(ans, [...'caphe'])], ['green', 'blue', 'green', 'green', 'blue']);
-    const run = (L, pn, i) => simulate(B.level('word', L), PROFILES[pn], rngFor('word-test', L, pn, i));
-    assert.deepEqual(run(10, 'median', 3), run(10, 'median', 3));
-    const rate = (L, pn) => { let k = 0; for (let i = 0; i < 300; i++) k += run(L, pn, i).pass; return k / 300; };
-    for (const L of [1, 30, 49]) assert.ok(rate(L, 'weak') <= rate(L, 'median') && rate(L, 'median') <= rate(L, 'skilled') + 0.02, `L${L}`);
-  });
-  test('word recognition counts candidates left: every answer is in the pool, the filter rarely drops it', async () => {
-    const B = loadBBD();
-    const { W, POOL, simulate } = await import('./adapters/word.mjs');
-    for (const p of W.PHRASES) p.words.forEach(w => assert.ok(POOL.get(w.length).index.has(w.map(W.noTone).join('')), w.join('')));
-    let rows = 0, dropped = 0;
-    for (const L of [1, 11, 30, 49]) for (let i = 0; i < 100; i++) {
-      const d = simulate(B.level('word', L), PROFILES.weak, rngFor('word-drop', L, i)).detail;
-      rows += d.rows; dropped += d.dropped;
-    }
-    assert.ok(dropped / rows < 0.05, `answer dropped by the bases-only filter on ${dropped}/${rows} rows`);
-  });
-  test('word calibration: no generated level, G5/G8 pass; G1–G3 are measured on frozen levels (E3)', async () => {
-    const r = await calibrate('word', { n: 150, write: false, quiet: true });
-    assert.equal(r.levels.length, 49);
-    assert.ok(r.levels.every(l => l.legacy));
-    for (const id of ['B', 'G5', 'G8']) assert.equal(r.gates.find(g => g.id === id).pass, true, id);
-  });
-});
+// Tests live in difficulty.word.test.mjs (file-size rule); registered here so test:sim keeps one entry point.
+(await import('./difficulty.word.test.mjs')).registerWord({ loadCore, J, failsByGate });
 
 // ---------- rain (owner: rain). js/rain.js reads BBD.level('rain', L) and BBRain.makeEq (js/levels/rain.js). ----------
-describe('rain: game reads BBD, legacy unchanged, gates', () => {
-  // Verbatim copies of js/rain.js spec(L) and makeEq(L) before the BBD integration (main @ a124c2d),
-  // with Math.random replaced by an injected rng so both sides can be fed the same stream.
-  const oldSpec = L => ({ fall: Math.max(8, 13 - 0.55 * (L - 1)), every: Math.max(2.7, 4.6 - 0.2 * (L - 1)), target: 10 + L });
-  const oldMakeEq = (L, rnd) => {
-    const ri = (a, b) => a + (rnd() * (b - a + 1) | 0);
-    const add = m => { const a = ri(1, m - 1), b = ri(1, m - a); return [`${a} + ${b}`, a + b]; };
-    const sub = m => { const a = ri(2, m), b = ri(1, a); return [`${a} − ${b}`, a - b]; };
-    const mul = (x0, x1, y1) => { const a = ri(x0, x1), b = ri(1, y1); return rnd() < 0.5 ? [`${a} × ${b}`, a * b] : [`${b} × ${a}`, a * b]; };
-    const div = (x1, c0, c1) => { const b = ri(2, x1), c = ri(c0, c1); return [`${b * c} ÷ ${b}`, c]; };
-    const pick = arr => arr[rnd() * arr.length | 0]();
-    switch (L) {
-      case 1: return add(10);
-      case 2: return pick([() => add(10), () => sub(10)]);
-      case 3: return pick([() => add(20), () => sub(20)]);
-      case 4: return pick([() => add(50), () => sub(50)]);
-      case 5: return pick([() => add(100), () => sub(100)]);
-      case 6: return mul(2, 5, 10);
-      case 7: return mul(2, 9, 9);
-      case 8: return pick([() => mul(2, 9, 9), () => div(9, 1, 9)]);
-      case 9: return pick([() => add(100), () => sub(100), () => mul(2, 9, 9), () => div(9, 1, 9)]);
-      default: return pick([() => add(200), () => sub(200), () => mul(2, 12, 12), () => div(12, 2, 12)]);
-    }
-  };
-  // Answer check for every equation shape the generator writes.
-  const solve = eq => {
-    const m = /^\? ([+×]) (\d+) = (\d+)$/.exec(eq);
-    if (m) return m[1] === '+' ? +m[3] - +m[2] : +m[3] / +m[2];
-    return Function(`return ${eq.replace(/×/g, '*').replace(/−/g, '-').replace(/÷/g, '/')}`)();
-  };
+// Tests live in difficulty.rain.test.mjs (file-size rule); registered here so test:sim keeps one entry point.
+(await import('./difficulty.rain.test.mjs')).registerRain({ loadCore, J, failsByGate });
 
-  test('L1..10: BBD gives exactly the old spec (===), ops tier = L', () => {
-    const B = loadBBD();
-    for (let L = 1; L <= 10; L++) {
-      const r = B.level('rain', L), o = oldSpec(L);
-      assert.equal(r.legacy, true, `L${L}`); assert.equal(r.ops, L, `L${L} ops`);
-      assert.equal(r.fall, o.fall, `L${L} fall`); assert.equal(r.every, o.every, `L${L} every`); assert.equal(r.target, o.target, `L${L} target`);
-    }
-  });
-
-  test('shared generator, tiers 1..10 = old makeEq: same rng → same equations and same rng use', async () => {
-    const { makeEq } = await import('./adapters/rain.mjs');
-    for (let L = 1; L <= 10; L++) for (let seed = 1; seed <= 40; seed++) {
-      const a = mulberry32(seed), b = mulberry32(seed);
-      for (let i = 0; i < 25; i++) assert.deepEqual([...makeEq(L, a)].slice(0, 2), oldMakeEq(L, b), `L${L} seed ${seed} draw ${i}`);   // spread: vm-realm array
-      assert.equal(a(), b(), `L${L} seed ${seed}: rng streams drifted`);
-    }
-  });
-
-  test('every tier: answers are correct, whole, 0..999 (3-digit numpad); new tiers show their new operation', async () => {
-    const { makeEq } = await import('./adapters/rain.mjs');
-    const rnd = mulberry32(7);
-    for (let tier = 1; tier <= 14; tier++) {
-      const ops = new Set();
-      for (let i = 0; i < 3000; i++) {
-        const [eq, ans, meta] = makeEq(tier, rnd);
-        assert.ok(Number.isInteger(ans) && ans >= 0 && ans <= 999, `tier ${tier}: ${eq} = ${ans}`);
-        assert.equal(solve(eq), ans, `tier ${tier}: ${eq}`);
-        ops.add(meta.op);
-      }
-      const want = { 11: 'add', 12: 'miss+', 13: 'two+', 14: 'mul21' }[tier];
-      if (want) assert.ok(ops.has(want), `tier ${tier} never drew ${want}`);
-    }
-  });
-
-  test('L11..30: 30 levels, tiers open on breathers, steps never get easier', () => {
-    const B = loadBBD();
-    assert.equal(B.maxLevel('rain'), 30);
-    const tier = { 11: 11, 16: 12, 21: 13, 26: 14 };
-    for (let L = 11; L <= 30; L++) {
-      const r = B.level('rain', L), p = B.level('rain', L - 1);
-      assert.equal(r.legacy, false);
-      if (tier[L]) assert.equal(r.ops, tier[L], `L${L} ops`); else if (r.kind !== 'breather') assert.equal(r.ops, p.ops, `L${L} ops`);
-      if (r.kind !== 'breather') {
-        assert.ok(r.every <= p.every && r.fall <= p.fall && r.target >= p.target, `L${L} easier than L${L - 1}`);
-        assert.ok(r.every < p.every || r.fall < p.fall || r.target > p.target, `L${L} identical to L${L - 1}`);
-      }
-      assert.ok(r.every >= 2.2 && r.fall >= 6.8 && r.target <= 25, `L${L} past a hardCap`);
-    }
-  });
-
-  test('rain calibration: every gate passes except the two known conflicts (G3 at L11, G4 on breathers)', async () => {
-    // G3/L11: legacy L10 (frozen, E3) sits 15 points above p*, so no L11 can be both within ±5 of p* (B)
-    // and not harder than L10. G4: under the adapter's cost model a weak player at 60% means a median
-    // near 97%, so B and G4 cannot both hold on a breather. Escalated to Duy; update this when he decides.
-    const r = await calibrate('rain', { n: 400, write: false, quiet: true });
-    const failed = r.gates.filter(g => g.pass === false);
-    assert.deepEqual(failed.map(g => g.id), ['G3', 'G4'], failed.map(g => `${g.id}: ${g.fails.join('; ')}`).join(' | '));
-    assert.deepEqual(failed[0].fails.map(f => f.split(' ')[0]), ['L11']);
-    assert.ok(failed[1].fails.every(f => [11, 16, 21, 26].includes(+f.slice(1).split(' ')[0])));
-    assert.equal(r.gates.find(g => g.id === 'G7').pass, null);
-  });
-});
-
-// ---------- train (owner: train). js/train.js reads BBD.level('train', L) and RTD_MAP.spawnGap (js/train-map.js). ----------
-describe('train: game reads BBD, legacy unchanged, gates', () => {
+// ---------- train (owner: train). Table v2: L1..30 retuned to the sawtooth (E3 lifted 2026-11-21). ----------
+// js/train.js reads BBD.level('train', L) and RTD_MAP.spawnGap (js/train-map.js).
+describe('train: table v2, one template for every level', () => {
   // Verbatim copies of js/train-map.js stationsFor and js/train.js nextSpawnDelay before the BBD integration
   // (main @ a124c2d), with Math.random replaced by an injected rng so both sides read the same stream.
   const oldStations = lv => Math.min(4 + lv, 15);
   const speedFactor = 0.45;
+  const oldBase = L => Math.max(1.8, 2.6 - 0.075 * (L - 1)) * (0.75 / speedFactor);
   const oldDelay = (level, st, rnd) => {
-    const m = Math.max(1.8, 2.6 - 0.075 * (level - 1)) * (0.75 / speedFactor);
+    const m = oldBase(level);
     const r = rnd();
     if (r < 0.15 && !st.lastBurst) { st.lastBurst = true; return Math.max(2.0, m * (0.55 + rnd() * 0.15)); }
     st.lastBurst = false;
@@ -444,50 +563,89 @@ describe('train: game reads BBD, legacy unchanged, gates', () => {
     return ctx.window.RTD_MAP;
   };
 
-  test('legacy L1..11 read through BBD are bit-identical to the old formulas', () => {
-    const B = loadBBD();
-    for (let L = 1; L <= 11; L++) {
-      const r = B.level('train', L);
-      assert.equal(r.legacy, true, `L${L}`);
-      assert.equal(r.stations, oldStations(L), `L${L} stations`);
-      assert.equal(r.base, Math.max(1.8, 2.6 - 0.075 * (L - 1)) * (0.75 / speedFactor), `L${L} base`);   // strict, no epsilon
-      assert.equal(r.speedF, speedFactor); assert.equal(r.burstP, 0.15);
-    }
-  });
-
-  test('RTD_MAP.spawnGap on a legacy spec draws the same gaps as the old nextSpawnDelay', () => {
-    const B = loadBBD(), M = loadMap();
-    for (let L = 1; L <= 11; L++) {
-      const s = B.level('train', L), a = mulberry32(1000 + L), b = mulberry32(1000 + L), st = { lastBurst: false };
-      let last = false;
-      for (let i = 0; i < 2000; i++) {
-        const g = M.spawnGap(s.base, s.burstP, last, a);
-        last = g.burst;
-        assert.equal(g.gap, oldDelay(L, st, b), `L${L} draw ${i}`);
-        assert.equal(g.burst, st.lastBurst);
+  test('train legacyLevels (v1) = old formulas bit-exact; E3 = true still plays them, same spawn gaps', () => {
+    const B = loadBBD(), M = loadMap(), leg = B.spec('train').legacy;
+    assert.equal(leg.length, 11);
+    B.CONFIG.E3_FREEZE_LEGACY = true;
+    try {
+      for (let L = 1; L <= 11; L++) {
+        const r = B.level('train', L);
+        assert.equal(r.legacy, true, `L${L}`);
+        assert.equal(r.stations, oldStations(L), `L${L} stations`);
+        assert.equal(r.base, oldBase(L), `L${L} base`);   // strict, no epsilon
+        assert.equal(r.speedF, speedFactor); assert.equal(r.burstP, 0.15);
+        const a = mulberry32(1000 + L), b = mulberry32(1000 + L), st = { lastBurst: false };
+        let last = false;
+        for (let i = 0; i < 2000; i++) {
+          const g = M.spawnGap(r.base, r.burstP, last, a);
+          last = g.burst;
+          assert.equal(g.gap, oldDelay(L, st, b), `L${L} draw ${i}`);
+          assert.equal(g.burst, st.lastBurst);
+        }
       }
-    }
+    } finally { B.CONFIG.E3_FREEZE_LEGACY = false; B.clearCache(); }
   });
 
-  test('30 levels; L12..30 keep 15 stations and stay inside the caps; touch targets ≥ 44 px', async () => {
+  test('train v2: L1..30 authored, keyed by level number, on the sawtooth; touch targets ≥ 44 px', async () => {
     const B = loadBBD(), A = await import(new URL('./adapters/train.mjs', import.meta.url).href);
+    assert.equal(B.version('train'), 2);
     assert.equal(B.maxLevel('train'), 30);
-    for (let L = 12; L <= 30; L++) {
+    assert.equal(B.authoredCount('train'), 30);
+    assert.equal(B.level('train', 1).stations, 5);
+    for (let L = 1; L <= 30; L++) {
       const r = B.level('train', L);
-      assert.equal(r.stations, 15); assert.equal(r.legacy, false);
-      assert.ok(r.base >= 2.30 && r.base < B.level('train', 11).base, `L${L} base ${r.base}`);
-      assert.equal(r.speedF, 0.45, `L${L}: speed held (faster trains are easier in the simulator)`);
-      assert.ok(r.burstP >= 0.15 && r.burstP <= 0.30);
+      assert.equal(r.authored, true, `L${L}`); assert.equal(r.legacy, false, `L${L}`);
+      assert.equal(B.levelId('train', L), L, 'stars stay keyed by level number');
+      assert.ok(r.stations >= 5 && r.stations <= 15, `L${L} stations ${r.stations}`);
+      if (L >= 15) assert.equal(r.stations, 15, `L${L}`);
+      assert.ok(r.base >= 2.30, `L${L} base ${r.base} inside hardCap`);
+      assert.equal(r.speedF, 0.28); assert.equal(r.burstP, 0);
       for (const w of [320, 390]) assert.ok(A.geometry(r, w).minTargetPx >= 44, `L${L} at ${w}px`);
+      if (L === 1) continue;
+      const p = B.level('train', L - 1);
+      assert.ok(r.stations - p.stations >= 0 && r.stations - p.stations <= 1, `L${L}: stations never drop, +1 at most`);
+      if (r.kind === 'breather') assert.ok(r.base > p.base, `L${L}: a breather sends trains further apart than the peak before it`);
+      if (r.kind === 'peak') assert.ok(r.base < p.base || r.stations > p.stations, `L${L}: a peak adds a station or sends trains closer`);
     }
+    assert.equal(B.level('train', 30).base, 3.27);   // played peak (override); the row keeps the 3.50 trend for L31+
   });
 
-  // KNOWN-FAIL: calibrate.mjs train exits 1. This test does NOT mean calibration is green; it only pins which
-  // gates miss, so a new miss shows up. Waiting on Duy (B@L26 vs G4; G3@L11 is legacy, E3).
-  test('KNOWN-FAIL chờ Duy: calibrate train still fails B@L26 and G3@L11 (pins the misses, not a pass)', async () => {
+  test('train progress: real old keys (v1, no marker) → v2 keep best, stars and rtd_*; corrupt data does not crash', () => {
+    // A finished v1 player: 11 legacy levels via rtd_best3, then L12..14 on the shared engine.
+    const stars = { 1: 3, 2: 3, 5: 2, 11: 1, 12: 2, 14: 1 };
+    const v1 = { bb_stats: JSON.stringify({ train: { best: 14, stars }, koi: { best: 2, stars: { 1: 1 } } }),
+      rtd_best3: '14', rtd_legacy_done: '0' };
+    const { BB, ls } = loadCore({ init: v1 });
+    const r = BB.migrateProgress('train');
+    assert.deepEqual([r.ran, r.reason, r.from, r.to], [true, 'migrated', 1, 2]);
+    assert.deepEqual(J(BB.gameStats('train')), { best: 14, stars });   // level numbers keep their meaning
+    assert.equal(BB.starsAt('train', 12), 2);
+    assert.equal(ls.get('bb_tablev_train'), '2');
+    assert.deepEqual([ls.get('rtd_best3'), ls.get('rtd_legacy_done')], ['14', '0']);   // game keys are not the engine's
+    assert.deepEqual(JSON.parse(ls.get('bb_stats')).koi, { best: 2, stars: { 1: 1 } });
+    const snap = ls.get('bb_stats');
+    assert.equal(BB.migrateProgress('train').reason, 'current');           // once per table version
+    assert.equal(ls.get('bb_stats'), snap);
+    // pre-BB player: only rtd_best3, no bb_stats at all
+    const o = loadCore({ init: { rtd_best3: '11' } });
+    assert.equal(o.BB.migrateProgress('train').ran, true);
+    assert.equal(o.ls.get('rtd_best3'), '11');
+    // junk stars and a corrupt marker: cleaned, best kept, no throw
+    const c = loadCore({ init: { bb_stats: JSON.stringify({ train: { best: '9', stars: { 3: '2', 4: 0, 5: 'x', 6: 7 } } }), bb_tablev_train: '-1' } });
+    assert.equal(c.BB.migrateProgress('train').reason, 'migrated');
+    assert.deepEqual(J(c.BB.gameStats('train')), { best: 9, stars: { 3: 2, 6: 3 } });
+    for (const bad of ['{bad', '[]', '5']) assert.equal(loadCore({ init: { bb_stats: bad, rtd_best3: '4' } }).BB.migrateProgress('train').ran, true, bad);
+    // a newer marker (rolled-back build) leaves data alone
+    const n = loadCore({ init: { bb_stats: JSON.stringify({ train: { best: 3, stars: { 1: 3 } } }), bb_tablev_train: '3' } });
+    assert.equal(n.BB.migrateProgress('train').reason, 'newer');
+    assert.equal(n.ls.get('bb_tablev_train'), '3');
+  });
+
+  // KNOWN-FAIL G1 L5 only: p*(5) = 0.797 caps the median at 0.847 (gate B) while G1 asks weak ≥ 0.85, and weak
+  // never beats median. No table can pass both; the engine owner sent it to Duy as options (a)/(b)/(c).
+  test('KNOWN-FAIL train (G1 L5 vs B, waiting for Duy): calibrate at N=1200', async () => {
     const r = await calibrate('train', { n: 1200, write: false, quiet: true });
-    const failed = Object.fromEntries(r.gates.filter(g => g.pass === false).map(g => [g.id, g.fails.map(f => f.split(' ')[0])]));
-    assert.deepEqual(failed, { B: ['L26'], G3: ['L11'] });
+    assert.deepEqual(failsByGate(r), { G1: [5] });
     assert.equal(r.gates.find(g => g.id === 'G7').pass, null);
   });
 });

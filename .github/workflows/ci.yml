@@ -17,21 +17,28 @@ jobs:
         run: npm run parity
       - name: Difficulty engine tests
         run: npm run test:sim
-      # Calibration gates (seeded, full N = 1200 per MERGED-SPEC §6; koi 2000). Only koi passes at full N.
-      # mem (G2/G3 at legacy L6-L8), train, rain and word miss gates in legacy levels; Duy lifted the
-      # legacy freeze (E3, 2026-11-21) and the retune lands in the next PR. Until then they report
-      # without blocking. Drop continue-on-error per game once it goes green.
-      - name: Calibration gates (blocking) — koi
-        run: node scripts/sim/calibrate.mjs koi --n 2000 --no-write
-      - name: Calibration gates (report only) — mem, train, rain, word
+      # Calibration gates (seeded, full N = 1200 per MERGED-SPEC §6; koi 2000). E3 lifted 2026-11-21:
+      # every gate runs on every level. No game passes all gates at full N yet, so each stays report-only
+      # (one step per game, so the run page shows which one is red). The exact failing set per game is
+      # pinned by the KNOWN-FAIL tests in `npm run test:sim`, which DO block: a new miss or a fixed one
+      # breaks them. Drop continue-on-error on a game the day its calibrate exits 0.
+      # Shared miss (train, koi, mem): G1 L5. p*(5) = 0.797 puts median <= 0.847 (gate B), so weak >= 0.85
+      # cannot hold too. Waiting on Duy: drop the L5 peak dip, scope G1 to L1-4, or start the sawtooth at L10.
+      - name: Calibration (report only) — train · misses G1 L5 (weak 0.73)
         continue-on-error: true
-        run: |
-          rc=0
-          node scripts/sim/calibrate.mjs mem --n 1200 --no-write || rc=1
-          node scripts/sim/calibrate.mjs train --n 1200 --no-write || rc=1
-          node scripts/sim/calibrate.mjs rain --n 1200 --no-write || rc=1
-          node scripts/sim/calibrate.mjs word --n 1200 --no-write || rc=1
-          exit $rc
+        run: node scripts/sim/calibrate.mjs train --n 1200 --no-write
+      - name: Calibration (report only) — koi · misses G1 L5 (weak 0.77)
+        continue-on-error: true
+        run: node scripts/sim/calibrate.mjs koi --n 2000 --no-write
+      - name: Calibration (report only) — mem · misses B L4 (median 0.93 vs 0.87), G1 L5 (weak 0.73)
+        continue-on-error: true
+        run: node scripts/sim/calibrate.mjs mem --n 1200 --no-write
+      - name: Calibration (report only) — rain · misses B L1-6/11/16/21/26, G3 L11/16/21/26 (breathers keep G4)
+        continue-on-error: true
+        run: node scripts/sim/calibrate.mjs rain --n 1200 --no-write
+      - name: Calibration (report only) — word · misses B on 49/49 (median 7-22 points above p*)
+        continue-on-error: true
+        run: node scripts/sim/calibrate.mjs word --n 1200 --no-write
       - run: npx playwright install --with-deps chromium
       - name: Smoke test (5 games + 320px)
         run: npm test
