@@ -24,11 +24,14 @@ test('page zoom is allowed and only game surfaces block gestures (SHELL-02, OPS-
 test('head has description, Open Graph, theme colour, icons and gstatic preconnect (OPS-1/2/12, SHELL-16/18)', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveTitle('Brainy Bits');
-  for (const sel of ['meta[name=description]', 'meta[property="og:title"]', 'meta[property="og:image"]',
-    'meta[name=theme-color]', 'link[rel=manifest]', 'link[rel=apple-touch-icon]',
-    'link[rel=preconnect][href="https://fonts.gstatic.com"][crossorigin]']) {
+  for (const sel of ['meta[name=description]', 'meta[property="og:title"]', 'meta[property="og:url"]',
+    'meta[property="og:image"]', 'meta[name=theme-color]', 'link[rel=canonical]', 'link[rel=manifest]',
+    'link[rel=apple-touch-icon]', 'link[rel=preconnect][href="https://fonts.gstatic.com"][crossorigin]']) {
     await expect(page.locator(sel)).toHaveCount(1);
   }
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', 'https://brainybits.thucanhtrantonnu.com/');
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', 'https://brainybits.thucanhtrantonnu.com/icons/og.png');
+  await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href', 'https://brainybits.thucanhtrantonnu.com/');
   const m = await (await page.request.get('/manifest.webmanifest')).json();
   expect(m.display).toBe('standalone');
   expect(m.orientation ?? 'any').toBe('any');            // landscape layouts exist; do not lock installed PWAs (review #8)
