@@ -8,6 +8,7 @@
     "parity": "node scripts/parity-check.mjs",
     "test": "playwright test",
     "test:sim": "node --test scripts/sim/difficulty.test.mjs",
+    "test:install": "node --test scripts/install-platform.test.mjs",
     "sim": "node scripts/sim/calibrate.mjs",
     "sim:train": "node scripts/sim/calibrate.mjs train --n 1200",
     "sim:koi": "node scripts/sim/calibrate.mjs koi --n 2000",
