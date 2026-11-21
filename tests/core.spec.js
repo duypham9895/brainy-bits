@@ -120,7 +120,7 @@ test('BB.resetAll deletes every bb_seed* flag and leaves unrelated keys alone (f
 async function pagesLikeServer(overrides) {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-    '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.txt': 'text/plain' };
+    '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.txt': 'text/plain' };
   const srv = http.createServer((req, res) => {
     let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     if (p.endsWith('/')) p += 'index.html';
@@ -155,13 +155,13 @@ test('service worker shows a new deploy despite max-age=600, drops old caches an
 
     // An older cache left by the previous VERSION is deleted when the new worker activates.
     await page.evaluate(async () => {
-      await (await caches.open('bb-v2')).put('/old', new Response('old'));
+      await (await caches.open('bb-v4')).put('/old', new Response('old'));
       await (await navigator.serviceWorker.getRegistration()).unregister();
     });
     await page.reload();
     await page.evaluate(() => navigator.serviceWorker.ready);
-    await expect.poll(() => page.evaluate(() => caches.keys())).not.toContain('bb-v2');
-    expect(await page.evaluate(() => caches.keys())).toContain('bb-v4');
+    await expect.poll(() => page.evaluate(() => caches.keys())).not.toContain('bb-v4');
+    expect(await page.evaluate(() => caches.keys())).toContain('bb-v5');
 
     // Offline: the cached app shell still opens.
     if (!(await page.evaluate(() => !!navigator.serviceWorker.controller))) await page.reload();

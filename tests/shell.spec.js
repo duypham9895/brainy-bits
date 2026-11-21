@@ -21,15 +21,42 @@ test('page zoom is allowed and only game surfaces block gestures (SHELL-02, OPS-
   expect(ta.cv).toBe('none');
 });
 
-test('head has description, Open Graph, theme colour, icons and gstatic preconnect (OPS-1/2/12, SHELL-16/18)', async ({ page }) => {
+test('head has description, Open Graph, JSON-LD, color-scheme, theme-color, icons and gstatic preconnect (OPS-1/2/12, SHELL-16/18)', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle('Brainy Bits');
-  for (const sel of ['meta[name=description]', 'meta[property="og:title"]', 'meta[property="og:image"]',
-    'meta[name=theme-color]', 'link[rel=manifest]', 'link[rel=apple-touch-icon]',
-    'link[rel=preconnect][href="https://fonts.gstatic.com"][crossorigin]']) {
-    await expect(page.locator(sel)).toHaveCount(1);
+  await expect(page).toHaveTitle('Brainy Bits — Trò ngắn luyện nhớ, tính nhẩm và chữ Việt');
+  for (const sel of ['meta[name=description]', 'meta[name="color-scheme"]', 'meta[name=theme-color]',
+    'meta[property="og:title"]', 'meta[property="og:url"]', 'meta[property="og:image"]',
+    'meta[property="og:image:type"]', 'meta[property="og:image:alt"]', 'meta[name="twitter:image"]',
+    'link[rel=canonical]', 'link[rel=manifest]', 'link[rel=icon][href="favicon.ico"]',
+    'link[rel=apple-touch-icon]', 'link[rel=preconnect][href="https://fonts.gstatic.com"][crossorigin]',
+    'script[type="application/ld+json"]']) {
+    await expect(page.locator(sel), sel).toHaveCount(1);
   }
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', 'https://brainybits.thucanhtrantonnu.com/');
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', 'https://brainybits.thucanhtrantonnu.com/icons/og.png');
+  await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href', 'https://brainybits.thucanhtrantonnu.com/');
+  const ld = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
+  expect(ld['@type']).toBe('WebApplication');
+  expect(ld.inLanguage).toBe('vi');
+  expect(ld.isAccessibleForFree).toBe(true);
+  expect((await page.request.get('/favicon.ico')).ok()).toBe(true);
+  expect((await page.request.get('/icons/og.png')).ok()).toBe(true);
   const m = await (await page.request.get('/manifest.webmanifest')).json();
+  const countPat = /\b(5|năm)\s+trò\b/i;
+  for (const val of [
+    await page.title(),
+    await page.locator('meta[name=description]').getAttribute('content'),
+    await page.locator('meta[property="og:title"]').getAttribute('content'),
+    await page.locator('meta[property="og:description"]').getAttribute('content'),
+    await page.locator('meta[property="og:image:alt"]').getAttribute('content'),
+    ld.alternateName,
+    ld.description,
+    await page.locator('#hubIntro').textContent(),
+    m.name,
+    m.description,
+  ]) {
+    expect(val).not.toMatch(countPat);
+  }
   expect(m.display).toBe('standalone');
   expect(m.orientation ?? 'any').toBe('any');            // landscape layouts exist; do not lock installed PWAs (review #8)
   expect(m.icons.some(i => i.purpose === 'maskable')).toBe(true);
@@ -227,19 +254,27 @@ test.describe('hub layout uses the screen width', () => {
       cols: cards.filter(c => Math.round(c.top) === Math.round(cards[0].top)).length,
       wrap: document.querySelector('.hubwrap').getBoundingClientRect().width,
       headerRow: Math.abs(r('hubStreak').top - r('hubSettings').top) < 40,
-      stripGap: r('hubSettings').left - document.querySelector('.hubstrip').getBoundingClientRect().right,
+      stripGap: document.querySelector('.top-actions').getBoundingClientRect().left - document.querySelector('.hubstrip').getBoundingClientRect().right,
     };
   };
   for (const [w, h, cols, header] of [[390, 844, 1, false], [768, 1024, 2, false], [1280, 800, 3, true], [1920, 1080, 3, true]]) {
     test(`${w}x${h}: ${cols} column(s)${header ? ', header row' : ''}`, async ({ page }) => {
+      await page.addInitScript(t => {
+        localStorage.setItem('bb_log', JSON.stringify([{ g: 'mem', lv: 1, won: true, stars: 3, score: 0, d: t, ms: 0 }]));
+        localStorage.setItem('bb_stats', JSON.stringify({ mem: { best: 1, stars: { 1: 3 } } }));
+        localStorage.setItem('bb_seeded_v2', '1');
+      }, today());
       await page.setViewportSize({ width: w, height: h });
       await page.goto('/');
       await expect(page.locator('#hub')).toBeVisible();
+      await expect(page.locator('#hubStrip')).toBeVisible();
+      // Cards slide in with a staggered entrance; measure once it settles (slow CI caught them mid-slide).
+      await page.evaluate(() => Promise.all(document.getAnimations().map(a => a.finished.catch(() => {}))));
       const l = await page.evaluate(layout);
       expect(l.cols).toBe(cols);
       expect(l.headerRow).toBe(header);
       expect(l.wrap).toBeLessThanOrEqual(1100);
-      if (header) expect(l.stripGap).toBeLessThanOrEqual(24);   // stats sit next to settings, no empty column
+      if (header) expect(l.stripGap).toBeLessThanOrEqual(24);   // stats sit next to top-actions, no empty column
       if (cols === 3) {                                   // two cards on the second row, centred as a pair
         const mid = await page.evaluate(() => {
           const a = document.getElementById('openRain').getBoundingClientRect(), b = document.getElementById('openWord').getBoundingClientRect();
@@ -319,4 +354,74 @@ test('hub copy and stat cells read naturally (review #13, #14)', async ({ page }
   expect(cells).toEqual(['0/0 tàu về đúng ga', '0 chuỗi đúng dài nhất', '0% độ chính xác', '1 cấp độ đạt tới']);
   const html = await (await page.request.get('/')).text();
   expect(html).not.toContain('orchestrator');
+});
+
+test('new visitor hides zero stats and sees intro; returning player sees stats strip', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#hubIntro')).toBeVisible();
+  await expect(page.locator('#hubStrip')).toBeHidden();
+
+  await page.evaluate(() => {
+    localStorage.setItem('bb_stats', JSON.stringify({ train: { best: 1, stars: { 1: 2 } } }));
+    localStorage.setItem('bb_seeded_v2', '1');
+  });
+  await page.reload();
+  await expect(page.locator('#hubStrip')).toBeVisible();
+  await expect(page.locator('#hubIntro')).toBeHidden();
+});
+
+test('offline QR modal renders SVG targets, works offline, and restores focus on Escape', async ({ page, context }) => {
+  await page.goto('/');
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  if (!(await page.evaluate(() => !!navigator.serviceWorker.controller))) await page.reload();
+
+  await context.setOffline(true);
+  await page.click('#hubQrBtn');
+  const dlg = page.locator('#qrDialog');
+  await expect(dlg).toBeVisible();
+  await expect(dlg).toHaveAttribute('open', '');
+  await expect(page.locator('#qrMount svg')).toHaveCount(1);
+  await expect(page.locator('#qrUrlText')).toHaveText('https://brainybits.thucanhtrantonnu.com/');
+
+  await page.click('#qrTargets button[data-hash="#tau"]');
+  await expect(page.locator('#qrTargetName')).toHaveText('Đường Ray Tư Duy');
+  await expect(page.locator('#qrUrlText')).toHaveText('https://brainybits.thucanhtrantonnu.com/#tau');
+  await expect(page.locator('#qrTargets button[data-hash="#tau"]')).toHaveAttribute('aria-pressed', 'true');
+
+  await page.click('#qrTargets button[data-hash="#chu"]');
+  await expect(page.locator('#qrUrlText')).toHaveText('https://brainybits.thucanhtrantonnu.com/#chu');
+
+  await page.keyboard.press('Escape');
+  await expect(dlg).toBeHidden();
+  expect(await page.evaluate(() => document.activeElement && document.activeElement.id)).toBe('hubQrBtn');
+  await context.setOffline(false);
+});
+
+test('3-state theme selector persists across reset and syncs color-scheme + theme-color', async ({ page }) => {
+  await page.goto('/');
+  await page.click('#hubSettings');
+  await page.click('#themeDarkBtn');
+  expect(await page.evaluate(() => [
+    localStorage.getItem('bb_theme'),
+    document.querySelector('meta[name="color-scheme"]').content,
+    document.querySelector('meta[name="theme-color"]').content,
+  ])).toEqual(['dark', 'dark', '#0e1712']);
+
+  await page.click('#themeLightBtn');
+  expect(await page.evaluate(() => [
+    localStorage.getItem('bb_theme'),
+    document.querySelector('meta[name="color-scheme"]').content,
+    document.querySelector('meta[name="theme-color"]').content,
+  ])).toEqual(['light', 'light', '#f6f0e4']);
+
+  await page.click('#setReset');
+  await Promise.all([page.waitForEvent('load'), page.click('#setResetYes')]);
+  expect(await page.evaluate(() => localStorage.getItem('bb_theme'))).toBe('light');
+
+  await page.click('#hubSettings');
+  await page.click('#themeAutoBtn');
+  expect(await page.evaluate(() => [
+    localStorage.getItem('bb_theme'),
+    document.querySelector('meta[name="color-scheme"]').content,
+  ])).toEqual([null, 'light dark']);
 });

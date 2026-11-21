@@ -61,7 +61,7 @@ Mỗi game giữ nguyên màn cũ (E3, có test so công thức cũ với `BBD.l
 train vẽ ≥ 44 px ở 320 px (`DISC_MIN_R`), vùng chạm koi có sàn cho mọi màn (kể cả màn cũ, vì G6 kiểm mọi màn).
 
 Nối dây chung: `index.html` cần 6 thẻ script (`docs/difficulty/INDEX-TAGS.md`); `sw.js` đã cache
-`js/difficulty.js` + `js/levels/*.js` (`bb-v4`); CI chạy `npm run test:sim` và gate calibration.
+`js/difficulty.js` + `js/levels/*.js` (`bb-v5`); CI chạy `npm run test:sim` và gate calibration.
 
 ## 5. Kết quả calibration 2026-11-21
 

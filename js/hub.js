@@ -51,25 +51,38 @@ function starsOf(key) {
   return Object.values(BB.gameStats(key).stars).reduce((a, b) => a + (b || 0), 0);
 }
 
+const OPEN_CARD = { train: 'openTrain', koi: 'openKoi', mem: 'openMem', rain: 'openRain', word: 'openWord' };
+
 // ---------- hub render ----------
 let shownStars = 0, shownStreak = 0;
 function renderHub() {
+  let totalPassed = 0;
   Object.values(GAMES).forEach(g => {
     const max = BB.LV_MAX[g.key], best = bestOf(g.key), st = starsOf(g.key);
+    totalPassed += best;
     const star = st ? ` · ★ ${st}/${max * 3}` : '';
     $(g.hub).textContent = best >= max ? `Xong cả ${max} level${star}`
       : best ? `Đã qua ${best}/${max} level${star}` : `${max} level, chưa chơi`;
     $(g.hub).classList.toggle('fresh', !best);
+    const card = $(OPEN_CARD[g.key]);
+    if (card) card.style.setProperty('--pct', (max > 0 ? Math.min(1, best / max) : 0).toFixed(3));
   });
   const stars = BB.totalStars(), streak = BB.dayStreak();
+  const hasProgress = totalPassed > 0 || stars > 0 || streak > 0;
+  if ($('hubStrip')) $('hubStrip').hidden = !hasProgress;
+  if ($('hubIntro')) $('hubIntro').hidden = hasProgress;
   BB.countUp($('hubStars'), shownStars, stars);
   BB.countUp($('hubStreak'), shownStreak, streak);
+  $('hubStreak').closest('.hstat')?.classList.toggle('is-zero', streak === 0);
+  $('hubStars').closest('.hstat')?.classList.toggle('is-zero', stars === 0);
+  $('hubShare')?.classList.toggle('quiet', stars === 0 && totalPassed === 0);
   shownStars = stars; shownStreak = streak;
 
   const d = BB.daily();
   $('hubDailyNo').textContent = `#${d.idx}`;
   $('hubDailyGame').textContent = `${BB.GAME_NAME[d.game]} · Level ${d.level}`;
   $('hubDailyState').textContent = d.done ? '✓ Đã xong' : 'Chơi';
+  $('hubDaily').dataset.game = d.game;
   $('hubDaily').classList.toggle('done', d.done);
   $('hubDaily').setAttribute('aria-label',
     `Thử thách hôm nay: ${BB.GAME_NAME[d.game]}, Level ${d.level}. ${d.done ? 'Đã xong' : 'Chơi ngay'}`);
@@ -101,6 +114,7 @@ function focusDialog() {
 }
 window.addEventListener('keydown', e => {
   if (e.key !== 'Tab' || e.defaultPrevented) return;
+  if (qrDialog && qrDialog.open) return;
   const ov = openDialog(); if (!ov) return;
   const els = focusables(ov); if (!els.length) return;
   const first = els[0], last = els[els.length - 1], a = document.activeElement;
@@ -114,7 +128,8 @@ window.addEventListener('keydown', e => {
 // ---------- router ----------
 let current = null;                                  // game key on screen, or null for the hub
 function route() {
-  closeSettings();                                   // Forward / hash change must not leave the sheet over a game
+  closeSettings();                                   // Forward / hash change must not leave sheets over a game
+  closeQrImmediate();
   const h = location.hash.replace('#', '');
   const game = GAMES[h] || null;
   const next = game ? game.key : null;
@@ -162,8 +177,140 @@ $('hubDaily').onclick = () => {
 // ---------- share ----------
 $('hubShare').onclick = async () => {
   const r = await BB.share();
-  if (r === 'failed') BB.toast('Chưa chia sẻ được, thử lại sau nhé');
+  if (r === 'failed') BB.toast('Chưa chia sẻ được, thử lại sau');
 };
+
+// ---------- theme selector (light / dark / system) ----------
+const metaScheme = document.querySelector('meta[name="color-scheme"]');
+const metaTheme = document.querySelector('meta[name="theme-color"]');
+const themeBtns = [...document.querySelectorAll('#settings [data-theme]')];
+const themeAutoBtn = $('themeAutoBtn');
+const osDarkMq = window.matchMedia('(prefers-color-scheme: dark)');
+
+function syncThemeUI() {
+  const stored = BB.store.get('bb_theme');
+  const currentTheme = (stored === 'light' || stored === 'dark') ? stored : 'light dark';
+  const isDark = currentTheme === 'dark' || (currentTheme === 'light dark' && osDarkMq.matches);
+  if (metaScheme) metaScheme.content = currentTheme;
+  if (metaTheme) metaTheme.content = isDark ? '#0e1712' : '#f6f0e4';
+  if (themeAutoBtn) themeAutoBtn.textContent = `Theo máy (${osDarkMq.matches ? 'Tối' : 'Sáng'})`;
+  themeBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.theme === currentTheme)));
+}
+themeBtns.forEach(btn => btn.addEventListener('click', () => {
+  const val = btn.dataset.theme;
+  if (val === 'light dark') BB.store.del('bb_theme');
+  else BB.store.set('bb_theme', val);
+  syncThemeUI();
+  BB.sfx('tap'); BB.haptic('tap');
+}));
+osDarkMq.addEventListener('change', syncThemeUI);
+window.addEventListener('storage', e => { if (!e.key || e.key === 'bb_theme') syncThemeUI(); });
+syncThemeUI();
+
+// ---------- native modal <dialog> for offline QR sharing ----------
+const BASE_URL = (location.protocol === 'https:' && !/^(localhost|127\.0\.0\.1)$/i.test(location.hostname))
+  ? (location.origin + location.pathname.replace(/index\.html$/, ''))
+  : 'https://brainybits.thucanhtrantonnu.com/';
+
+let supportsDisplayTransition;
+function canTransitionDisplay() {
+  if (supportsDisplayTransition !== undefined) return supportsDisplayTransition;
+  if (!window.CSS?.supports?.('transition-behavior', 'allow-discrete') || !document.body) return false;
+  const probe = document.createElement('div');
+  probe.style.cssText = 'transition: display 1s allow-discrete !important; display: block;';
+  document.body.appendChild(probe); getComputedStyle(probe).display; probe.style.display = 'none';
+  supportsDisplayTransition = getComputedStyle(probe).display === 'block'; probe.remove();
+  return supportsDisplayTransition;
+}
+const supportsTopLayerExit = () => window.CSS?.supports?.('overlay', 'auto') && canTransitionDisplay();
+
+const qrDialog = $('qrDialog');
+let qrOpener = null;
+async function closeQrDialog() {
+  if (!qrDialog || !qrDialog.open) return;
+  if (!supportsTopLayerExit()) {
+    qrDialog.setAttribute('data-closing', '');
+    const anims = qrDialog.getAnimations({ subtree: true });
+    if (anims.length > 0) await Promise.race([Promise.allSettled(anims.map(a => a.finished)), new Promise(r => setTimeout(r, 1200))]);
+    if (!qrDialog.hasAttribute('data-closing')) return;
+    qrDialog.removeAttribute('data-closing');
+  }
+  qrDialog.close();
+}
+function closeQrImmediate() {
+  if (!qrDialog || !qrDialog.open) return;
+  qrOpener = null;
+  qrDialog.removeAttribute('data-closing');
+  qrDialog.close();
+}
+
+let currentQrUrl = BASE_URL;
+let currentQrSlug = 'trang-chu';
+let currentQrSvg = '';
+const qrTargetBtns = [...document.querySelectorAll('#qrTargets button')];
+
+function setQrTarget(hash, label) {
+  currentQrUrl = BASE_URL + (hash || '');
+  currentQrSlug = hash ? hash.replace('#', '') : 'trang-chu';
+  currentQrSvg = window.BBQR ? window.BBQR.svg(currentQrUrl, {
+    fg: '#102218',
+    bg: '#faf5ea',
+    qz: 4,
+    label: 'Mã QR mở ' + label,
+  }) : '';
+  if ($('qrMount')) $('qrMount').innerHTML = currentQrSvg;
+  if ($('qrUrlText')) $('qrUrlText').innerHTML = currentQrUrl.replace('https://', 'https://<wbr>').replace('#', '<wbr>#');
+  if ($('qrTargetName')) $('qrTargetName').textContent = label;
+  qrTargetBtns.forEach(b => b.setAttribute('aria-pressed', String((b.dataset.hash || '') === (hash || ''))));
+}
+
+if (qrDialog) {
+  qrDialog.addEventListener('close', () => {
+    const opener = qrOpener; qrOpener = null;
+    if (opener && opener.isConnected && !document.hidden) { try { opener.focus({ preventScroll: true }); } catch (e) {} }
+  });
+  qrDialog.addEventListener('cancel', e => { e.preventDefault(); closeQrDialog(); });
+  if (!('closedBy' in HTMLDialogElement.prototype)) {
+    qrDialog.addEventListener('click', event => {
+      if (event.target !== qrDialog) return;
+      const r = qrDialog.getBoundingClientRect();
+      const inside = r.top <= event.clientY && event.clientY <= r.top + r.height && r.left <= event.clientX && event.clientX <= r.left + r.width;
+      if (!inside) closeQrDialog();
+    });
+  }
+  if ($('hubQrBtn')) $('hubQrBtn').onclick = () => {
+    closeSettings();
+    qrOpener = document.activeElement;
+    qrDialog.removeAttribute('data-closing');
+    setQrTarget('', 'Brainy Bits · Trang chủ');
+    qrDialog.showModal();
+    BB.sfx('tap'); BB.haptic('tap');
+  };
+  if ($('qrCloseBtn')) $('qrCloseBtn').onclick = closeQrDialog;
+  qrTargetBtns.forEach(btn => btn.addEventListener('click', () => {
+    setQrTarget(btn.dataset.hash || '', btn.dataset.label || 'Brainy Bits');
+    BB.sfx('tap');
+  }));
+  if ($('qrCopyBtn')) $('qrCopyBtn').onclick = async () => {
+    try { await navigator.clipboard.writeText(currentQrUrl); BB.toast('Đã chép đường dẫn'); return; } catch (e) {}
+    BB.toast('Chưa chép được đường dẫn, thử sao chép trực tiếp');
+  };
+  if ($('qrSaveBtn')) $('qrSaveBtn').onclick = () => {
+    if (!currentQrSvg) return;
+    const blob = new Blob([currentQrSvg], { type: 'image/svg+xml;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = `brainy-bits-${currentQrSlug}-qr.svg`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    BB.toast('Đã lưu ảnh QR (.svg)');
+  };
+  if ($('qrShareResultBtn')) $('qrShareResultBtn').onclick = async () => {
+    const r = await BB.share();
+    if (r === 'failed') BB.toast('Chưa chia sẻ được, thử lại sau');
+  };
+}
 
 // ---------- settings sheet ----------
 const sheet = $('settings');
@@ -172,6 +319,8 @@ function syncSwitches() {
   $('setHaptic').setAttribute('aria-checked', String(BB.settings.haptics));
 }
 function openSettings() {
+  closeQrImmediate();
+  syncThemeUI();
   syncSwitches();
   $('setConfirm').classList.add('hidden'); $('setReset').classList.remove('hidden');
   sheet.classList.remove('hidden');
@@ -205,6 +354,7 @@ const PAUSE = { train: ['pauseBtn', 'paused', 'resumeBtn'], koi: ['kPauseBtn', '
 const visible = el => el && !el.classList.contains('hidden') && el.getClientRects().length > 0;
 window.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || e.defaultPrevented) return;
+  if (qrDialog && qrDialog.open) return;
   if (visible(sheet)) { closeSettings(); e.preventDefault(); return; }
   const p = current && PAUSE[current]; if (!p) return;
   const [btn, ov, resume] = p.map(id => $(id));

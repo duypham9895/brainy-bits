@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="text-scale" content="scale">
+<title>Option B · Sunlit Paper Studio — Brainy Bits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5efe4;--card:#fffdf8;--ink:#1d2b22;--sub:#465d4e;--border:#d8cebd;
+    --train:#e9f3eb;--koi:#e4f3f1;--mem:#eeebf9;--rain:#e6f0fb;--word:#f6ede3;
+    --accent:#e5721f;--accent-ink:#fff;--daily:#fdf3da;--daily-bd:#d49d2a;
+    --ease:cubic-bezier(0.22,1,0.36,1);
+  }
+  [data-theme="dark"]{
+    --bg:#0a150e;--card:#152a1e;--ink:#f5faf7;--sub:#b6d0c0;--border:rgba(255,255,255,.14);
+    --train:#173122;--koi:#103a3b;--mem:#221b40;--rain:#112d49;--word:#332117;
+    --accent:#ff9636;--accent-ink:#241100;--daily:#2e250e;--daily-bd:rgba(255,213,74,.45);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100dvh;background:var(--bg);color:var(--ink);line-height:1.45;padding:18px 16px 32px;
+    font-family:"Baloo 2",ui-rounded,system-ui,-apple-system,sans-serif;transition:background-color .2s var(--ease),color .2s var(--ease)}
+  .wrap{max-width:440px;margin:0 auto;display:grid;gap:14px}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:16px;
+    background:var(--card);border:1px solid var(--border)}
+  .toolbar span{font-size:.86rem;font-weight:700;color:var(--sub)}
+  .toggle{min-height:44px;padding:0 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);
+    color:var(--ink);font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;white-space:nowrap;flex:none}
+  .top{display:flex;align-items:center;justify-content:space-between}
+  .title{margin:0;display:flex;align-items:center;gap:10px;font-size:1.75rem;font-weight:800}
+  .strip{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:12px;text-align:center}
+  .stat b{display:block;font-size:1.5rem;line-height:1.1;color:var(--accent);font-variant-numeric:tabular-nums}
+  .stat small{font-size:.86rem;color:var(--sub);font-weight:600}
+  .daily{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:20px;
+    background:var(--daily);border:1.5px solid var(--daily-bd);text-align:left;color:var(--ink);cursor:pointer}
+  .daily small{display:block;font-size:.82rem;font-weight:700;color:var(--sub)}
+  .daily b{font-size:1.1rem}
+  .go{padding:9px 16px;border-radius:13px;background:var(--accent);color:var(--accent-ink);font-weight:800}
+  .card{display:flex;align-items:center;gap:14px;padding:14px;border-radius:20px;border:1px solid var(--border);
+    background:var(--train);color:var(--ink);text-align:left;cursor:pointer}
+  .card.koi{background:var(--koi)}.card.mem{background:var(--mem)}.card.rain{background:var(--rain)}.card.word{background:var(--word)}
+  .card b{display:block;font-size:1.12rem}
+  .card small{display:block;font-size:.86rem;color:var(--sub)}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="toolbar">
+    <span>Option B · Sáng / Tối hai chế độ</span>
+    <button type="button" class="toggle" id="sw">Nền tối</button>
+  </div>
+  <div class="top">
+    <h1 class="title">
+      <svg width="32" height="32" viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="4" width="18" height="18" rx="5" fill="#ffd54a"/><rect x="26" y="4" width="18" height="18" rx="5" fill="#ff8a3d"/><rect x="4" y="26" width="18" height="18" rx="5" fill="#52b85a"/><rect x="27.5" y="27.5" width="15" height="15" rx="4" fill="none" stroke="#c88a1e" stroke-width="3"/><circle cx="35" cy="35" r="3" fill="#c88a1e"/></svg>
+      Brainy Bits
+    </h1>
+  </div>
+  <div class="strip">
+    <div class="stat"><b>3</b><small>ngày liên tiếp</small></div>
+    <div class="stat"><b>27</b><small>sao đã có</small></div>
+  </div>
+  <button type="button" class="daily">
+    <span><small>Thử thách hôm nay #14</small><b>Cho Cá Koi Ăn · Level 3</b></span>
+    <span class="go">Chơi</span>
+  </button>
+  <button type="button" class="card">
+    <svg width="38" height="38" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 40h36" stroke="#5d7867" stroke-width="3" stroke-linecap="round"/><rect x="11" y="8" width="26" height="26" rx="8" fill="#eb9514"/><rect x="16" y="13" width="16" height="9" rx="3" fill="#2a1300"/><circle cx="18" cy="28" r="2.4" fill="#2a1300"/><circle cx="30" cy="28" r="2.4" fill="#2a1300"/></svg>
+    <span><b>Đường Ray Tư Duy</b><small>Đổi ngã rẽ, đưa tàu về đúng ga cùng màu, cùng hình</small></span>
+  </button>
+  <button type="button" class="card koi">
+    <svg width="38" height="38" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 24c6-10 20-12 28-4l7-6v20l-7-6c-8 8-22 6-28-4z" fill="#ff8f61"/><circle cx="12.5" cy="22.5" r="1.8" fill="#0d2c2e"/></svg>
+    <span><b>Cho Cá Koi Ăn</b><small>Mỗi con cá chỉ được ăn một lần, nhớ kỹ nhé</small></span>
+  </button>
+  <button type="button" class="card mem">
+    <svg width="38" height="38" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="6" width="16" height="16" rx="4" fill="#f0b429"/><rect x="26" y="6" width="16" height="16" rx="4" fill="#6f63ad"/><rect x="6" y="26" width="16" height="16" rx="4" fill="#6f63ad"/><rect x="26" y="26" width="16" height="16" rx="4" fill="#f0b429"/></svg>
+    <span><b>Ô Sáng Ghi Nhớ</b><small>Nhớ vị trí các ô vừa sáng rồi chạm lại đúng</small></span>
+  </button>
+  <button type="button" class="card rain">
+    <svg width="38" height="38" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 5c7 10 13 17 13 24a13 13 0 0 1-26 0c0-7 6-14 13-24z" fill="#3a8dde"/><path d="M24 23v12M18 29h12" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/></svg>
+    <span><b>Mưa Phép Tính</b><small>Giải phép tính trước khi giọt mưa chạm mặt nước</small></span>
+  </button>
+  <button type="button" class="card word">
+    <svg width="38" height="38" viewBox="0 0 48 48" aria-hidden="true"><rect x="3" y="12" width="20" height="24" rx="5" fill="#2e7d3a"/><rect x="25" y="12" width="20" height="24" rx="5" fill="#f2ba66"/><path d="M8 31l5-14 5 14M9.8 26h6.4" stroke="#fff" stroke-width="2.8" stroke-linecap="round" fill="none"/><path d="M31 17v14h8" stroke="#2a1a12" stroke-width="2.8" stroke-linecap="round" fill="none"/></svg>
+    <span><b>Đoán Cụm Từ</b><small>Đoán cụm 2 từ tiếng Việt trong 6 lượt</small></span>
+  </button>
+</main>
+<script>
+const b = document.getElementById('sw');
+b.onclick = () => {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  b.textContent = dark ? 'Nền tối' : 'Nền sáng';
+};
+</script>
+</body>
+</html>

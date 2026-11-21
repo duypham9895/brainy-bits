@@ -1,13 +1,14 @@
 /* train: game-specific styles. Loaded after app.css, so rules here may override it. */
+#trainApp{--sub:#b6d0c0;--muted:#98b8a5;--note:#d2e4d8;--focus:#ffd54a}
 /* Pause is a touch control: 44px minimum, not the shared 38px. */
 #trainApp #pauseBtn{width:44px;height:44px;flex:none;font-size:15px}
-#trainApp #pauseBtn:focus-visible,#trainApp .lv:focus-visible{outline:2px solid #ffd54a;outline-offset:2px}
+#trainApp #pauseBtn:focus-visible,#trainApp .lv:focus-visible{outline:3px solid #ffd54a;outline-offset:2px}
 /* HUD pills may shrink on 320px phones instead of pushing Pause off-screen. */
 #trainApp #hud .pill{min-width:auto}
-#trainApp .lv{min-height:44px}
-#trainApp .lv .lvst{display:block;font-size:10px;line-height:1;letter-spacing:1px;color:#ffd54a;margin-top:2px}
+#trainApp .lv{min-height:52px}
+#trainApp .lv .lvst{display:block;font-size:10.5px;line-height:1;letter-spacing:1px;color:#ffd54a;margin-top:2px}
 #trainApp .lv.done::after{content:none}
-#trainApp .rtd-rule{font-size:13px;text-wrap:balance;color:#9fb8a8;margin:6px 0 0}
+#trainApp .rtd-rule{font-size:.8rem;text-wrap:balance;color:var(--muted);margin:6px 0 2px}
 #rtdRotate{margin:4px 0 6px}
 /* Narrow phones (320-430px, iPhone SE to Pro Max, Pixel): Level 11 + streak + drain fit one row instead of
    wrapping and shrinking the map mid-round. :root matches app.css's own compact rule, which wins

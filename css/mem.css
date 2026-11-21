@@ -1,4 +1,5 @@
 /* mem: game-specific styles. Loaded after app.css, so rules here may override it. */
+#memApp{--sub:#cfc7f7;--muted:#b4aae6;--note:#e3defc;--focus:#ffd54a}
 /* 6x6 grid: smaller gap keeps every tile >= 44px at 320px wide. */
 .mgrid{perspective:700px}
 .mgrid.dense{gap:4px}
@@ -7,10 +8,11 @@
 .mtile.miss:focus-visible{outline-color:#fff}
 /* Paused: the grid is hidden so nothing can be studied behind the pause card (MEM-2). */
 .mgrid.hush{visibility:hidden}
-/* Stars earned per level on the menu buttons. */
-#mlvgrid .lv.done[data-st]::after{content:attr(data-st);color:#ffd54a;font-size:10px;letter-spacing:-1px;top:3px;right:5px}
-#mrStars{margin:10px 0 2px}
-#mrStarRule{font-size:12.5px;line-height:1.4}
+/* Stars earned per level sit neatly under the target count, never overlapping the level number. */
+#mlvgrid .lv{min-height:52px}
+#mlvgrid .lv.done[data-st]::after{content:attr(data-st);position:static;display:block;color:#ffd54a;font-size:10.5px;letter-spacing:1px;line-height:1;margin-top:2px}
+#mrStars{margin:6px 0 2px}
+#mrStarRule{font-size:.8rem;line-height:1.4}
 
 @media (prefers-reduced-motion: no-preference){
   .mtile.lit{animation:mFlip .34s cubic-bezier(0.22,1,0.36,1) var(--d,0ms) both}

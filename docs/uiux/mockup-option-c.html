@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="text-scale" content="scale">
+<title>Option C · Compact Bento Arcade — Brainy Bits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100dvh;background:radial-gradient(120% 80% at 50% 0%,#1d3a2a 0%,#0a150e 70%);color:#fff;
+    font-family:"Baloo 2",ui-rounded,system-ui,-apple-system,sans-serif;line-height:1.4;padding:16px 14px 24px}
+  .hub{max-width:410px;margin:0 auto;display:grid;gap:10px}
+  .note{font-size:.82rem;color:#b6d0c0;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  h1{margin:0;display:flex;align-items:center;gap:8px;font-size:1.65rem;font-weight:800;color:#ffd54a}
+  .iconbtn{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.1);color:#fff;display:grid;place-items:center;cursor:pointer}
+  .week{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:18px;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09)}
+  .days{display:flex;gap:5px}
+  .day{width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-size:.72rem;font-weight:700;color:#b6d0c0}
+  .day.on{background:#7ee081;color:#0e2614}
+  .daily{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:18px;
+    border:1px solid rgba(255,213,74,.42);background:linear-gradient(155deg,#3a2f12,#1f1a0b);color:#fff;text-align:left;cursor:pointer}
+  .daily small{display:block;font-size:.8rem;font-weight:700;color:#ffd54a}
+  .daily b{font-size:1.05rem}
+  .go{padding:8px 14px;border-radius:12px;background:linear-gradient(180deg,#ffc342,#ff7a2e);color:#2a1300;font-weight:800}
+  .bento{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tile{display:grid;gap:6px;align-content:space-between;text-align:left;padding:13px;border-radius:20px;min-height:122px;
+    border:1px solid rgba(255,255,255,.12);background:linear-gradient(160deg,#1f3b2b,#132619);color:#fff;cursor:pointer}
+  .tile.koi{background:linear-gradient(160deg,#164a4a,#0d2c2e)}
+  .tile.mem{background:linear-gradient(160deg,#2c2450,#1a1533)}
+  .tile.rain{background:linear-gradient(160deg,#173a5c,#0e2338)}
+  .tile.word{grid-column:1 / -1;min-height:84px;display:flex;align-items:center;gap:12px;background:linear-gradient(160deg,#4a2f1f,#2a1a12)}
+  .tile b{display:block;font-size:1.06rem;line-height:1.18}
+  .tile small{display:block;color:#c2d7ca;font-size:.8rem;margin-top:2px}
+  .tile em{display:block;font-style:normal;color:#ffd54a;font-size:.78rem;font-weight:700}
+  .share{min-height:46px;border-radius:15px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;
+    font-family:inherit;font-size:.98rem;font-weight:700;cursor:pointer}
+  :focus-visible{outline:3px solid #ffd54a;outline-offset:3px}
+</style>
+</head>
+<body>
+<main class="hub">
+  <div class="note">Option C · Compact Bento Arcade (vừa 5 game trên 1 màn 390×844)</div>
+  <header class="top">
+    <h1><svg width="30" height="30" viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="4" width="18" height="18" rx="5" fill="#ffd54a"/><rect x="26" y="4" width="18" height="18" rx="5" fill="#ff8a3d"/><rect x="4" y="26" width="18" height="18" rx="5" fill="#7ee081"/><rect x="27.5" y="27.5" width="15" height="15" rx="4" fill="none" stroke="#ffd54a" stroke-opacity=".6" stroke-width="3"/><circle cx="35" cy="35" r="3" fill="#ffd54a"/></svg>Brainy Bits</h1>
+    <button type="button" class="iconbtn" aria-label="Cài đặt"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="6" width="16" height="2.2" rx="1.1"/><circle cx="9" cy="7.1" r="2.6"/><rect x="4" y="15.8" width="16" height="2.2" rx="1.1"/><circle cx="15" cy="16.9" r="2.6"/></svg></button>
+  </header>
+  <div class="week">
+    <div><b style="color:#ffd54a;font-size:1.1rem">3 ngày · 28 sao</b></div>
+    <div class="days" aria-label="Chuỗi tuần">
+      <span class="day on">T2</span><span class="day on">T3</span><span class="day on">T4</span><span class="day">T5</span><span class="day">T6</span><span class="day">T7</span><span class="day">CN</span>
+    </div>
+  </div>
+  <button type="button" class="daily">
+    <span><small>Thử thách hôm nay #14</small><b>Mưa Phép Tính · Level 4</b></span>
+    <span class="go">Chơi</span>
+  </button>
+  <div class="bento">
+    <button type="button" class="tile">
+      <svg width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><rect x="11" y="8" width="26" height="26" rx="8" fill="#ffb02e"/><rect x="16" y="13" width="16" height="9" rx="3" fill="#2a1300"/></svg>
+      <span><b>Đường Ray</b><small>Đổi ngã rẽ cho tàu</small><em>3/11 level</em></span>
+    </button>
+    <button type="button" class="tile koi">
+      <svg width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 24c6-10 20-12 28-4l7-6v20l-7-6c-8 8-22 6-28-4z" fill="#ffb38a"/></svg>
+      <span><b>Cá Koi</b><small>Mỗi con ăn 1 lần</small><em>2/10 level</em></span>
+    </button>
+    <button type="button" class="tile mem">
+      <svg width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="6" width="16" height="16" rx="4" fill="#ffd54a"/><rect x="26" y="26" width="16" height="16" rx="4" fill="#ffd54a"/></svg>
+      <span><b>Ô Sáng</b><small>Chạm đúng ô vừa sáng</small><em>5/13 level</em></span>
+    </button>
+    <button type="button" class="tile rain">
+      <svg width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 5c7 10 13 17 13 24a13 13 0 0 1-26 0c0-7 6-14 13-24z" fill="#7cc7ff"/></svg>
+      <span><b>Mưa Phép Tính</b><small>Tính nhanh trước khi rơi</small><em>4/10 level</em></span>
+    </button>
+    <button type="button" class="tile word">
+      <svg width="36" height="36" viewBox="0 0 48 48" aria-hidden="true"><rect x="3" y="12" width="20" height="24" rx="5" fill="#3fa34d"/><rect x="25" y="12" width="20" height="24" rx="5" fill="#ffcf8a"/></svg>
+      <span><b>Đoán Cụm Từ</b><small>Đoán cụm 2 từ tiếng Việt trong 6 lượt · 5/49 level</small></span>
+    </button>
+  </div>
+  <button type="button" class="share">Chia sẻ kết quả</button>
+</main>
+</body>
+</html>
