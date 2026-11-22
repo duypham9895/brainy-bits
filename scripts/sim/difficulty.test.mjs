@@ -452,13 +452,13 @@ test('calibrate gates every level now (E3 lifted): B and G6 read legacy rows too
   assert.equal(r.config.tableVersion, 2);
 });
 
-// mem table v2 at full N=1200. Was KNOWN-FAIL B L4/L5 (easy side, G1 kept). Duy 2026-11-22 (A): B is one-sided
-// on L1–9, so those two misses are no longer misses. Every gate passes with zero waivers.
-test('mem v2: zero failed gates, zero waivers, weak ≥ 0.85 on L1–5 at N=1200', async () => {
+// mem table v2 at full N=1200. Duy 2026-11-22 (B): B is one-sided before the first peak (L15), weak floors
+// 0.90 on L1–5 and 0.82 on L6–10 (G1), weak ≥ 0.70 at L15 (G9). Every gate passes with zero waivers.
+test('mem v2: zero failed gates, zero waivers, weak ≥ 0.90 on L1–5 at N=1200', async () => {
   const r = await calibrate('mem', { n: 1200, write: false, quiet: true });
   assert.deepEqual(failsByGate(r), {});
   assert.deepEqual(r.waived, []);
-  assert.ok(r.levels.filter(l => l.L <= 5).every(l => l.profiles.weak.p >= 0.85));
+  assert.ok(r.levels.filter(l => l.L <= 5).every(l => l.profiles.weak.p >= 0.90));
 });
 
 // "+10 levels from the rule alone": generated L31–40 (engine knobs, no authored rows) pass every gate.
@@ -545,20 +545,26 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
       close(r.show, 1 + 0.3 * r.t, 1e-9); assert.equal(B.levelId('mem', L), L);   // no ids: stars stay keyed by L
     }
   });
-  test('v2 follows the sawtooth: steps (except L4) and peaks harder than the level before, breathers lighter than their peak', () => {
+  // A step that brings a bigger grid (L6 5×5, L9 6×6) may drop to 3 gathered tiles at the same time (Duy 2026-11-22, B:
+  // the new element comes with the other knobs eased). So a step is harder when the grid grows, or on the same grid when
+  // it adds a tile, or keeps the tiles and spreads them more.
+  const stepHarder = (a, b) => a.size > b.size || (a.size === b.size && (a.t > b.t || (a.t === b.t && a.disp > b.disp + 1e-9)));
+  test('v2 follows the sawtooth: steps and peaks harder than the level before, breathers lighter than their peak', () => {
     const B = loadBBD();
     for (let L = 2; L <= 30; L++) {
       const r = B.level('mem', L), p = B.level('mem', L - 1);
       if (r.kind === 'peak') assert.equal(r.t, p.t + 1, `L${L} peak adds one tile`);
       else if (r.kind === 'breather') assert.ok(harder(p, r), `L${L} breather lighter than peak L${L - 1}`);
-      else if (L !== 4) assert.ok(harder(r, p), `L${L} step harder than L${L - 1}`);
+      else assert.ok(stepHarder(r, p), `L${L} step harder than L${L - 1}`);
     }
-    // No peak or breather before L10 (Duy 2026-11-21).
-    assert.ok([1, 2, 3, 4, 5, 6, 7, 8, 9].every(L => B.level('mem', L).kind === 'step'));
-    assert.equal(B.level('mem', 10).kind, 'peak'); assert.equal(B.level('mem', 11).kind, 'breather');
-    // L1–5: three tiles while the grid grows. L4 gathers the tiles again (disp 0): the B/G1 frontier, see KNOWN-FAIL mem v2.
-    assert.deepEqual([1, 2, 3, 4, 5].map(L => B.level('mem', L).t), [3, 3, 3, 3, 3]);
-    assert.deepEqual([1, 2, 3, 4, 5].map(L => B.level('mem', L).size), [4, 5, 6, 6, 6]);
+    // No peak or breather before L15 (Duy 2026-11-22, B, all games).
+    assert.ok(range(1, 14).every(L => B.level('mem', L).kind === 'step'));
+    assert.equal(B.level('mem', 15).kind, 'peak'); assert.equal(B.level('mem', 16).kind, 'breather');
+    // L1–5: 4×4 grid, 3 tiles then 4 from L3 (G1 weak ≥ 0.90). 5×5 at L6, 6×6 from L9. L15 peak: 4 tiles gathered.
+    assert.deepEqual(range(1, 5).map(L => B.level('mem', L).t), [3, 3, 4, 4, 4]);
+    assert.deepEqual(range(1, 10).map(L => B.level('mem', L).size), [4, 4, 4, 4, 4, 5, 5, 5, 6, 6]);
+    assert.deepEqual([B.level('mem', 15).t, B.level('mem', 15).disp], [4, 0]);
+    assert.ok(range(1, 30).every(L => B.level('mem', L).disp <= 0.5), 'disp within hardCap');
   });
   // L31+ follows the table template, anchored at the last step row (L29), not at the L30 peak.
   // Pinned rows = the ones calibrated green at N=1200 (calibrate mem --from 26 --to 45, 2026-11-22: disp start 0.1).
