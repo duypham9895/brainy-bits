@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Mở màn dễ hơn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;650;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/doc.css">
+</head>
+<body>
+<nav><div class="in">
+  <a href="index.html">Độ khó</a>
+  <button id="t" type="button">sáng</button>
+</div></nav>
+
+<main>
+<section>
+  <div class="meta r"><span class="words">—</span><span>Research · 2026-11-22</span></div>
+  <h1 class="r">Anh đúng: 10 màn đầu đang khó quá sớm.</h1>
+  <div class="tldr r"><p><strong>Không nguồn nào ủng hộ đặt đỉnh khó ở L10 với tỉ lệ qua 77%.</strong>
+  Nghiên cứu đo trên người thật đều nghiêng một phía: mở màn càng dễ thì người chơi ở lại càng lâu.
+  Đường Ray còn nặng thêm vì L6 đổi hai thứ cùng lúc, và bot giả lập giỏi hơn người mới chơi trên điện thoại.
+  <strong>Cần anh quyết: sửa khuôn chung cho cả 5 game hay chỉ Đường Ray.</strong></p></div>
+</section>
+
+<section>
+  <div class="g three r">
+    <div class="k"><div class="n">77%</div><div class="cap">mục tiêu qua ở L10 hôm nay. Đề xuất: 90%</div></div>
+    <div class="k"><div class="n">L10</div><div class="cap">đỉnh khó đầu tiên hôm nay. Đề xuất: L15, nhẹ</div></div>
+    <div class="k"><div class="n">57%</div><div class="cap">bot yếu qua L10 Đường Ray. L6–10 chưa có gate cho bot yếu</div></div>
+  </div>
+</section>
+
+<section>
+  <h2 class="r">Nguồn nói gì</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>Nguồn</th><th>Kết quả</th><th>Loại</th></tr></thead>
+    <tbody>
+      <tr><td><a href="https://www.stat.cmu.edu/~brian/463-663/project-part-one/Optimizing%20Challenge.pdf">Lomas, CHI 2013</a>, 80 nghìn người</td><td>Game càng dễ, chơi càng lâu. Giới hạn thời gian ngắn làm người chơi nản nhất</td><td>đo</td></tr>
+      <tr><td><a href="https://business.columbia.edu/sites/default/files-efs/citation_file_upload/ascarza_netzer_runge_2023-12-04.pdf">Ascarza, RCT 2023</a></td><td>Giảm độ khó thì giữ chân và chi tiêu đều tăng. Thua một màn làm khả năng nghỉ chơi tăng 14%</td><td>đo</td></tr>
+      <tr><td><a href="https://arxiv.org/abs/2008.12937">Rovio, CHI PLAY 2020</a></td><td>Người chơi bỏ nhiều nhất ở các màn đầu</td><td>đo</td></tr>
+      <tr><td><a href="https://www.gamigion.com/why-does-royal-match-wait-22-levels-to-introduce-their-first-live-op/">Royal Match</a></td><td>Khoảng 90% qua ngay lần đầu tới L22. Màn khó đầu tiên ở L39</td><td>ước tính</td></tr>
+      <tr><td><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6831579/">"Luật 85%"</a></td><td>Mức tối ưu để máy học, không phải để người chơi thấy vui. Không dùng được ở đây</td><td>lý thuyết</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2 class="r">Vì sao Đường Ray khó</h2>
+  <div class="k c r"><p><strong>L5 → L6 đổi hai thứ cùng lúc:</strong> tàu ra dày hơn 11% và thêm một ga. Bot yếu tụt từ 86% xuống 74%.
+  Từ L6 đến L10, mỗi màn thêm một ga trong khi tàu vẫn dày. Nghiên cứu khuyên mỗi màn chỉ đổi một thứ.</p></div>
+  <div class="k c r"><p><strong>Bot giỏi hơn người mới:</strong> bot biết luật từ chuyến đầu, không bao giờ bẻ ghi quá sớm, không chạm nhầm ghi bên cạnh, không hoảng.
+  Nên kể cả con số của bot yếu cũng vẫn lạc quan.</p></div>
+</section>
+
+<section>
+  <h2 class="r">Ba hướng</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>Hướng</th><th>Được</th><th>Mất</th></tr></thead>
+    <tbody>
+      <tr><td>A. Chỉ chỉnh thông số Đường Ray</td><td>Nhanh, một file</td><td>Khuôn vẫn đòi đỉnh 77% ở L10. 4 game kia giữ nguyên cú nhảy</td></tr>
+      <tr><td>B. Sửa khuôn chung + gate bot yếu L1–10, Đường Ray trước</td><td>Sửa đúng gốc, gate giữ luật về sau</td><td>Phải hiệu chỉnh lại cả 5 game</td></tr>
+      <tr><td>C. Làm bot giống người mới hơn</td><td>Số sát người thật hơn</td><td>Hằng số mới vẫn là đoán, chưa có dữ liệu người thật</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2 class="r">Chưa xác minh</h2>
+  <div class="k c r"><p>Không studio nào công bố tỉ lệ qua L1–10. Số Royal Match là ước tính của bên thứ ba.
+  Chưa có dữ liệu riêng cho Gen Z hay người chơi Việt. Đường cong đề xuất là phán đoán dựa trên hướng của nguồn, chưa chạy sim. Bản đầy đủ: <code>RESEARCH-EARLY-LEVELS.md</code>.</p></div>
+</section>
+</main>
+
+<footer>
+  <p>brainy-bits · nhánh <code>docs/difficulty-early-research</code> · chưa merge.</p>
+  <div class="v"><strong>Same vendor, same priors — no external verifier ran.</strong></div>
+</footer>
+<script src="../assets/doc.js"></script>
+</body>
+</html>
