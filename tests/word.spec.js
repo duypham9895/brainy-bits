@@ -1,5 +1,5 @@
 // Đoán Cụm Từ: các lỗi đã sửa (W1–W13, SHELL-04, SHELL-07) và phần thưởng mới.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function open(page, { lv, reduced = true } = {}) {
   if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' });

@@ -2,7 +2,7 @@
 // L1..9 keep the old rows (decision 2, 2026-11-21: tiers 7–9 back at L7–9), L10..30 retuned, breathers carry the E4 safety net), old progress keys still count
 // and migrate once, and the next-level flow runs to a finished state after L30.
 // Run: PW_PORT=8964 npx playwright test tests/rain-levels.spec.js
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 import { loadBBD } from '../scripts/sim/load-bbd.mjs';
 import { CANVAS_H } from '../scripts/sim/adapters/rain.mjs';
 

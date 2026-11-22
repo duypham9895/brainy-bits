@@ -1,7 +1,7 @@
 // Ô Sáng 30 màn: the game reads its levels from BBD (js/difficulty.js + js/levels/mem.js).
 // index.html gets those two script tags from the integrator; until then this file adds them to the
 // served page (before core.js) so the test runs against the integrated game either way.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function withEngine(page) {
   await page.route(url => url.pathname === '/' || url.pathname === '/index.html', async route => {

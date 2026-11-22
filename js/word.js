@@ -9,13 +9,13 @@ const MAX_TRIES = 6;
 // Gợi ý không được chứa từ nào của đáp án, cũng không được trùng một đáp án khác (kiểm trong tests/word.spec.js).
 const PHRASES = [
   ['bà nội','Người thân'], ['cà phê','Đồ uống'], ['áo dài','Trang phục'], ['phở bò','Món ăn'], ['ước mơ','Cảm xúc, khái niệm'],
-  ['xe đạp','Phương tiện'], ['bánh mì','Món ăn'], ['trà sữa','Đồ uống'], ['mùa thu','Thời tiết'], ['con mèo','Động vật'],
-  ['bún chả','Món ăn'], ['sân bay','Địa điểm'], ['núi lửa','Thiên nhiên'], ['nụ cười','Cảm xúc, khái niệm'], ['bóng đá','Thể thao'],
+  ['xe đạp','Phương tiện'], ['bánh mì','Món ăn'], ['trà sữa','Đồ uống'], ['mùa thu','Thời gian'], ['con mèo','Động vật'],
+  ['bún chả','Món ăn'], ['sân bay','Địa điểm'], ['núi lửa','Thiên nhiên'], ['nụ cười','Biểu cảm'], ['bóng đá','Thể thao'],
   ['đồng hồ','Đồ vật'], ['du lịch','Hoạt động'], ['âm nhạc','Giải trí'], ['khiêu vũ','Hoạt động'], ['hoa hồng','Thiên nhiên'],
-  ['bãi biển','Địa điểm'], ['gia đình','Con người'], ['học sinh','Con người'], ['bầu trời','Thiên nhiên'], ['mặt trời','Thiên nhiên'],
+  ['bãi biển','Địa điểm'], ['gia đình','Mối quan hệ'], ['học sinh','Con người'], ['bầu trời','Thiên nhiên'], ['mặt trời','Thiên nhiên'],
   ['máy tính','Đồ vật'], ['thư viện','Địa điểm'], ['bạn thân','Con người'], ['đại dương','Thiên nhiên'], ['cầu vồng','Thiên nhiên'],
-  ['mưa phùn','Thời tiết'], ['nhà hàng','Địa điểm'], ['trái tim','Cảm xúc, khái niệm'], ['tình yêu','Cảm xúc, khái niệm'], ['kính râm','Đồ vật'],
-  ['thành phố','Địa điểm'], ['pháo hoa','Sự kiện'], ['bệnh viện','Địa điểm'], ['hạnh phúc','Cảm xúc, khái niệm'], ['nông thôn','Địa điểm'],
+  ['mưa phùn','Thời tiết'], ['nhà hàng','Địa điểm'], ['trái tim','Cơ thể'], ['tình yêu','Cảm xúc, khái niệm'], ['kính râm','Đồ vật'],
+  ['thành phố','Địa điểm'], ['pháo hoa','Lễ hội'], ['bệnh viện','Địa điểm'], ['hạnh phúc','Cảm xúc, khái niệm'], ['nông thôn','Địa điểm'],
   ['sinh nhật','Sự kiện'], ['trường học','Địa điểm'], ['ánh trăng','Thiên nhiên'], ['điện thoại','Đồ vật'], ['bánh chưng','Món ăn'],
   ['giáng sinh','Sự kiện'], ['thanh xuân','Cảm xúc, khái niệm'], ['nghệ thuật','Văn hoá'], ['truyền thống','Văn hoá'],
 ].map(([p, cat]) => ({ words: p.normalize('NFC').split(' ').map(w => [...w]), cat }))
@@ -477,10 +477,6 @@ BB.onLeave('word', () => {
 
 // ---------- chữ trên màn hình (markup thuộc index.html, chỉnh lại cho khớp luật mới) ----------
 function syncCopy(){
-  const how = document.querySelectorAll('#wmenu .how > div > span:last-child');
-  if (how[0]) how[0].innerHTML = 'Gõ chữ cái, bấm <b>â ê ô / ă / ơ ư</b> để đổi nguyên âm và <b>á à ả ã ạ</b> để thêm dấu thanh. Dấu tự vào đúng chữ như bộ gõ: <b>mua</b> + <b>à</b> ra <b>mùa</b>. Bàn phím máy tính gõ được VNI: a1 = á, o6 = ô, u7 = ư, d9 = đ.';
-  if (how[1]) how[1].innerHTML = '<b>Xanh lá</b>: đúng chữ, đúng chỗ. <b>Vàng</b>: có chữ đó nhưng sai chỗ. <b>Xanh dương</b>: có nguyên âm đó nhưng khác dấu (o, ô, ơ tính chung), có thể ở chỗ khác. <b>Xám</b>: không có.';
-  if (how[2]) how[2].innerHTML = 'Mỗi level 1 cụm từ, xếp theo độ khó. Từ đoán phải đánh vần được thành tiếng Việt. Kẹt quá thì bấm <b>💡</b> xem chủ đề.';
   const lg = document.querySelector('#wordApp .wlegend');
   // Nhãn đầy đủ và nhãn ngắn (cùng chữ với RES_TXT); css/word.css chọn cái nào hiện theo bề ngang.
   if (lg) lg.innerHTML = [['green', 'Đúng chữ, đúng chỗ', 'Đúng chỗ'], ['yellow', 'Đúng chữ, sai chỗ', 'Sai chỗ'], ['blue', 'Có nguyên âm, khác dấu', 'Khác dấu'], ['gray', 'Không có', 'Không có']]

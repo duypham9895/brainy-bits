@@ -15,16 +15,38 @@ const PRECACHE = [
 
 self.addEventListener('install', e => {
   // One missing file must not block the whole install, so each one is cached on its own.
+  // cache: 'no-cache' revalidates with the server (304 when the page just loaded the same file)
+  // instead of 'reload', which downloaded the whole app a second time right after the first visit.
   e.waitUntil(caches.open(VERSION)
-    .then(c => Promise.all(PRECACHE.map(u => c.add(new Request(u, { cache: 'reload' })).catch(() => {}))))
+    .then(c => Promise.all(PRECACHE.map(u => c.add(new Request(u, { cache: 'no-cache' })).catch(() => {}))))
     .then(() => self.skipWaiting()));
 });
 
+// A file the install could not fetch (a 500, a dropped connection) is copied from the previous
+// cache before that cache is deleted, so one bad request never leaves a game broken offline.
+async function fillGaps(keys) {
+  const c = await caches.open(VERSION);
+  const old = keys.filter(k => k !== VERSION && k !== FONT_CACHE);
+  for (const u of PRECACHE) {
+    if (await c.match(u)) continue;
+    for (const k of old) {
+      const hit = await (await caches.open(k)).match(u);
+      if (hit) { await c.put(u, hit); break; }
+    }
+  }
+  return old;
+}
+
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== FONT_CACHE).map(k => caches.delete(k))))
+    .then(fillGaps)
+    .then(old => Promise.all(old.map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
+
+// On a network that connects but barely answers ("Lie-Fi"), waiting for fetch() hung the app for
+// 8+ s. After SLOW_MS the cached copy is served; the fetch keeps going and refreshes the cache.
+const SLOW_MS = 4000;
 
 // Same-origin files: network first so a new deploy (or a local edit during preview) shows up on
 // the next load without anyone bumping VERSION; the cache is only the offline fallback.
@@ -33,16 +55,28 @@ self.addEventListener('activate', e => {
 // Fetching by req.url (not the Request) avoids WebKit rejecting a mode:'navigate' request in init.
 async function sameOrigin(req) {
   const c = await caches.open(VERSION);
-  try {
+  const cached = () => c.match(req, { ignoreSearch: req.mode === 'navigate' });
+  const net = (async () => {
     const res = await fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' });
-    if (res.ok && res.type === 'basic') c.put(req, res.clone());
+    if (res.ok && res.type === 'basic') await c.put(req, res.clone());
     if (res.type !== 'basic') return res;
     const h = new Headers(res.headers); h.set('Cache-Control', 'no-cache');
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+  })();
+  let timer;
+  const slow = new Promise(resolve => { timer = setTimeout(resolve, SLOW_MS, 'slow'); });
+  try {
+    const first = await Promise.race([net, slow]);
+    if (first !== 'slow') return first;
+    const hit = await cached();
+    return hit || await net;                 // nothing cached yet: keep waiting for the network
   } catch (err) {
-    const hit = await c.match(req, { ignoreSearch: req.mode === 'navigate' });
+    const hit = await cached();
     if (hit) return hit;
     throw err;
+  } finally {
+    clearTimeout(timer);
+    net.catch(() => {});                     // a late failure after the cache answered is not an error
   }
 }
 
@@ -50,7 +84,8 @@ async function networkFirst(req, cacheName) {
   const c = await caches.open(cacheName);
   try {
     const res = await fetch(req);
-    // The Google Fonts <link> has no crossorigin, so its response is opaque (ok === false).
+    // The <link> now has crossorigin, so the CSS is a CORS response. Opaque ones (from pages
+    // cached before that change) are still kept: browsers pad each to megabytes in storage quotas.
     if (res.ok || res.type === 'opaque') c.put(req, res.clone());
     return res;
   } catch (err) {

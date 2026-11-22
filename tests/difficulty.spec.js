@@ -1,7 +1,7 @@
 // Browser check for the shared difficulty engine: js/difficulty.js must load as a classic <script>
 // with no BB on the page, and give the same numbers the Node simulator sees.
 // Engine invariants and the mem calibration gates live in scripts/sim/difficulty.test.mjs (node --test).
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 test('BBD loads as a classic script without BB and matches the Node tables', async ({ page }) => {
   const errors = [];

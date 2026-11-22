@@ -1,5 +1,5 @@
 // Mưa Phép Tính: regression tests for RAIN-1..4, the missed items and the reward layer.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function openRain(page, setup) {
   if (setup) await page.addInitScript(setup);
@@ -470,4 +470,19 @@ test('pause, quit to the menu and start again: drops keep falling', async ({ pag
     setTimeout(() => { window.requestAnimationFrame = orig; res(n); }, 1500);
   }));
   expect(frames, 'game loop runs after Pause -> Quit -> Start').toBeGreaterThan(20);
+});
+
+test('QA: a short portrait window pauses the round and keeps a usable canvas (WebKit 390x664 -> 412x420)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 664 });
+  await openRain(page);
+  await startAt(page, 1);
+  await page.evaluate(() => window.__rainTest.spawnDrop(77, 0.8));
+  await page.setViewportSize({ width: 412, height: 420 });
+  await expect(page.locator('#rpaused')).toBeVisible();
+  const s = await dbg(page);
+  expect(s.misses).toBe(0);
+  expect(s.H).toBeGreaterThan(90);            // compact keypad: was 52px, drops hit the water at once
+  await page.click('#rResume');
+  await page.waitForTimeout(100);
+  expect((await dbg(page)).misses).toBe(0);
 });

@@ -1,6 +1,6 @@
 // Đường Ray Tư Duy: regression tests for audit findings RTD-01..12, OPS-6, OPS-10, SHELL-08/17
 // and the package C reward flow. Uses window.__rtd (read-only test hook in js/train.js).
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function openTrain(page, init) {
   const errors = [];

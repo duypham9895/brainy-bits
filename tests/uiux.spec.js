@@ -1,7 +1,7 @@
 // UI/UX craft and accessibility gate: contrast (WCAG AA + 1.4.11), touch targets,
 // zero horizontal overflow, focus rings, reduced motion, OS text-scale opt-in,
 // and regression checks for the fixed menu/result/display bugs.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 const PROGRESS_FIXTURE = {
   bb_stats: JSON.stringify({

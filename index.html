@@ -97,9 +97,9 @@
   "image": "https://brainybits.thucanhtrantonnu.com/icons/og.png"
 }
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet" crossorigin>
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/train.css">
 <link rel="stylesheet" href="css/koi.css">
@@ -313,10 +313,10 @@
 <div id="koiApp" style="display:none">
   <div id="kwrap">
     <div id="khud">
-      <div class="pill" id="kPond">Hồ 1/5</div>
+      <div class="pill" id="kPond">Level 1</div>
       <div class="pill" id="kScore">Điểm 0</div>
       <div class="grow"></div>
-      <div class="pill" id="kLevel">Cấp 1</div>
+      <div class="pill" id="kLevel">Nhầm 0/1</div>
       <button type="button" class="roundbtn" id="kPauseBtn" aria-label="Tạm dừng"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg></button>
     </div>
     <canvas id="kcv"></canvas>
@@ -346,19 +346,19 @@
       <h2 id="krTitle">Level 1</h2>
       <div class="big" id="krBig">0/0</div>
       <p class="note" id="krDetail"></p>
-      <button type="button" class="btn" id="krNext">Hồ tiếp theo</button>
+      <button type="button" class="btn" id="krNext">Level tiếp theo</button>
       <button type="button" class="btn alt" id="krMenu">Về menu</button>
     </div>
   </div>
 
   <div id="kdone" class="overlay hidden">
     <div class="card">
-      <h2>Hoàn thành 5 hồ! 🎉</h2>
+      <h2>Xong cả 30 level! 🎉</h2>
       <div class="stars" id="kdStars"><span class="s">★</span><span class="s">★</span><span class="s">★</span></div>
       <div class="big" id="kdScore">0</div>
       <div class="stats">
-        <div><b id="kdAcc">0%</b> độ chính xác</div>
-        <div><b id="kdLevel">1</b> cấp độ đạt tới</div>
+        <div><b id="kdAcc">0</b> level đủ 3 sao</div>
+        <div><b id="kdLevel">0</b> level đã qua</div>
       </div>
       <p class="note" id="kdNote"></p>
       <button type="button" class="btn" id="kdAgain">Chơi lại</button>
@@ -518,9 +518,9 @@
       <h1 class="word-h">Đoán Cụm Từ</h1>
       <p class="sub">Đoán cụm 2 từ tiếng Việt trong 6 lượt</p>
       <div class="how">
-        <div><span class="i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M7 10h2M11 10h2M15 10h2M8 14h8"/></svg></span><span>Gõ chữ cái, rồi bấm <b>â ê ô / ă / ơ ư</b> để đổi chữ vừa gõ, và bấm <b>á à ả ã ạ</b> để thêm dấu thanh. Mỗi ô là 1 chữ cái kèm dấu.</span></div>
-        <div><span class="i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="4" y="4" width="7" height="7" rx="1.5" fill="#3fa34d" stroke="none"/><rect x="13" y="4" width="7" height="7" rx="1.5" fill="#d4a72c" stroke="none"/><rect x="4" y="13" width="7" height="7" rx="1.5" fill="#3b82f6" stroke="none"/><rect x="13" y="13" width="7" height="7" rx="1.5" fill="#6b655f" stroke="none"/></svg></span><span><b>Xanh lá</b>: đúng chữ, đúng chỗ. <b>Vàng</b>: có chữ đó nhưng sai chỗ. <b>Xanh dương</b>: đúng nguyên âm nhưng sai dấu. <b>Xám</b>: không có.</span></div>
-        <div><span class="i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 4h10v5a5 5 0 0 1-10 0zM12 14v5M8 19h8M7 6H4a2 2 0 0 0 0 4h3M17 6h3a2 2 0 0 1 0 4h-3"/></svg></span><span>Mỗi level 1 cụm từ, xếp theo độ khó. Kẹt quá thì bấm <b>💡</b> xem chủ đề.</span></div>
+        <div><span class="i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M7 10h2M11 10h2M15 10h2M8 14h8"/></svg></span><span>Gõ chữ cái, bấm <b>â ê ô / ă / ơ ư</b> để đổi nguyên âm và <b>á à ả ã ạ</b> để thêm dấu thanh. Dấu tự vào đúng chữ như bộ gõ: <b>mua</b> + <b>à</b> ra <b>mùa</b>. Bàn phím máy tính gõ được VNI: a1 = á, o6 = ô, u7 = ư, d9 = đ.</span></div>
+        <div><span class="i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="4" y="4" width="7" height="7" rx="1.5" fill="#3fa34d" stroke="none"/><rect x="13" y="4" width="7" height="7" rx="1.5" fill="#d4a72c" stroke="none"/><rect x="4" y="13" width="7" height="7" rx="1.5" fill="#3b82f6" stroke="none"/><rect x="13" y="13" width="7" height="7" rx="1.5" fill="#6b655f" stroke="none"/></svg></span><span><b>Xanh lá</b>: đúng chữ, đúng chỗ. <b>Vàng</b>: có chữ đó nhưng sai chỗ. <b>Xanh dương</b>: có nguyên âm đó nhưng khác dấu (o, ô, ơ tính chung), có thể ở chỗ khác. <b>Xám</b>: không có.</span></div>
+        <div><span class="i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 4h10v5a5 5 0 0 1-10 0zM12 14v5M8 19h8M7 6H4a2 2 0 0 0 0 4h3M17 6h3a2 2 0 0 1 0 4h-3"/></svg></span><span>Mỗi level 1 cụm từ, xếp theo độ khó. Từ đoán phải đánh vần được thành tiếng Việt. Kẹt quá thì bấm <b>💡</b> xem chủ đề.</span></div>
       </div>
       <div class="label">Chọn level</div>
       <div class="lvgrid" id="wlvgrid"></div>

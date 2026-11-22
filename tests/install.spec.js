@@ -1,7 +1,7 @@
 // "Add to Home Screen" guide: banner rule, settings row, guide dialog, Android install prompt,
 // in-app browsers, keyboard, theme contrast, layout. INSTALL_SHOTS=1 also saves review screenshots,
 // into INSTALL_SHOTS_DIR when it is set, else into each test's output folder.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 

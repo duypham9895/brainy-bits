@@ -2,7 +2,7 @@
 // Fails on horizontal overflow, controls pushed off-screen, touch targets under 44 px on touch
 // devices (24 px with a mouse), and clipped text in controls. Screenshots go to the test output
 // folder (RESP_SHOTS=1) so a person can look at the layout, not only the numbers.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 const VIEWPORTS = [
   { name: 'phone-320', width: 320, height: 568, touch: true },

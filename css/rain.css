@@ -62,6 +62,14 @@
     padding-right:max(12px, env(safe-area-inset-right), calc(50% - 300px))}
 }
 
+/* Màn dọc nhưng thấp (cửa sổ chia đôi, thanh trình duyệt lớn): bàn phím thu gọn để canvas còn chỗ cho giọt rơi. */
+@media (orientation: portrait) and (max-height: 600px){
+  #rainApp .rbar{padding:4px 12px 2px}
+  #rainApp .rdisp{min-height:36px;font-size:24px}
+  #rainApp .rpad{gap:6px;padding-top:4px;padding-bottom:max(8px, env(safe-area-inset-bottom))}
+  #rainApp .rpad button{min-height:44px;padding:6px 0;font-size:22px}
+}
+
 /* Điện thoại xoay ngang / cửa sổ thấp: chiều cao là thứ thiếu, nên đặt canvas bên trái, bàn phím
    bên phải. Bàn phím lấy hết phần còn lại của cột phải (phím ≥ 44px), canvas lấy toàn bộ chiều cao dưới HUD. */
 @media (orientation: landscape) and (max-height: 560px){

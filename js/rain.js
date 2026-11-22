@@ -308,7 +308,7 @@ function startLoop(){ if (running) return; running = true; lastT = 0; requestAni
 function resize(){
   const r = cv.getBoundingClientRect();
   if (!r.width || !r.height) return;
-  const oldW = W;
+  const oldW = W, oldH = H;
   dpr = Math.min(window.devicePixelRatio || 1, 3);
   W = r.width; H = r.height;
   cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
@@ -321,8 +321,10 @@ function resize(){
   parts = [];
   // Xoay máy hoặc khung chơi đổi dáng giữa ván: tạm dừng để người chơi định thần lại.
   // Xét cả viewport lẫn canvas: ở 320px dọc canvas đã W > H, nên xoay máy không làm canvas đổi dáng.
-  const land = innerWidth > innerHeight, cl = W > H;
-  if (landscape !== null && (land !== landscape || cl !== cvLand) && state === 'play') pause();
+  // Thêm: khung chơi thấp đi hơn 15% (cửa sổ co lại, thanh trình duyệt hiện ra) cũng tạm dừng,
+  // vì mặt nước nâng lên theo và giọt sắp rơi sẽ chạm nước ngay khung kế tiếp.
+  const land = innerWidth > innerHeight, cl = W > H, shrunk = oldH > 0 && H < oldH*0.85;
+  if (landscape !== null && (land !== landscape || cl !== cvLand || shrunk) && state === 'play') pause();
   landscape = land; cvLand = cl;
   // Đổi cỡ canvas xoá trắng nó; khi vòng lặp đang dừng (tạm dừng) thì tự vẽ lại một khung.
   if (!running && W && window.APP && window.APP.active === 'rain') draw(0);

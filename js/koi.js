@@ -69,8 +69,19 @@ function params(d){
   return { koi: r.koi, cd: r.cd, decoys: r.decoys, spdMul: r.spdMul || 1, turnMul: r.turnMul || 1, legacy: r.legacy };
 }
 
+// Canvas kéo tới đáy màn hình: trên iPhone, vòng hẹn giờ và hàng hạt phải nằm trên thanh Home.
+let SB = 0;
+function safeBottom(){
+  const p = document.createElement('div');
+  p.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
+  document.body.appendChild(p);
+  const v = parseFloat(getComputedStyle(p).paddingBottom) || 0;
+  p.remove();
+  return v;
+}
+
 // vùng cá bơi (chừa chỗ cho vòng hẹn giờ ở dưới)
-const area = () => ({ x0: 8, y0: 8, x1: W - 8, y1: H - 96 });
+const area = () => ({ x0: 8, y0: 8, x1: W - 8, y1: H - 96 - SB });
 const fishLen = () => Math.max(34, Math.min(60, Math.min(W, H) * 0.13)) * (fish.length > 11 || params(diff).koi > 11 ? 0.85 : 1);
 
 // ---------- tạo hồ ----------
@@ -138,8 +149,8 @@ function buildStatic(){
     for (let k=0;k<4;k++){ g.beginPath(); g.ellipse(x + (k-1.5)*s*0.5, y - k*s*0.3, s*0.35, s*0.9, (k-1.5)*0.3, 0, Math.PI*2); g.fill(); }
   }
   // khay thức ăn phía dưới
-  const by = H - 92;
-  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, by, W, 92);
+  const by = H - 92 - SB;
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, by, W, 92 + SB);
   g.fillStyle = 'rgba(255,255,255,.05)'; g.fillRect(0, by, W, 1);
 }
 
@@ -211,7 +222,7 @@ function drawDial(){
   const sx = dialShake > 0 && !BB.motion.reduced ? Math.sin(dialShake*60) * 6 * dialShake/0.3 : 0;
   // vòng vừa đầy: nảy nhẹ (giảm chuyển động thì chỉ sáng viền, không đổi kích thước)
   const pk = dialPulse > 0 ? dialPulse/0.3 : 0;
-  const cx = W/2 + sx, cy = H - 56, R = 24 * (BB.motion.reduced ? 1 : 1 + 0.12*Math.sin(pk*Math.PI));
+  const cx = W/2 + sx, cy = H - 56 - SB, R = 24 * (BB.motion.reduced ? 1 : 1 + 0.12*Math.sin(pk*Math.PI));
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.arc(cx, cy+2, R+6, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = '#e9f5f0'; ctx.beginPath(); ctx.arc(cx, cy, R+4, 0, Math.PI*2); ctx.fill();
   if (cooldown > 0) {
@@ -234,7 +245,7 @@ function drawDial(){
   const x0 = W/2 - gap*(n-1)/2;
   for (let i=0;i<n;i++){
     ctx.fillStyle = i < pellets ? '#ffffff' : 'rgba(255,255,255,.18)';
-    ctx.beginPath(); ctx.arc(x0 + i*gap, H - 16, 4.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x0 + i*gap, H - 16 - SB, 4.5, 0, Math.PI*2); ctx.fill();
   }
 }
 
@@ -412,6 +423,7 @@ function resize(){
   if (!rect.width || !rect.height) return;
   dpr = Math.min(window.devicePixelRatio || 1, 3);
   W = rect.width; H = rect.height;
+  SB = safeBottom();
   cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
   buildStatic();
   const A = area();

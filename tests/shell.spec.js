@@ -1,6 +1,6 @@
 // Shell and hub: zoom, HUD buttons, router lifecycle, Back navigation, hub progress, daily
 // challenge, settings, reduced motion, focus, PWA. Each test stays well under 20 s.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 const today = () => {
   const d = new Date(), p = n => String(n).padStart(2, '0');
@@ -353,7 +353,7 @@ test('hub copy and stat cells read naturally (review #13, #14)', async ({ page }
   await expect(page.locator('#openTrain small')).toHaveText('Đổi ngã rẽ, đưa tàu về đúng ga cùng màu, cùng hình');
   const cells = await page.evaluate(() => ['rCorrect', 'rStreak', 'kdAcc', 'kdLevel']
     .map(id => document.getElementById(id).parentElement.textContent));
-  expect(cells).toEqual(['0/0 tàu về đúng ga', '0 chuỗi đúng dài nhất', '0% độ chính xác', '1 cấp độ đạt tới']);
+  expect(cells).toEqual(['0/0 tàu về đúng ga', '0 chuỗi đúng dài nhất', '0 level đủ 3 sao', '0 level đã qua']);
   const html = await (await page.request.get('/')).text();
   expect(html).not.toContain('orchestrator');
 });
