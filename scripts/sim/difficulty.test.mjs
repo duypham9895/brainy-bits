@@ -15,14 +15,17 @@ const harderOrEqual = (k, a, b) => (k.dir > 0 ? a >= b - 1e-9 : a <= b + 1e-9); 
 test('D(L), kind(L) and p*(L) match MERGED-SPEC §4.1', () => {
   const B = loadBBD();
   close(B.D(1), 0); close(B.D(30), 1); close(B.D(10), Math.sqrt(9 / 29)); close(B.D(20), Math.sqrt(19 / 29));
-  assert.equal(B.kind(5), 'peak'); assert.equal(B.kind(6), 'breather'); assert.equal(B.kind(1), 'step');
+  // Duy 2026-11-21 (1)=A: no peak at L5; first peak L10, first breather L11 (kind of L1..31: difficulty.sawtooth.test.mjs).
+  assert.equal(B.kind(5), 'step'); assert.equal(B.kind(6), 'step'); assert.equal(B.kind(1), 'step');
+  assert.equal(B.kind(10), 'peak'); assert.equal(B.kind(11), 'breather');
   assert.equal(B.kind(30), 'peak'); assert.equal(B.kind(31), 'breather'); assert.equal(B.kind(29), 'step');
   close(B.pStar(1), 0.92);
   close(B.pStar(30), 0.69);                                  // E1 = A: L30 peak ≈ 0.69
   close(B.pStar(29), 0.92 - 0.17 * Math.sqrt(28 / 29));
   close(B.pStar(15), 0.92 - 0.17 * Math.sqrt(14 / 29) - 0.06);
   close(B.pStar(16), 0.92 - 0.17 * Math.sqrt(15 / 29));      // breather offset 0 (A-1 fix)
-  for (let L = 6; L <= 41; L += 5) {                          // breather between its peak and L−4
+  close(B.pStar(5), 0.92 - 0.17 * Math.sqrt(4 / 29));        // L5 is a step now: no −0.06 dip
+  for (let L = 11; L <= 41; L += 5) {                         // breather between its peak and L−4
     assert.ok(B.pStar(L) > B.pStar(L - 1)); assert.ok(B.pStar(L) < B.pStar(L - 4));
   }
   close(B.pStar(200), 0.65);                                  // floor
@@ -384,13 +387,21 @@ test('calibrate gates every level now (E3 lifted): B and G6 read legacy rows too
   assert.equal(r.config.tableVersion, 2);
 });
 
-// KNOWN-FAIL mem table v2 at full N=1200: every gate passes except the B/G1 conflict the engine owner raised
-// for Duy (L5: B needs median ≤ 0.847, G1 needs weak ≥ 0.85, and weak never beats median in the sim; L4 sits
-// on the same frontier: 945 rows searched at L4, none had weak ≥ 0.85 with median ≤ 0.915).
-// Pinned so any new miss shows up. Replace with deepEqual(failsByGate(r), {}) once Duy picks a way out.
-test('KNOWN-FAIL mem v2 (B L4 + G1 L5, waiting on Duy): calibrate at N=1200', async () => {
+// mem table v2 at full N=1200. Was KNOWN-FAIL B L4/L5 (easy side, G1 kept). Duy 2026-11-22 (A): B is one-sided
+// on L1–9, so those two misses are no longer misses. Every gate passes with zero waivers.
+test('mem v2: zero failed gates, zero waivers, weak ≥ 0.85 on L1–5 at N=1200', async () => {
   const r = await calibrate('mem', { n: 1200, write: false, quiet: true });
-  assert.deepEqual(failsByGate(r), { B: [4], G1: [5] });
+  assert.deepEqual(failsByGate(r), {});
+  assert.deepEqual(r.waived, []);
+  assert.ok(r.levels.filter(l => l.L <= 5).every(l => l.profiles.weak.p >= 0.85));
+});
+
+// "+10 levels from the rule alone": generated L31–40 (engine knobs, no authored rows) pass every gate.
+// Run from L26 so G2/G3 also judge the L30 → L31 seam against the authored rows.
+test('mem L31–40 generated from the engine: zero failed gates, zero waivers at N=1200', async () => {
+  const r = await calibrate('mem', { n: 1200, from: 26, to: 40, write: false, quiet: true });
+  assert.deepEqual(failsByGate(r), {});
+  assert.deepEqual(r.waived, []);
 });
 
 test('TODO adapters fail loudly instead of passing', async () => {
@@ -467,17 +478,20 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
       close(r.show, 1 + 0.3 * r.t, 1e-9); assert.equal(B.levelId('mem', L), L);   // no ids: stars stay keyed by L
     }
   });
-  test('v2 follows the sawtooth: steps (L7+) and peaks harder than the level before, breathers lighter than their peak', () => {
+  test('v2 follows the sawtooth: steps (except L4) and peaks harder than the level before, breathers lighter than their peak', () => {
     const B = loadBBD();
     for (let L = 2; L <= 30; L++) {
       const r = B.level('mem', L), p = B.level('mem', L - 1);
       if (r.kind === 'peak') assert.equal(r.t, p.t + 1, `L${L} peak adds one tile`);
       else if (r.kind === 'breather') assert.ok(harder(p, r), `L${L} breather lighter than peak L${L - 1}`);
-      else if (L >= 7) assert.ok(harder(r, p), `L${L} step harder than L${L - 1}`);
+      else if (L !== 4) assert.ok(harder(r, p), `L${L} step harder than L${L - 1}`);
     }
-    // L1–4: three tiles while the grid grows. L4 gathers the tiles again (disp 0): the B/G1 frontier, see KNOWN-FAIL mem v2.
-    assert.deepEqual([1, 2, 3, 4].map(L => B.level('mem', L).t), [3, 3, 3, 3]);
-    assert.deepEqual([1, 2, 3, 4].map(L => B.level('mem', L).size), [4, 5, 6, 6]);
+    // No peak or breather before L10 (Duy 2026-11-21).
+    assert.ok([1, 2, 3, 4, 5, 6, 7, 8, 9].every(L => B.level('mem', L).kind === 'step'));
+    assert.equal(B.level('mem', 10).kind, 'peak'); assert.equal(B.level('mem', 11).kind, 'breather');
+    // L1–5: three tiles while the grid grows. L4 gathers the tiles again (disp 0): the B/G1 frontier, see KNOWN-FAIL mem v2.
+    assert.deepEqual([1, 2, 3, 4, 5].map(L => B.level('mem', L).t), [3, 3, 3, 3, 3]);
+    assert.deepEqual([1, 2, 3, 4, 5].map(L => B.level('mem', L).size), [4, 5, 6, 6, 6]);
   });
   // L31+ follows the table template, anchored at the last step row (L29), not at the L30 peak.
   // Pinned rows = the ones calibrated green at N=1200 (calibrate mem --from 26 --to 45, 2026-11-21).
@@ -529,7 +543,10 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
   });
 });
 
-// ---------- koi (owner: koi levels branch). Table v2: L1..10 retuned to the sawtooth (E3 lifted 2026-11-21). ----------
+// ---------- engine: Duy 2026-11-21 (1) sawtooth from L10, (3) gate waivers. Tests in difficulty.sawtooth.test.mjs. ----------
+(await import('./difficulty.sawtooth.test.mjs')).registerSawtooth();
+
+// ---------- koi (owner: koi levels branch). Table v2: L1..30 authored on the sawtooth, L31+ from the engine (2026-11-21). ----------
 // Tests live in difficulty.koi.test.mjs (file-size rule); registered here so test:sim keeps one entry point.
 (await import('./difficulty.koi.test.mjs')).registerKoi({ loadCore, J, failsByGate });
 
@@ -603,7 +620,10 @@ describe('train: table v2, one template for every level', () => {
       for (const w of [320, 390]) assert.ok(A.geometry(r, w).minTargetPx >= 44, `L${L} at ${w}px`);
       if (L === 1) continue;
       const p = B.level('train', L - 1);
-      assert.ok(r.stations - p.stations >= 0 && r.stations - p.stations <= 1, `L${L}: stations never drop, +1 at most`);
+      assert.ok(r.stations - p.stations <= 1, `L${L}: +1 station at most`);
+      // L5 (5 stations after 6 at L4) is the only drop: the G1/B window has no base on 6 stations there.
+      // A drop must pay with denser trains, so a step never gets easier on both knobs.
+      if (r.stations < p.stations) assert.ok(L === 5 && r.stations === p.stations - 1 && r.base < p.base, `L${L}: stations drop only at L5, by 1, with a smaller base`);
       if (r.kind === 'breather') assert.ok(r.base > p.base, `L${L}: a breather sends trains further apart than the peak before it`);
       if (r.kind === 'peak') assert.ok(r.base < p.base || r.stations > p.stations, `L${L}: a peak adds a station or sends trains closer`);
     }
@@ -641,11 +661,15 @@ describe('train: table v2, one template for every level', () => {
     assert.equal(n.ls.get('bb_tablev_train'), '3');
   });
 
-  // KNOWN-FAIL G1 L5 only: p*(5) = 0.797 caps the median at 0.847 (gate B) while G1 asks weak ≥ 0.85, and weak
-  // never beats median. No table can pass both; the engine owner sent it to Duy as options (a)/(b)/(c).
-  test('KNOWN-FAIL train (G1 L5 vs B, waiting for Duy): calibrate at N=1200', async () => {
-    const r = await calibrate('train', { n: 1200, write: false, quiet: true });
-    assert.deepEqual(failsByGate(r), { G1: [5] });
+  // Zero failures and zero waivers at full N on the authored L1..30 and the generated L31..40 ("+10 levels" from
+  // the rule alone). One run so G2/G3 also see the L30 → L31 seam. G7 stays SKIP (pass: null).
+  test('train: every gate green at N=1200 on L1..40, no waivers', async () => {
+    const r = await calibrate('train', { n: 1200, to: 40, write: false, quiet: true });
+    assert.deepEqual(failsByGate(r), {});
+    assert.deepEqual(r.waived, []);
+    assert.equal(r.ok, true);
+    assert.deepEqual(r.gates.map(g => [g.id, g.status]),
+      [['B', 'PASS'], ['G1', 'PASS'], ['G2', 'PASS'], ['G3', 'PASS'], ['G4', 'PASS'], ['G5', 'PASS'], ['G6', 'PASS'], ['G7', 'SKIP'], ['G8', 'PASS']]);
     assert.equal(r.gates.find(g => g.id === 'G7').pass, null);
   });
 });

@@ -15,9 +15,12 @@
   const lettersOf = src => LETTERS[ORDER.indexOf(src)];
   // Version 2 play order. Bot estimate per phrase (scripts/sim/adapters/word.mjs, 4000 players per profile,
   // seeds independent of the slot), then rank-matched to p*(L): the easiest phrase goes to the highest p*,
-  // so peaks (5k) get a harder phrase than the breather after them. L1–5 need weak ≥ 85% (G1) and
+  // so peaks get a harder phrase than the breather after them. L1–5 need weak ≥ 85% (G1) and
   // breathers weak ≥ 60% (G4). Gate results: docs/difficulty/calibration-word.json.
-  const PLAY = [18, 46, 48, 45, 40, 32, 20, 37, 41, 6, 36, 43, 42, 11, 19, 27, 17, 47, 44, 25, 39, 16, 31, 34, 26,
+  // 2026-11-21, Duy (1): no peak at L5, first peak L10, first breather L11. L5 and L6 swapped phrases (32 ↔ 40)
+  // so the old L5→L6 peak-to-breather drop does not read as a rising step (G2). v2 never shipped, so no new
+  // table version: stars are keyed by phrase id and the v1 → v2 migration is unchanged.
+  const PLAY = [18, 46, 48, 45, 32, 40, 20, 37, 41, 6, 36, 43, 42, 11, 19, 27, 17, 47, 44, 25, 39, 16, 31, 34, 26,
     5, 2, 3, 21, 0, 24, 22, 35, 15, 33, 14, 13, 23, 7, 10, 38, 1, 4, 8, 29, 28, 30, 12, 9];
   const row = src => ({ id: 'p' + src, phrase: src, letters: lettersOf(src), maxTries: 6 });
   if (BBD && BBD.register) BBD.register('word', {
@@ -25,6 +28,10 @@
     legacyLevels: ORDER.map(row),             // ids here too, so E3_FREEZE_LEGACY = true keeps stars on their phrase
     levels: PLAY.map(row),
     knobs: [],
+    // Duy 2026-11-21 (3), gates/01-spec/DIFFICULTY-DECISIONS.md: B reported WAIVED, never PASS. G1–G6, G8 still bind.
+    gateWaivers: { B: 'Duy 2026-11-21 (3): content-only game, no knob; with 6 tries and the hint open at once the bot '
+      + 'median sits 7–22 points above p* on every level, and those bot parameters are not yet checked against real '
+      + 'players (G7 SKIP). Rules stay as they are; revisit when G7 data exists.' },
     // v1 → v2: old star key L (level number) = phrase ORDER[L − 1]. Keys past 49 or already ids stay as they are.
     migrate: ({ best, stars, remapLevels }) => ({ best, stars: remapLevels(stars, L => (L <= ORDER.length ? 'p' + ORDER[L - 1] : null)) }),
     maxLevel: cfg => Math.min(cfg.E2_WORD_LEVELS, PLAY.length),

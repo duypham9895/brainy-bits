@@ -4,9 +4,11 @@
  "from": 1,
  "to": 30,
  "simVersion": 1,
- "generatedOn": "2026-11-21",
+ "generatedOn": "2026-11-22",
  "config": {
   "E1": "A",
+  "breatherEasyOk": true,
+  "bEasyOkBelow": 10,
   "E3": false,
   "E5": true,
   "tableVersion": 2,
@@ -17,72 +19,80 @@
  "seed": "mulberry32(cyrb53(\"camp|game|L|profile|i\"))",
  "note": "bL = logit(1 − p_median) with θ_median = 0, a = 1; 2PL fit not run yet",
  "adapterOpts": {},
- "ok": false,
+ "ok": true,
+ "waived": [],
  "gates": [
   {
    "id": "B",
-   "name": "every level: |p_median − p*| ≤ 0.05",
+   "name": "every level: |p_median − p*| ≤ 0.05 (breathers: only too hard fails) (L1–9: only p_median < p* − 0.05 fails)",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G1",
    "name": "weak ≥ 85% on L1–5",
-   "pass": false,
-   "fails": [
-    "L5 weak 0.7325"
-   ],
-   "note": ""
+   "pass": true,
+   "fails": [],
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G2",
    "name": "median pass rate does not rise between consecutive step levels (tolerance = 2·SE)",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G3",
-   "name": "breather easier than the peak before it and harder than L−4",
+   "name": "breather easier than the peak before it",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G4",
    "name": "weak ≥ 60% on every breather",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G5",
    "name": "skilled ≥ 50% at L30 (E1 = A)",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G6",
    "name": "knobs within hardCap; targets ≥ 44 px at 320 and 390 px",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G7",
    "name": "Playwright parity, 3 seeds at L1/L15/L30",
    "pass": null,
    "fails": [],
-   "note": "SKIPPED: needs the game to read BBD.level() (per-game integration step)"
+   "note": "SKIPPED: needs the game to read BBD.level() (per-game integration step)",
+   "status": "SKIP"
   },
   {
    "id": "G8",
    "name": "first-attempt and ≤3-attempt pass reported; ≤3 never below first attempt",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   }
  ],
  "levels": [
@@ -276,54 +286,54 @@
   },
   {
    "L": 5,
-   "kind": "peak",
+   "kind": "step",
    "legacy": false,
-   "pStar": 0.7969,
+   "pStar": 0.8569,
    "D": 0.3714,
-   "bL": -1.69,
+   "bL": -2.197,
    "knobs": {
-    "stations": 6,
-    "base": 2.85,
+    "stations": 5,
+    "base": 3.27,
     "speedF": 0.28,
     "burstP": 0,
     "twoTone": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.7325,
+     "p": 0.8592,
      "ci": [
-      0.7067,
-      0.7568
+      0.8383,
+      0.8777
      ],
-     "acc": 0.8309,
-     "msMedian": 109475,
-     "p3": 0.9225
+     "acc": 0.8902,
+     "msMedian": 108322,
+     "p3": 0.9767
     },
     "median": {
-     "p": 0.8442,
+     "p": 0.9,
      "ci": [
-      0.8226,
-      0.8636
+      0.8817,
+      0.9157
      ],
-     "acc": 0.8954,
-     "msMedian": 109755,
-     "p3": 0.9742
+     "acc": 0.9222,
+     "msMedian": 108370,
+     "p3": 0.995
     },
     "skilled": {
-     "p": 0.9267,
+     "p": 0.9608,
      "ci": [
-      0.9105,
-      0.9401
+      0.9483,
+      0.9704
      ],
-     "acc": 0.9413,
-     "msMedian": 109656,
-     "p3": 0.9917
+     "acc": 0.9618,
+     "msMedian": 108472,
+     "p3": 0.9975
     }
    }
   },
   {
    "L": 6,
-   "kind": "breather",
+   "kind": "step",
    "legacy": false,
    "pStar": 0.8494,
    "D": 0.4152,

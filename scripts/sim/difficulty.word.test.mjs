@@ -110,16 +110,22 @@ describe('word: 49 phrases reordered by measured difficulty, stars keyed by phra
     }
     assert.ok(dropped / rows < 0.05, `answer dropped by the bases-only filter on ${dropped}/${rows} rows`);
   });
-  // Table v2 (reordered) passes G1–G6 and G8. KNOWN-FAIL on B only: with 6 tries every phrase sits at median
-  // 78–100% (full N), above p* on almost every level, and reordering cannot lower a median. B needs a knob
-  // (e.g. maxTries per level) or harder phrases: a decision for Duy, not a gate change. Full-N numbers:
-  // docs/difficulty/calibration-word.json.
-  test('KNOWN-FAIL word (table v2, B waiting for Duy): G1–G6, G8 pass, only B misses', async () => {
+  // Duy 2026-11-21 (3): word waives B (reported WAIVED, never PASS) and must pass G1–G6 and G8. Duy (1) moved the
+  // first peak to L10, so L5/L6 swapped phrases. Full-N run: docs/difficulty/calibration-word.json.
+  test('word (table v2): zero failed gates, only B waived and never counted as PASS', async () => {
+    const B = loadBBD();
+    assert.deepEqual(Object.keys(B.spec('word').gateWaivers), ['B']);
+    assert.match(B.spec('word').gateWaivers.B, /\S/);
     const r = await calibrate('word', { n: 150, write: false, quiet: true });
     assert.equal(r.levels.length, 49);
     assert.ok(r.levels.every(l => !l.legacy));
-    for (const id of ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G8']) assert.equal(r.gates.find(g => g.id === id).pass, true, id);
-    assert.deepEqual(Object.keys(failsByGate(r)).sort(), ['B']);
+    assert.deepEqual(failsByGate(r), {});
+    assert.deepEqual(r.waived, ['B']);
+    const g = id => r.gates.find(x => x.id === id);
+    assert.deepEqual([g('B').status, g('B').pass, g('B').waived], ['WAIVED', null, true]);
+    for (const id of ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G8']) assert.equal(g(id).status, 'PASS', id);
+    assert.equal(g('G7').status, 'SKIP');
+    assert.equal(r.ok, true);
   });
 });
 }

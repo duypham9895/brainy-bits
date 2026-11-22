@@ -42,7 +42,7 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
   };
 
   // Table version 2 (E3 lifted 2026-11-21): the old rows stay as `legacyLevels` reference data; the game plays `levels`.
-  test('legacy rows = the old spec (===); v2 plays them unchanged on L1..6 only', () => {
+  test('legacy rows = the old spec (===); v2 plays them unchanged on L1..6, L7..10 keep tier and chain at faster rain (decision 2)', () => {
     const B = loadBBD(), leg = B.spec('rain').legacy;
     assert.equal(B.version('rain'), 2);
     assert.equal(leg.length, 10);
@@ -55,6 +55,11 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
       const r = B.level('rain', L);
       assert.equal(r.legacy, false, `L${L}`); assert.equal(r.authored, true, `L${L}`);
       if (L <= 6) for (const k of ['ops', 'fall', 'every', 'target']) assert.equal(r[k], leg[L - 1][k], `L${L} ${k}`);
+      // L7..10: content and chain stay (decision 2), the rain is pulled toward B with speed only (review 2026-11-22)
+      else if (L <= 10) {
+        for (const k of ['ops', 'target']) assert.equal(r[k], leg[L - 1][k], `L${L} ${k}`);
+        assert.ok(r.fall < leg[L - 1].fall && r.every < leg[L - 1].every, `L${L}: faster rain than the old row`);
+      }
     }
     assert.equal(B.authoredCount('rain'), 30);
   });
@@ -84,15 +89,15 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
     }
   });
 
-  // Was "L11..30 … steps never get easier" with tiers 1..10 on L1..10. New truth (v2): tiers 6..9 stay at ~100%
-  // even at the speed cap (calibration-rain.json), so L7..9 replay tier 5 faster and L10 opens tier 10; inside a
+  // Was "L11..30 … steps never get easier" with tiers 1..10 on L1..10. Decision 2 (Duy 2026-11-21): tiers 7..9
+  // are back at L7..9 (level L = tier L up to L10); rain speeds up step by step over L7..10 (review 2026-11-22); inside a
   // block the steps never get easier; breathers open the next tier with the E4 safety net as knobs:
   // a 10-drop chain, 4 lives instead of 3, slower rain than the peak before.
   test('L1..30 (v2): tiers per block, breathers = 10 drops + 4 lives + slower rain, steps never get easier, caps hold', () => {
     const B = loadBBD();
     assert.equal(B.maxLevel('rain'), 30);
     const ops = Array.from({ length: 30 }, (_, i) => B.level('rain', i + 1).ops);
-    assert.deepEqual(ops, [1, 2, 3, 4, 5, 6, 5, 5, 5, 10, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14]);
+    assert.deepEqual(ops, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14]);
     for (let L = 7; L <= 30; L++) {
       const r = B.level('rain', L), p = B.level('rain', L - 1);
       if (r.kind === 'breather') {
@@ -107,7 +112,12 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
       if (r.kind !== 'breather') assert.equal(r.lives, 3, `L${L} lives`);
       assert.ok(r.every >= 2.2 && r.fall >= 6.8 && r.target <= 25, `L${L} past a hardCap`);
     }
-    for (let L = 1; L <= 6; L++) assert.equal(B.level('rain', L).lives, 3, `L${L} old rows keep 3 lives`);
+    for (let L = 1; L <= 9; L++) assert.equal(B.level('rain', L).lives, 3, `L${L} old rows keep 3 lives`);
+    // L7..10: the rain speeds up level by level (no 87 → 13% weak cliff in one step at L10)
+    for (let L = 7; L <= 10; L++) {
+      const r = B.level('rain', L), p = B.level('rain', L - 1);
+      assert.ok(r.every <= p.every && r.fall < p.fall, `L${L} rain not faster than L${L - 1}`);
+    }
     // L31+ (engine continuation, not shipped): breathers keep the safety net, every knob stays inside its cap
     for (let L = 31; L <= 60; L++) {
       const r = B.level('rain', L);
@@ -168,20 +178,14 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
     assert.equal(n.ls.get('bb_tablev_rain'), '3');
   });
 
-  // Full N (≈4 s). BLOCKED ON DUY, not a retune gap: under human.mjs some gates cannot hold together in rain.
-  //  · B L1–5: G1 needs weak ≥ 85%; no knob mix (tier 1–5, lives 1–5, target 3–15, fall 4–10 s, every 2.2–6 s)
-  //    gives that with median ≤ p* + 0.05 on L2–5 (L1 only with 1 life and 6 drops). L6 keeps the old row.
-  //  · B + G3 on breathers 11/16/21/26: G4 (weak ≥ 60%) needs median ≥ ~0.94 in every grid tried; with the median
-  //    inside B the best breather gives weak ~0.50 (1 life, 3 drops) or ~0.30 (≥ 3 lives, ≥ 8 drops).
-  //    Rain keeps the safety net (G4 green), so those breathers are easier than p* (B) and than L−4 (G3).
-  // When Duy picks, replace with assert.deepEqual(failsByGate(r), {}).
-  test('BLOCKED rain (B L1–6 vs G1, B + G3 vs G4 on breathers): calibrate at N=1200', async () => {
+  // Full N (≈5 s). Duy 2026-11-22 cleared the two rain blocks: (A) B is one-sided on L1–9 (every miss there was
+  // easy side) and (A) breathers may be as easy as needed, B only fails them when too hard, G3 keeps "easier than
+  // the peak" only, G4 (weak ≥ 60%) stays. Every gate passes with zero waivers.
+  test('rain v2: zero failed gates, zero waivers at N=1200', async () => {
     const r = await calibrate('rain', { n: 1200, write: false, quiet: true });
-    assert.deepEqual(failsByGate(r), { B: [...range(1, 6), 11, 16, 21, 26], G3: [11, 16, 21, 26] });
-    for (const id of ['G1', 'G2', 'G4', 'G5', 'G6', 'G8']) assert.equal(r.gates.find(g => g.id === id).pass, true, id);
-    // every miss is on the easy side: the median sits above p*, never below
-    r.levels.filter(l => Math.abs(l.profiles.median.p - l.pStar) > 0.05).forEach(l => assert.ok(l.profiles.median.p > l.pStar, `L${l.L}`));
+    assert.deepEqual(failsByGate(r), {});
     assert.equal(r.gates.find(g => g.id === 'G7').pass, null);
+    assert.deepEqual(r.waived, []);                                         // rain declares no waiver
     assert.equal(r.config.tableVersion, 2);
   });
 
@@ -204,10 +208,10 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
         assert.ok(r.every < p.every || r.fall < p.fall, `L${L} identical to L${L - 1}`);
       }
     }
-    const r = await calibrate('rain', { n: 1200, from: 31, to: 45, write: false, quiet: true });
-    // G2 L37→L38 is seed noise, not the table: the same spec (ops 14, every 2.63, fall 7.65) measures
-    // 69.6% on the L37 seeds and 75.1% on the L38 seeds (scripts/sim/human.mjs rngFor, N=1200).
-    assert.deepEqual(failsByGate(r), { B: [31, 36, 41], G2: [37], G3: [36, 41] });
+    // N=4000: at N=1200 G2 L37→L38 flips on seed (the same spec measures 69.6% on the L37 seeds and 75.1% on the
+    // L38 seeds). A bigger N narrows the G2 tolerance, so this is stricter. CI runs the same N.
+    const r = await calibrate('rain', { n: 4000, from: 31, to: 45, write: false, quiet: true });
+    assert.deepEqual(failsByGate(r), {});
     for (const id of ['G1', 'G4', 'G5', 'G6', 'G8']) assert.equal(r.gates.find(g => g.id === id).pass, true, id);
     r.levels.filter(l => l.kind !== 'breather').forEach(l =>
       assert.ok(Math.abs(l.profiles.median.p - l.pStar) <= 0.05, `L${l.L} median ${l.profiles.median.p} vs p* ${l.pStar}`));

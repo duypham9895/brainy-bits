@@ -22,10 +22,13 @@ const CONFIG = {
 
   // Curve constants (MERGED-SPEC §4.1). Not owner decisions; change only with a calibration run.
   REF_L: 30,               // D(REF_L) = 1
-  PERIOD: 5,               // peak at 5k, breather at 5k+1
+  PERIOD: 5,               // peak at 5k, breather at 5k+1, both only from 2·PERIOD on (first peak L10, first breather L11)
+  BREATHER_EASY_OK: true,  // Duy 2026-11-22 (rain, A): a breather may be as easy as needed. B fails it only when too hard; G3 drops 'easier than L−4'. G4 stays.
+  B_EASY_OK_BEFORE_SAW: true, // Duy 2026-11-22 (Gen Z players): on L1..sawStart-1 gate B fails only when median < p* − BAND (too hard). false = two-sided.
+  SAW_FROM_PERIODS: 2,     // Duy 2026-11-21 (1)=A: no peak at L5; L1–9 rise as steps so G1 (weak ≥ 0.85, L1–5) holds. 1 = old L5 peak.
   P_TOP: 0.92,             // p*(1), R:dda
   PEAK_DIP: 0.06,          // peak levels: p* − 0.06 (A)
-  BREATHER_OFFSET: 0,      // A-1 fix: breathers get no p* bonus
+  BREATHER_OFFSET: 0,      // A-1 fix: breathers get no p* bonus (applies from the first breather, L11)
   LIGHTER: { maxRelief: 0.15, failsInRow: 2, pBelow: 0.5, suggestPrevAfter: 3 },  // §4.5, R:dda, Hunicke
   ELO: { uSlope: 0.05, key: 'bbd_theta' },                                         // Pelánek U(n)=1/(1+0.05n)
 };
@@ -39,10 +42,13 @@ const e1 = () => E1_PRESETS[CONFIG.E1] || E1_PRESETS.A;
 // ---------- curve ----------
 const RESERVED = new Set(['L', 'kind', 'legacy', 'authored', 'id', 'D', 'pStar', 'exhausted', 'assist']);
 function D(L) { return Math.sqrt(Math.max(0, L - 1) / (CONFIG.REF_L - 1)); }          // A, R:dda (abagames, MIT)
+// Sawtooth: peak at L % PERIOD === 0, breather right after it, but only from L = SAW_FROM_PERIODS·PERIOD on.
+// Default (PERIOD 5, from 2): L1–9 steps, L10 peak, L11 breather, L15 peak, L16 breather, …
+function sawStart() { return CONFIG.PERIOD * CONFIG.SAW_FROM_PERIODS; }
 function kind(L) {
-  const P = CONFIG.PERIOD;
-  if (L >= P && L % P === 0) return 'peak';
-  if (L > P && L % P === 1) return 'breather';
+  const P = CONFIG.PERIOD, S = sawStart();
+  if (L >= S && L % P === 0) return 'peak';
+  if (L > S && L % P === 1) return 'breather';
   return 'step';
 }
 function pStar(L) {
@@ -57,6 +63,17 @@ function pStar(L) {
 // ---------- registry ----------
 const specs = new Map();
 const isInt = n => Number.isInteger(n) && n >= 1;
+// Gates a table may waive, each with a written reason (Duy 2026-11-21 (3): word waives B). Every other gate stays binding.
+const WAIVABLE_GATES = Object.freeze(['B']);
+function checkWaivers(g, w) {
+  if (w == null) return Object.freeze({});
+  if (typeof w !== 'object' || Array.isArray(w)) throw new Error(`BBD.register(${g}): gateWaivers must be an object { gateId: reason }`);
+  Object.keys(w).forEach(id => {
+    if (!WAIVABLE_GATES.includes(id)) throw new Error(`BBD.register(${g}): gate "${id}" cannot be waived (only ${WAIVABLE_GATES.join(', ')})`);
+    if (typeof w[id] !== 'string' || !w[id].trim()) throw new Error(`BBD.register(${g}): waiver for gate ${id} needs a reason string`);
+  });
+  return Object.freeze({ ...w });
+}
 
 function register(gameKey, spec) {
   if (typeof gameKey !== 'string' || !gameKey) throw new TypeError('BBD.register: gameKey must be a string');
@@ -83,6 +100,7 @@ function register(gameKey, spec) {
     derive: typeof spec.derive === 'function' ? spec.derive : null,
     maxLevel: spec.maxLevel, overrides: Object.freeze({ ...(spec.overrides || {}) }),
     meta: Object.freeze({ ...(spec.meta || {}) }),
+    gateWaivers: checkWaivers(gameKey, spec.gateWaivers),
   });
   specs.set(gameKey, s);
   return s;
@@ -215,7 +233,8 @@ function compute(s, L) {
     const relieved = quant(k, row[k.name] - k.dir * (r.by ?? k.step));
     // Breathers stay monotone among themselves: never easier than the previous generated breather.
     // Whether a breather sits between its peak and L−4 is a pass-rate question: gate G3 in the simulator.
-    const prevB = L - CONFIG.PERIOD > n ? levelRow(s, L - CONFIG.PERIOD)[k.name] : undefined;
+    const prevL = L - CONFIG.PERIOD;                     // the previous breather, when it is generated and is one
+    const prevB = prevL > n && kind(prevL) === 'breather' ? levelRow(s, prevL)[k.name] : undefined;
     row[k.name] = typeof prevB === 'number' ? harder(k, relieved, prevB) : relieved;
   });
   Object.assign(row, s.overrides[L] || {});              // authored exceptions, e.g. a hand-set L30
@@ -223,7 +242,7 @@ function compute(s, L) {
   return { ...row, ...(derived || {}), L, kind: kd, legacy: false };
 }
 const cache = new Map();                                  // key: game|L|configStamp
-const stamp = () => JSON.stringify([CONFIG.E1, CONFIG.E3_FREEZE_LEGACY, CONFIG.E5_KNOBS_ONLY, CONFIG.REF_L, CONFIG.PERIOD]);
+const stamp = () => JSON.stringify([CONFIG.E1, CONFIG.E3_FREEZE_LEGACY, CONFIG.E5_KNOBS_ONLY, CONFIG.REF_L, CONFIG.PERIOD, CONFIG.SAW_FROM_PERIODS]);
 function levelRow(s, L) {
   const key = `${s.key}|${L}|${stamp()}`;
   let r = cache.get(key);
@@ -391,7 +410,7 @@ const progress = {
 };
 
 return Object.freeze({
-  CONFIG, E1_PRESETS, e1, D, kind, pStar, register, level, maxLevel, exhausted, lighter, elo,
+  CONFIG, E1_PRESETS, e1, D, kind, pStar, register, WAIVABLE_GATES, level, maxLevel, exhausted, lighter, elo,
   levelId, version, authoredCount, progress,
   games: () => [...specs.keys()],
   spec: gameKey => get(gameKey),

@@ -1,5 +1,5 @@
 // Mưa Phép Tính, 30 levels: the game reads BBD.level('rain', L) from table version 2 (E3 lifted 2026-11-21:
-// L1..6 keep the old rows, L7..30 retuned, breathers carry the E4 safety net), old progress keys still count
+// L1..9 keep the old rows (decision 2, 2026-11-21: tiers 7–9 back at L7–9), L10..30 retuned, breathers carry the E4 safety net), old progress keys still count
 // and migrate once, and the next-level flow runs to a finished state after L30.
 // Run: PW_PORT=8964 npx playwright test tests/rain-levels.spec.js
 import { test, expect } from '@playwright/test';
@@ -44,8 +44,9 @@ test('grid shows 30 levels; hub and daily agree on 30', async ({ page }) => {
 });
 
 // Was "legacy L1..10 = old formula, legacy: true". v2 truth: L1..6 still play the old formula (authored rows,
-// 3 lives), L7..10 are retuned; the old rows survive as legacyLevels; every row matches the Node table.
-test('v2: L1..6 play the old formula with 3 lives, legacyLevels keep L1..10; L1..30 match the Node tables', async ({ page }) => {
+// 3 lives); L7..9 keep tiers 7..9 (decision 2, 2026-11-21) with faster rain, L10 is retuned (speed ramp over L7..10,
+// review 2026-11-22); the old rows survive as legacyLevels; every row matches the Node table.
+test('v2: L1..6 play the old formula with 3 lives, L7..10 keep their tier at faster rain, legacyLevels keep L1..10; L1..30 match the Node tables', async ({ page }) => {
   await openRain(page);
   const r = await page.evaluate(() => Array.from({ length: 30 }, (_, i) => ({ ...window.__rainTest.spec(i + 1) })));
   const leg = await page.evaluate(() => window.BBD.spec('rain').legacy.map(x => ({ ...x })));
@@ -54,8 +55,11 @@ test('v2: L1..6 play the old formula with 3 lives, legacyLevels keep L1..10; L1.
     const old = { fall: Math.max(8, 13 - 0.55 * (L - 1)), every: Math.max(2.7, 4.6 - 0.2 * (L - 1)), target: 10 + L };
     expect(leg[L - 1]).toEqual({ ...old, ops: L });
     if (L <= 6) expect(r[L - 1]).toMatchObject({ ...old, ops: L, lives: 3, legacy: false, authored: true });
+    else {                                          // L7..10: same tier and chain, faster rain (speed ramp)
+      expect(r[L - 1]).toMatchObject({ ops: L, target: old.target, lives: 3, legacy: false, authored: true });
+      expect(r[L - 1].every < old.every && r[L - 1].fall < old.fall).toBe(true);
+    }
   }
-  expect(r[9]).not.toMatchObject({ fall: leg[9].fall, every: leg[9].every });   // L10 retuned
   const B = loadBBD();
   for (let L = 1; L <= 30; L++) expect(r[L - 1]).toEqual({ ...B.level('rain', L) });
 });
@@ -134,8 +138,8 @@ test('corrupt saved data does not break the menu: junk bb_stats and marker, rain
   expect(errors).toEqual([]);
 });
 
-// Was "L1..10 keep the old text" (level L = tier L). v2: tiers 1..10 keep their old names; L1..6 and L10 show
-// them, L7..9 replay tier 5 so they show its name.
+// Was "L1..10 keep the old text" (level L = tier L). v2 after decision 2 (2026-11-21): level L = tier L again
+// on L1..10, so L1..10 show the old names.
 test('level names: tiers 1..10 keep the old text, v2 levels show their tier, new tiers named at their breathers', async ({ page }) => {
   await openRain(page);
   const n = await page.evaluate(() => window.__rainTest.LVINFO.map(x => x && x.name));
@@ -143,7 +147,7 @@ test('level names: tiers 1..10 keep the old text, v2 levels show their tier, new
     'Cộng, trừ trong phạm vi 50', 'Cộng, trừ trong phạm vi 100', 'Bảng nhân 2–5', 'Bảng nhân 2–9',
     'Nhân, chia (bảng 2–9)', 'Đủ 4 phép tính', 'Đủ 4 phép tính, số lớn hơn'];
   expect(await page.evaluate(() => window.BBRain.TIER_NAME.slice(1, 11))).toEqual(old);
-  expect(n.slice(1, 11)).toEqual([...old.slice(0, 6), old[4], old[4], old[4], old[9]]);
+  expect(n.slice(1, 11)).toEqual(old);
   expect([n[11], n[16], n[21], n[26]]).toEqual(['Thêm cộng, trừ có nhớ', 'Thêm tìm số còn thiếu',
     'Thêm phép tính hai bước', 'Thêm nhân số có hai chữ số']);
 });
@@ -200,7 +204,7 @@ test('next-level flow: L10 leads to L11; passing L30 shows the finished state', 
   await expect(page.locator('#rrNext')).toHaveText('Level 11 →');
   // the "next level" line names every change: tier, faster rain, chain, lives (review NIT 9)
   const info = await page.evaluate(() => [6, 11, 12, 29].map(L => window.__rainTest.nextInfo(L)));
-  expect(info).toEqual(['cộng, trừ trong phạm vi 100, mưa nhanh hơn, giải 17 phép', 'mưa nhanh hơn, giải 20 phép, còn 3 mạng', 'giải 21 phép', 'mưa nhanh hơn']);
+  expect(info).toEqual(['bảng nhân 2–9, mưa nhanh hơn, giải 17 phép', 'mưa nhanh hơn, giải 20 phép, còn 3 mạng', 'giải 21 phép', 'mưa nhanh hơn']);
   await page.click('#rrNext');
   expect(await dbg(page)).toMatchObject({ state: 'play', level: 11, target: 10, lives: 4 });   // v2 breather
 

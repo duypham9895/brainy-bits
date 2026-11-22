@@ -70,8 +70,8 @@ test('RAIN-2: a digit that matches nothing clears the input instead of piling up
   expect((await dbg(page)).solved).toBe(1);
 });
 
-// Was "L1..10 ramp monotonically, level L = tier L". Table v2 (2026-11-21): L7..9 replay tier 5 faster and L10
-// opens tier 10, so the per-tier checks read tiers 1..10 straight from the generator, and the ramp check is
+// Was "L1..10 ramp monotonically, level L = tier L". Table v2 (2026-11-21): level L = tier L on L1..10 again
+// (decision 2), but L10 and the breathers retune speed, so the per-tier checks read tiers 1..10 straight from the generator, and the ramp check is
 // "rain never slows down while the tier stays the same" (a new tier may come with slower rain).
 test('RAIN-4 + missed L10: tiers 1..10 keep their operations; rain never slows inside a tier', async ({ page }) => {
   await openRain(page);
@@ -104,7 +104,7 @@ test('RAIN-4 + missed L10: tiers 1..10 keep their operations; rain never slows i
   });
   expect(big).toBe(true);
   const sp = await page.evaluate(() => Array.from({ length: 31 }, (_, L) => (L ? window.__rainTest.spec(L) : null)));
-  expect(sp.slice(1, 11).map(x => x.ops)).toEqual([1, 2, 3, 4, 5, 6, 5, 5, 5, 10]);
+  expect(sp.slice(1, 11).map(x => x.ops)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   for (let L = 2; L <= 30; L++) {
     if (sp[L].ops !== sp[L - 1].ops || sp[L].kind === 'breather' || sp[L - 1].kind === 'breather') continue;
     expect(sp[L].fall, `L${L}`).toBeLessThanOrEqual(sp[L - 1].fall);

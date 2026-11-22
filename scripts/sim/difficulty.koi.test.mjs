@@ -22,35 +22,38 @@ describe('koi: table v2, one template for every level', () => {
     try { assert.equal(B.level('koi', 1).koi, 6); assert.equal(B.level('koi', 1).legacy, true); }
     finally { B.CONFIG.E3_FREEZE_LEGACY = false; B.clearCache(); }
   });
-  test('koi v2: L1..10 authored, same level numbers (no ids), L10 = v1 L10 so generated L11+ keep their anchors', () => {
+  test('koi v2: L1..30 authored, same level numbers (no ids); L1..10 keep the v1 wait; L31+ come from the engine', () => {
     const B = loadBBD();
     assert.equal(B.version('koi'), 2);
-    assert.equal(B.authoredCount('koi'), 10);
-    for (let L = 1; L <= 10; L++) {
+    assert.equal(B.authoredCount('koi'), 30);
+    for (let L = 1; L <= 30; L++) {
       const r = B.level('koi', L);
       assert.equal(r.authored, true); assert.equal(r.legacy, false);
       assert.equal(B.levelId('koi', L), L, 'stars stay keyed by level number');
-      assert.ok(Math.abs(r.cd - (1.3 + 0.15 * L)) < 1e-9, `L${L} cd keeps the v1 wait`);
+      if (L <= 10) assert.ok(Math.abs(r.cd - (1.3 + 0.15 * L)) < 1e-9, `L${L} cd keeps the v1 wait`);
     }
-    const l10 = B.level('koi', 10), v1 = B.spec('koi').legacy[9];
-    for (const k of ['koi', 'cd', 'decoys']) assert.equal(l10[k], v1[k], `L10 ${k}`);
+    assert.equal(B.level('koi', 31).authored, undefined);
+    assert.equal(B.exhausted('koi', 40), false, '+10 levels still have knobs left');
   });
-  test('koi: 30 levels follow one template and stay inside the tracking limits', () => {
+  test('koi: L1..40 follow one template and stay inside the tracking limits', () => {
     const B = loadBBD();
     assert.equal(B.maxLevel('koi'), 30);
-    for (let L = 1; L <= 30; L++) {
+    for (let L = 1; L <= 40; L++) {
       const r = B.level('koi', L);
       assert.ok(r.koi >= 12 && r.koi <= 15, `L${L} koi ${r.koi}`);
-      if (r.kind === 'breather') assert.equal(r.koi, 12, `L${L} breather drops to 12 fish`);
+      if (r.kind === 'breather') assert.equal(r.koi, 12, `L${L} breather plays 12 fish`);
       assert.ok(r.spdMul <= 1.4 && r.turnMul <= 1.5 && r.decoys <= 6, `L${L} ${JSON.stringify(r)}`);
       if (r.spdMul > 1.25) assert.ok(r.koi <= 14, `L${L}: fast fish never come with a full pond`);
+      if (L <= 5) assert.equal(r.decoys, 0, `L${L}: no grey fish on L1–5 (G1)`);
       if (L === 1) continue;
       const p = B.level('koi', L - 1);
-      // A step must change something the player sees (count, grey fish, speed, turning); a +0.05 s wait alone is not felt.
-      if (r.kind !== 'breather') assert.ok(['koi', 'decoys', 'spdMul', 'turnMul'].some(k => r[k] !== p[k]), `koi L${L}: no visible change from L${L - 1}`);
-      // Grey fish never drop, and in L1..10 they only change on peaks and breathers.
+      // Authored steps change something the player sees (count, grey fish, speed, turning); a +0.05 s wait alone
+      // is not felt. Generated L31+ steps may repeat the row before: the curve is nearly flat there (p* −0.3/level).
+      if (L <= 30 && r.kind !== 'breather') assert.ok(['koi', 'decoys', 'spdMul', 'turnMul'].some(k => r[k] !== p[k]), `koi L${L}: no visible change from L${L - 1}`);
+      // Grey fish never drop, and only change on peaks and breathers (steps add koi, speed or turning).
+      // L19 is the one old exception (+1 grey fish on a step, row kept as it was before 2026-11-21).
       assert.ok(r.decoys >= p.decoys, `L${L} decoys ${p.decoys} → ${r.decoys}`);
-      if (L <= 10 && r.kind === 'step') assert.equal(r.decoys, p.decoys, `L${L}: a step adds a koi, not grey fish`);
+      if (r.kind === 'step' && L !== 19) assert.equal(r.decoys, p.decoys, `L${L}: a step does not add grey fish`);
     }
   });
   test('koi progress: old keys (v1, no marker) → v2 keeps best, stars and koi_lv2; corrupt data does not crash', () => {
@@ -76,12 +79,16 @@ describe('koi: table v2, one template for every level', () => {
     assert.equal(n.BB.migrateProgress('koi').reason, 'newer');
     assert.equal(n.ls.get('bb_tablev_koi'), '3');
   });
-  // N=2000 (≈2 s): at N=400 the sampling error (±2 points) is close to the B band, so a pass there can be luck.
-  // KNOWN-FAIL G1 L5 only: p*(5) = 0.797 caps the median at 0.847 (gate B) while G1 asks weak ≥ 0.85, and weak
-  // never beats median. No table can pass both; the engine owner sent it to Duy as options (a)/(b)/(c).
-  test('KNOWN-FAIL koi (G1 L5 vs B, waiting for Duy): calibrate at N=2000', async () => {
-    const r = await calibrate('koi', { n: 2000, write: false, quiet: true });
-    assert.deepEqual(failsByGate(r), { G1: [5] });
+  // N=2000 (≈2 s each): at N=400 the sampling error (±2 points) is close to the B band, so a pass there can be luck.
+  // Zero failures and zero waivers, on the shipped L1..30 and on the engine-made L31..40 ("+10 levels" from the rule).
+  test('koi calibrates green at N=2000: L1..30 and generated L31..40, no gate failed, nothing waived', async () => {
+    for (const [from, to] of [[1, 30], [1, 40]]) {
+      const r = await calibrate('koi', { n: 2000, from, to, write: false, quiet: true });
+      assert.deepEqual(failsByGate(r), {}, `L${from}..${to}`);
+      assert.deepEqual(r.waived, [], `L${from}..${to}`);
+      assert.equal(r.ok, true);
+      assert.deepEqual(r.gates.map(g => g.status).filter(st => st !== 'PASS'), ['SKIP'], 'only G7 skips');
+    }
   });
 });
 }

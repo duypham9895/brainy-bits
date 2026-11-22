@@ -59,8 +59,9 @@ that merges only when every check is green. If one game's new level cannot be ma
 
 ## 2. Departments, in this order (one section each in the run report)
 
-1. **PM**: state today's target for each game: new level number L = maxLevel + 1, its kind from the
-   sawtooth (peak at 5k, breather at 5k+1, else step), the target pass rate `BBD.pStar(L)`.
+1. **PM**: state today's target for each game: new level number L = maxLevel + 1, its kind from
+   `BBD.kind(L)` (peak at 5k and breather at 5k+1 from L10 on, else step; L1-9 are all steps, no peak at L5),
+   the target pass rate `BBD.pStar(L)`.
    Stop rules: if `BBD.exhausted(game, L)` is true (every knob at its hardCap), do NOT invent a harder
    level: skip that game and add it to "needs Duy" (a new mechanic or knob is an owner decision, E5).
    Global cap: if any game would exceed 100 levels, skip it and ask Duy (the level grid and pacing were
@@ -80,11 +81,16 @@ that merges only when every check is green. If one game's new level cannot be ma
    difficulty a little above the previous level (length, tone complexity, frequency). Apply
    `anti-ai-writing` to the hint. No proper nouns, brands, politics, religion or anything offensive.
 4. **Data / calibration**: run `node scripts/sim/calibrate.mjs <game> --from <L-4> --to <L> --n 1200`
-   (koi `--n 2000`) for every changed game. Every gate must pass for the new level (median-profile pass rate
-   inside the band around p*, monotonic except breathers, weak-profile breathers >= 60%, skilled can finish).
-   Older levels may still carry known misses (listed in the rules file §3 and pinned by the KNOWN-FAIL tests);
-   do not fix them here, and do not add new ones. If a gate fails, adjust only the new
-   level's knobs and rerun (max 5 attempts per game); if it still fails, revert that game and report.
+   (koi `--n 2000`) for every changed game. Rain: once `L` goes past 30, run with `--n 4000` instead of 1200
+   (same `--from <L-4>` window) — a bigger N narrows gate G2's tolerance, so this is stricter, not looser.
+   **The new level L must keep every gate green**: B, G1-G6 and G8 pass (G7 stays SKIP) and the command exits 0.
+   Word: gate B is waived (Duy 2026-11-21); the run prints `WAIVED: B (not passed)` and exits 0. Report it as
+   WAIVED, never as PASS; G1-G6 and G8 must still pass.
+   train, koi, mem and rain pass every gate (word: every gate but B, which is WAIVED) on every shipped level today (gate B is one-sided on L1-9 and on every
+   breather, `B_EASY_OK_BEFORE_SAW` / `BREATHER_EASY_OK`, rules file §2-3), and CI blocks on all five, so any
+   miss there fails the PR. For every game, judge the new level by its own lines: L must not appear in any
+   gate's miss list. If a gate fails, adjust only the new level's knobs and rerun (max 5 attempts per game); if
+   it still fails, revert that game and report.
    Never loosen a gate, never edit the simulator or adapters to make a level pass.
 5. **SWE**: if the game reads levels through `BBD`, no code change should be needed. If the level grid,
    result screen or "next level" flow needs a change to show the new level, keep it minimal and covered

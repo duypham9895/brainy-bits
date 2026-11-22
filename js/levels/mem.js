@@ -32,20 +32,23 @@
     // show unrounded, bit-for-bit the old js/mem.js value (toFixed(2) gave 3.7 instead of 3.6999… at L7).
     legacyLevels.push({ size, t, k: 0.3, disp: 0, show: 1.0 + 0.3 * t });
   }
-  // Table v2, one template for L1..30 (sawtooth: peak at 5k, breather at 5k+1, step otherwise):
-  //   L1–4  three tiles while the grid grows (4×4 → 6×6) and the tiles spread (disp);
-  //   L5+   6×6. A step spreads the tiles a little more (disp +0.05), a peak adds one tile,
+  // Table v2, one template for L1..30 (sawtooth from L10: peak at 5k, breather at 5k+1, step otherwise;
+  // Duy 2026-11-21: no peak at L5, L1–9 are steps):
+  //   L1–5  three tiles while the grid grows (4×4 → 6×6) and the tiles spread (disp);
+  //   L6+   6×6. A step spreads the tiles a little more (disp +0.05), a peak adds one tile,
   //         a breather drops one tile and gathers the tiles again.
-  // One deliberate exception: L4 gathers the tiles (disp 0), so it is easier than L3. That buys weak ≥ 85%
-  // for G1 at the cost of gate B (median 92.6 vs p* 86.5). No L4 row meets both (N=1200 sweep); waits on
-  // Duy's B/G1 decision, see the KNOWN-FAIL pin in scripts/sim/difficulty.test.mjs.
+  // One deliberate exception: L4 gathers the tiles (disp 0), so it is easier than L3, and L5 is the L3 row.
+  // That keeps weak ≥ 85% (G1, Duy's promise to older/casual players) at the cost of gate B on the easy side
+  // (L4 median 92.6 vs p* 86.5, L5 93.2 vs 85.7). No row meets both: 441 rows each at L4 and L5 (size 3–6,
+  // t 3–10, disp 0–1 by 0.05, N=1200), lowest median with weak ≥ 0.85 was 92.6 (L4) and 92.9 (L5). The sim's
+  // weak–median gap never drops below ~7 points near weak 85%, and B at L5 needs ≤ 5.7. See the KNOWN-FAIL pin.
   // Viewing time keeps the v1 rule (k = 0.3 s per tile): below ~7 tiles time never binds in the sim, so
   // shrinking it would only change the label, not the difficulty. Rows were fit with calibrate.mjs at N=1200
   // (docs/difficulty/calibration-mem.json). Same level numbers as v1: stars and mem_lv keep their keys.
   // [size, t, disp]
   const V2 = [
-    [4, 3, 0.5], [5, 3, 0.5], [6, 3, 0.15], [6, 3, 0], [6, 4, 0.15],          // L1–5 (L5 peak)
-    [6, 4, 0], [6, 4, 0.05], [6, 4, 0.1], [6, 4, 0.15], [6, 5, 0.05],      // L6 breather … L10 peak
+    [4, 3, 0.5], [5, 3, 0.5], [6, 3, 0.15], [6, 3, 0], [6, 3, 0.15],         // L1–5 steps (no peak at L5)
+    [6, 4, 0], [6, 4, 0.05], [6, 4, 0.1], [6, 4, 0.15], [6, 5, 0.05],      // L6 … L9 steps, L10 first peak
     [6, 4, 0.1], [6, 4, 0.2], [6, 4, 0.25], [6, 4, 0.3], [6, 5, 0.2],      // L11 … L15
     [6, 4, 0.35], [6, 5, 0], [6, 5, 0.05], [6, 5, 0.1], [6, 6, 0.05],      // L16 … L20
     [6, 5, 0], [6, 5, 0.05], [6, 5, 0.1], [6, 5, 0.15], [6, 6, 0.1],       // L21 … L25

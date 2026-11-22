@@ -302,7 +302,7 @@ test('Neon #14: a returning player with only rtd_best3 sees levels up to best ma
   await expect(page.locator('#lvgrid .lv.done')).toHaveCount(5);
   await expect(tiles.nth(4)).toHaveClass(/done/);
   await expect(tiles.nth(5)).not.toHaveClass(/done/);
-  await expect(tiles.nth(4)).toHaveAttribute('aria-label', 'Level 5, 6 ga, đã qua');
+  await expect(tiles.nth(4)).toHaveAttribute('aria-label', 'Level 5, 5 ga, đã qua');
   await expect(page.locator('#startBtn')).toHaveText('Chơi Level 6 · 6 ga');
   // winning Level 9 in this version marks Level 9 only; 6-8 were never played (RTD-09)
   await page.click('#startBtn');

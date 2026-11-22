@@ -25,6 +25,34 @@ export function wilson(k, n, z = 1.96) {
 const median = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
 const tolFor = (p1, p2, n) => Math.max(0.02, 2 * Math.sqrt(p1 * (1 - p1) / n + p2 * (1 - p2) / n));
 
+// Gate waivers a table declares (`gateWaivers: { B: '<reason>' }` in js/levels/<game>.js). Only B, only with a
+// reason. A waived gate is reported as WAIVED (pass: null, its misses kept for reading) and never as PASS.
+export const WAIVABLE = ['B'];
+export function validateWaivers(waivers, game = '?') {
+  if (waivers == null) return {};
+  if (typeof waivers !== 'object' || Array.isArray(waivers)) throw new Error(`calibrate ${game}: gateWaivers must be an object { gateId: reason }`);
+  for (const [id, reason] of Object.entries(waivers)) {
+    if (!WAIVABLE.includes(id)) throw new Error(`calibrate ${game}: gate "${id}" cannot be waived (only ${WAIVABLE.join(', ')})`);
+    if (typeof reason !== 'string' || !reason.trim()) throw new Error(`calibrate ${game}: waiver for gate ${id} needs a reason string`);
+  }
+  return { ...waivers };
+}
+export function applyWaivers(gates, waivers, game) {
+  const w = validateWaivers(waivers, game);
+  return gates.map(g => (w[g.id] === undefined ? g
+    : { ...g, pass: null, waived: true, waiver: w[g.id], measuredPass: g.pass, note: `WAIVED: ${w[g.id]}` }));
+}
+// Gate B misses. Duy 2026-11-22: before the first peak (L < PERIOD·SAW_FROM_PERIODS) a level that is easier than p*
+// is not a miss, only one that is harder (median < p* − BAND). From the first peak on, B is two-sided again.
+export const bOneSidedBelow = BBD => BBD.CONFIG.PERIOD * BBD.CONFIG.SAW_FROM_PERIODS;
+export function bMiss(r, BBD) {
+  const d = r.profiles.median.p - r.pStar;
+  if (BBD.CONFIG.B_EASY_OK_BEFORE_SAW && r.L < bOneSidedBelow(BBD)) return d < -BAND;
+  if (BBD.CONFIG.BREATHER_EASY_OK && r.kind === 'breather') return d < -BAND;   // Duy 2026-11-22: breathers may be easy
+  return Math.abs(d) > BAND;
+}
+export const gateStatus = g => (g.waived ? 'WAIVED' : g.pass === null ? 'SKIP' : g.pass ? 'PASS' : 'FAIL');
+
 export async function loadAdapter(game) {
   const mod = await import(pathToFileURL(join(ROOT, 'scripts', 'sim', 'adapters', `${game}.mjs`)).href);
   if (mod.TODO) throw new Error(`adapter ${game} is a TODO stub; implement scripts/sim/adapters/${game}.mjs first`);
@@ -55,8 +83,8 @@ export function checkGates(rows, BBD, game, adapter, n) {
   const out = [];
   const gate = (id, name, fails, note = '') => out.push({ id, name, pass: fails.length === 0, fails, note });
 
-  gate('B', 'every level: |p_median − p*| ≤ 0.05',
-    rows.filter(r => Math.abs(r.profiles.median.p - r.pStar) > BAND)
+  gate('B', `every level: |p_median − p*| ≤ 0.05${BBD.CONFIG.BREATHER_EASY_OK ? ' (breathers: only too hard fails)' : ''}${BBD.CONFIG.B_EASY_OK_BEFORE_SAW ? ` (L1–${bOneSidedBelow(BBD) - 1}: only p_median < p* − 0.05 fails)` : ''}`,
+    rows.filter(r => bMiss(r, BBD))
       .map(r => `L${r.L} median ${r.profiles.median.p} vs p* ${r.pStar.toFixed(3)}`));
   gate('G1', 'weak ≥ 85% on L1–5',
     rows.filter(r => r.L <= 5 && r.profiles.weak.p < G1_WEAK).map(r => `L${r.L} weak ${r.profiles.weak.p}`));
@@ -65,11 +93,11 @@ export function checkGates(rows, BBD, game, adapter, n) {
       const a = P(r.L - 1, 'median'), b = r.profiles.median.p;
       return b > a + tolFor(a, b, n);
     }).map(r => `L${r.L - 1}→L${r.L}: ${P(r.L - 1, 'median')} → ${r.profiles.median.p}`));
-  gate('G3', 'breather easier than the peak before it and harder than L−4',
+  gate('G3', `breather easier than the peak before it${BBD.CONFIG.BREATHER_EASY_OK ? '' : ' and harder than L−4'}`,
     rows.filter(r => r.kind === 'breather').flatMap(r => {
       const f = [], b = r.profiles.median.p, pk = P(r.L - 1, 'median'), l4 = P(r.L - 4, 'median');
       if (pk !== undefined && b < pk - tolFor(b, pk, n)) f.push(`L${r.L} ${b} harder than peak L${r.L - 1} ${pk}`);
-      if (l4 !== undefined && b > l4 + tolFor(b, l4, n)) f.push(`L${r.L} ${b} easier than L${r.L - 4} ${l4}`);
+      if (!BBD.CONFIG.BREATHER_EASY_OK && l4 !== undefined && b > l4 + tolFor(b, l4, n)) f.push(`L${r.L} ${b} easier than L${r.L - 4} ${l4}`);
       return f;
     }));
   gate('G4', 'weak ≥ 60% on every breather',
@@ -96,7 +124,7 @@ export function checkGates(rows, BBD, game, adapter, n) {
     note: 'SKIPPED: needs the game to read BBD.level() (per-game integration step)' });
   gate('G8', 'first-attempt and ≤3-attempt pass reported; ≤3 never below first attempt',
     rows.flatMap(r => PROFILE_NAMES.filter(pn => r.profiles[pn].p3 + 0.02 < r.profiles[pn].p).map(pn => `L${r.L} ${pn} p3 ${r.profiles[pn].p3} < p ${r.profiles[pn].p}`)));
-  return out;
+  return applyWaivers(out, spec.gateWaivers, game).map(g => ({ ...g, status: gateStatus(g) }));
 }
 
 export async function calibrate(game, { n = 400, from = 1, to, write = true, quiet = false, adapterOpts = {} } = {}) {
@@ -112,35 +140,37 @@ export async function calibrate(game, { n = 400, from = 1, to, write = true, qui
       bL: +BBD.elo.bFromP(Math.min(0.999, Math.max(0.001, profiles.median.p))).toFixed(3), knobs, profiles });
   }
   const gates = checkGates(rows, BBD, game, adapter, n);
-  const ok = gates.every(g => g.pass !== false);
+  const ok = gates.every(g => g.pass !== false);            // WAIVED and SKIP carry pass: null, so they never fail or pass
+  const waived = gates.filter(g => g.waived).map(g => g.id);
   const report = {
     game, n, from, to, simVersion: 1, generatedOn: new Date().toISOString().slice(0, 10),
-    config: { E1: BBD.CONFIG.E1, E3: BBD.CONFIG.E3_FREEZE_LEGACY, E5: BBD.CONFIG.E5_KNOBS_ONLY, tableVersion: BBD.version(game), ...BBD.e1() },
+    config: { E1: BBD.CONFIG.E1, breatherEasyOk: !!BBD.CONFIG.BREATHER_EASY_OK, bEasyOkBelow: BBD.CONFIG.B_EASY_OK_BEFORE_SAW ? bOneSidedBelow(BBD) : null, E3: BBD.CONFIG.E3_FREEZE_LEGACY, E5: BBD.CONFIG.E5_KNOBS_ONLY, tableVersion: BBD.version(game), ...BBD.e1() },
     seed: 'mulberry32(cyrb53("camp|game|L|profile|i"))', note: 'bL = logit(1 − p_median) with θ_median = 0, a = 1; 2PL fit not run yet',
-    adapterOpts, ok, gates, levels: rows,
+    adapterOpts, ok, waived, gates, levels: rows,
   };
   if (write) writeFileSync(join(ROOT, 'docs', 'difficulty', `calibration-${game}.json`), JSON.stringify(report, null, 1) + '\n');
-  if (!quiet) print(report);
+  if (!quiet) print(report, BBD);
   return report;
 }
 
-function print({ game, n, levels, gates, ok }) {
+function print({ game, n, levels, gates, ok, waived }, BBD) {
   const pct = x => (x * 100).toFixed(0).padStart(3);
   console.log(`\n${game} · N=${n} per profile · first-attempt pass % (≤3 attempts in brackets)`);
   console.log('  L kind  leg   p*  | weak       median     skilled    | Δmed');
   for (const r of levels) {
     const c = pn => `${pct(r.profiles[pn].p)} [${pct(r.profiles[pn].p3)}]`;
     const d = r.profiles.median.p - r.pStar;
-    console.log(`${String(r.L).padStart(3)} ${r.kind.padEnd(8).slice(0, 5)} ${r.legacy ? 'L' : ' '}  ${pct(r.pStar)} | ${c('weak')}  ${c('median')}  ${c('skilled')}  | ${(d >= 0 ? '+' : '') + (d * 100).toFixed(0)}${Math.abs(d) > BAND ? ' ✗' : ''}`);
+    console.log(`${String(r.L).padStart(3)} ${r.kind.padEnd(8).slice(0, 5)} ${r.legacy ? 'L' : ' '}  ${pct(r.pStar)} | ${c('weak')}  ${c('median')}  ${c('skilled')}  | ${(d >= 0 ? '+' : '') + (d * 100).toFixed(0)}${bMiss(r, BBD) ? ' ✗' : ''}`);
   }
   console.log('\nGates:');
   for (const g of gates) {
-    const tag = g.pass === null ? 'SKIP' : g.pass ? 'PASS' : 'FAIL';
-    console.log(`  ${tag.padEnd(4)} ${g.id.padEnd(3)} ${g.name}${g.note ? ` — ${g.note}` : ''}`);
+    const tag = gateStatus(g);
+    console.log(`  ${tag.padEnd(6)} ${g.id.padEnd(3)} ${g.name}${g.note ? ` — ${g.note}` : ''}`);
     g.fails.slice(0, 6).forEach(f => console.log(`         · ${f}`));
     if (g.fails.length > 6) console.log(`         · … ${g.fails.length - 6} more`);
   }
-  console.log(ok ? '\nRESULT: all gates pass (G7 skipped)' : '\nRESULT: FAIL');
+  const w = waived && waived.length ? `; WAIVED: ${waived.join(', ')} (not passed)` : '';
+  console.log(ok ? `\nRESULT: no gate failed (G7 skipped${w})` : `\nRESULT: FAIL${w}`);
 }
 
 function parseArgs(argv) {
@@ -152,11 +182,19 @@ function parseArgs(argv) {
     else if (x.startsWith('--')) a[x.slice(2)] = Number(argv[++i]);
     else a._.push(x);
   }
+  // A flag that reads as NaN or 0 must not fall back to a default range: in CI, `--to "$(…)"` with a failed
+  // substitution became Number('') = 0, and calibrate then checked only L1–maxLevel and stayed green.
+  for (const [k, v] of Object.entries(a)) {
+    if (k === '_' || typeof v !== 'number') continue;
+    if (Number.isNaN(v)) throw new Error(`--${k} needs a number`);
+    if (['n', 'from', 'to'].includes(k) && !(Number.isInteger(v) && v >= 1)) throw new Error(`--${k} must be a whole number ≥ 1, got ${v}`);
+  }
   return a;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
-  const a = parseArgs(process.argv.slice(2));
+  let a;
+  try { a = parseArgs(process.argv.slice(2)); } catch (e) { console.error(`calibrate: ${e.message}`); process.exit(2); }
   const game = a._[0];
   if (!game) { console.error('usage: node scripts/sim/calibrate.mjs <train|koi|mem|rain|word> [--n 400] [--from 1] [--to 30] [--no-write]'); process.exit(2); }
   const { _, n, from, to, write, quiet, ...adapterOpts } = a;   // any other --flag number goes to the adapter (e.g. --gamma 0.25)

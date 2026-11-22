@@ -17,28 +17,26 @@ jobs:
         run: npm run parity
       - name: Difficulty engine tests
         run: npm run test:sim
-      # Calibration gates (seeded, full N = 1200 per MERGED-SPEC §6; koi 2000). E3 lifted 2026-11-21:
-      # every gate runs on every level. No game passes all gates at full N yet, so each stays report-only
-      # (one step per game, so the run page shows which one is red). The exact failing set per game is
-      # pinned by the KNOWN-FAIL tests in `npm run test:sim`, which DO block: a new miss or a fixed one
-      # breaks them. Drop continue-on-error on a game the day its calibrate exits 0.
-      # Shared miss (train, koi, mem): G1 L5. p*(5) = 0.797 puts median <= 0.847 (gate B), so weak >= 0.85
-      # cannot hold too. Waiting on Duy: drop the L5 peak dip, scope G1 to L1-4, or start the sawtooth at L10.
-      - name: Calibration (report only) — train · misses G1 L5 (weak 0.73)
-        continue-on-error: true
-        run: node scripts/sim/calibrate.mjs train --n 1200 --no-write
-      - name: Calibration (report only) — koi · misses G1 L5 (weak 0.77)
-        continue-on-error: true
-        run: node scripts/sim/calibrate.mjs koi --n 2000 --no-write
-      - name: Calibration (report only) — mem · misses B L4 (median 0.93 vs 0.87), G1 L5 (weak 0.73)
-        continue-on-error: true
-        run: node scripts/sim/calibrate.mjs mem --n 1200 --no-write
-      - name: Calibration (report only) — rain · misses B L1-6/11/16/21/26, G3 L11/16/21/26 (breathers keep G4)
-        continue-on-error: true
-        run: node scripts/sim/calibrate.mjs rain --n 1200 --no-write
-      - name: Calibration (report only) — word · misses B on 49/49 (median 7-22 points above p*)
-        continue-on-error: true
+      # Calibration gates (seeded, full N = 1200 per MERGED-SPEC §6; koi 2000), every gate on every level.
+      # A game whose calibrate exits 0 is BLOCKING; word exits 0 with gate B WAIVED (Duy 2026-11-21, decision 3),
+      # which is reported as WAIVED, never PASS. Green games run to max(40, maxLevel + 10), so the shipped levels,
+      # the next 10 the engine would generate ("thêm 10 màn" from the rule alone) and the seam between them stay green.
+      # Since 2026-11-22 every game is blocking; none is report-only. calibrate.mjs exits 2 when --n/--from/--to is
+      # empty, NaN or < 1, so a failed $(node -e …) bound fails the step instead of silently checking L1-maxLevel.
+      - name: Calibration — train L1 to max(40, maxLevel+10)
+        run: node scripts/sim/calibrate.mjs train --n 1200 --to "$(node -e "import('./scripts/sim/load-bbd.mjs').then(m => console.log(Math.max(40, m.loadBBD().maxLevel('train') + 10)))")" --no-write
+      - name: Calibration — koi L1 to max(40, maxLevel+10)
+        run: node scripts/sim/calibrate.mjs koi --n 2000 --to "$(node -e "import('./scripts/sim/load-bbd.mjs').then(m => console.log(Math.max(40, m.loadBBD().maxLevel('koi') + 10)))")" --no-write
+      - name: Calibration — word L1-49 (B WAIVED, G1-G6 + G8 must pass)
         run: node scripts/sim/calibrate.mjs word --n 1200 --no-write
+      - name: Calibration — mem L1 to max(40, maxLevel+10) (B one-sided on L1-9, Duy 2026-11-22)
+        run: node scripts/sim/calibrate.mjs mem --n 1200 --to "$(node -e "import('./scripts/sim/load-bbd.mjs').then(m => console.log(Math.max(40, m.loadBBD().maxLevel('mem') + 10)))")" --no-write
+      - name: Calibration — rain L1-30 (breathers may be easy, Duy 2026-11-22)
+        run: node scripts/sim/calibrate.mjs rain --n 1200 --to 30 --no-write
+      # N=4000 here: generated L37/L38 are near-identical rows and G2 flips on seed at N=1200. Bigger N narrows the
+      # G2 tolerance (2·SE), so this is stricter, not looser.
+      - name: Calibration — rain L26 to max(40, maxLevel+10) at N=4000 (L30→L31 seam + engine-generated)
+        run: node scripts/sim/calibrate.mjs rain --n 4000 --from 26 --to "$(node -e "import('./scripts/sim/load-bbd.mjs').then(m => console.log(Math.max(40, m.loadBBD().maxLevel('rain') + 10)))")" --no-write
       - run: npx playwright install --with-deps chromium
       - name: Smoke test (5 games + 320px)
         run: npm test

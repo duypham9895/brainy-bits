@@ -43,7 +43,7 @@ const skipCooldown = page => page.evaluate(() => { window.__koi.cooldown = 0; })
 
 test('KOI-02: double-tap on a grey fish counts one mistake, then the dial locks', async ({ page }) => {
   const errors = await openKoi(page);
-  await start(page, 6);                                // bảng v2: cá xám có từ L5, L6 = 12 koi + 3 cá xám
+  await start(page, 11);                               // bảng v2: cá xám có từ L10 (đỉnh đầu), L11 = 12 koi + 4 cá xám
   expect(await tapFish(page, 'decoy')).toBe(true);
   expect(await tapFish(page, 'decoy')).toBe(true);
   await expect(page.locator('#kLevel')).toHaveText('Nhầm 1/1');
@@ -53,7 +53,7 @@ test('KOI-02: double-tap on a grey fish counts one mistake, then the dial locks'
 
 test('missed: second finger and right click are ignored', async ({ page }) => {
   await openKoi(page);
-  await start(page, 6);
+  await start(page, 11);
   await tapFish(page, 'decoy', { isPrimary: false });
   await tapFish(page, 'decoy', { button: 2, pointerType: 'mouse' });
   await expect(page.locator('#kLevel')).toHaveText('Nhầm 0/1');
@@ -61,20 +61,20 @@ test('missed: second finger and right click are ignored', async ({ page }) => {
 
 test('KOI-03: a second mistake ends the pond early with pellets left', async ({ page }) => {
   await openKoi(page);
-  await start(page, 6);
+  await start(page, 11);
   await tapFish(page, 'decoy');
   await skipCooldown(page);
   await tapFish(page, 'decoy');
   await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
   expect(await page.evaluate(() => window.__koi.pellets)).toBeGreaterThan(0);
-  await expect(page.locator('#krTitle')).toContainText('Chưa qua Level 6');
+  await expect(page.locator('#krTitle')).toContainText('Chưa qua Level 11');
   await expect(page.locator('#krDetail')).toContainText('dừng sớm');
   await expect(page.locator('#krStars')).toBeHidden();
 });
 
 test('KOI-06: pause works during the end-of-pond delay', async ({ page }) => {
   await openKoi(page);
-  await start(page, 6);
+  await start(page, 11);
   await tapFish(page, 'decoy');
   await skipCooldown(page);
   await tapFish(page, 'decoy');
@@ -277,6 +277,6 @@ test('review 2026-11-21: menu copy matches the level table (fish at L1, first gr
   await expect(how).toContainText(`Từ level ${want.grey} có cá xám`);
   await expect(how).toContainText('Cứ 5 level có một màn khó, ngay sau là một màn nhẹ.');
   await expect(how).not.toContainText('mỗi level tăng thêm 1 con');
-  expect(want).toEqual({ koi1: 12, grey: 5 });
+  expect(want).toEqual({ koi1: 12, grey: 10 });
   expect(errors).toEqual([]);
 });

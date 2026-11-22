@@ -5,8 +5,8 @@ const cv = $('kcv'), ctx = cv.getContext('2d');
 const bg = document.createElement('canvas');
 let W = 0, H = 0, dpr = 1;
 const BB = window.BB;
-// Tham số level lấy từ engine độ khó chung (js/difficulty.js + js/levels/koi.js, bảng v2): L1..10 viết tay
-// theo đường răng cưa chung, L11..30 do engine sinh, cả 30 màn đã calibrate bằng bot. Trang chưa nạp BBD
+// Tham số level lấy từ engine độ khó chung (js/difficulty.js + js/levels/koi.js, bảng v2): L1..30 viết tay
+// theo đường răng cưa chung, L31+ do engine sinh, cả 30 màn đã calibrate bằng bot. Trang chưa nạp BBD
 // thì game quay về 10 level cũ (bảng v1), không bao giờ hỏng.
 const BBD = window.BBD && window.BBD.games().includes('koi') ? window.BBD : null;
 const LV_MAX = BBD ? BB.setLvMax('koi', BBD.maxLevel('koi')) : BB.LV_MAX.koi;   // 30 | 10; qua level cuối là xong game

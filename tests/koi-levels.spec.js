@@ -95,8 +95,12 @@ test('level grid shows 30 levels; L11+ say how many fish and how fast', async ({
   await lv.nth(29).click();
   await expect(page.locator('#kLevelTxt')).toHaveText('13 cá koi + 5 cá xám · chờ 3,2 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,4, đổi hướng ×1,3');
   await expect(page.locator('#kStartBtn')).toHaveText('Chơi Level 30 · 13 cá');
-  await lv.nth(4).click();                                               // spdMul 1: no speed note
-  await expect(page.locator('#kLevelTxt')).toHaveText('15 cá koi + 2 cá xám · chờ 2,05 giây giữa 2 lần cho ăn');
+  await lv.nth(3).click();                                               // spdMul 1: no speed note
+  await expect(page.locator('#kLevelTxt')).toHaveText('15 cá koi · chờ 1,9 giây giữa 2 lần cho ăn');
+  await lv.nth(4).click();                                               // L5 is a step (Duy 2026-11-21): no grey fish yet
+  await expect(page.locator('#kLevelTxt')).toHaveText('15 cá koi · chờ 2,05 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,05');
+  await lv.nth(9).click();                                               // L10, first peak: first grey fish
+  await expect(page.locator('#kLevelTxt')).toHaveText('15 cá koi + 2 cá xám · chờ 2,8 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,25, đổi hướng ×1,1');
   await expect(lv.nth(0).locator('small')).toHaveText('12 cá');
   const same = [];                                                       // every level reads differently from the one before
   let prev = null;
@@ -133,7 +137,7 @@ test('table v2 migration: old v1 progress keeps levels passed, stars and koi_lv2
   expect(r).toEqual({ v: '2', lv: '7', st: stats.koi, mem: stats.mem, again: 'current' });
   const lv = page.locator('#klvgrid .lv');
   await expect(lv.nth(0).locator('.kst')).toHaveText('★★★');
-  await expect(lv.nth(5)).toHaveAttribute('aria-label', 'Level 6, 12 cá, đã qua, 1 sao');
+  await expect(lv.nth(5)).toHaveAttribute('aria-label', 'Level 6, 15 cá, đã qua, 1 sao');
   await expect(lv.nth(6)).toHaveClass(/\bon\b/);                         // next unpassed level stays L7
   await expect(page.locator('#kBestTxt')).toHaveText('Đã qua tới Level 6');
   expect(errors).toEqual([]);

@@ -4,9 +4,11 @@
  "from": 1,
  "to": 49,
  "simVersion": 1,
- "generatedOn": "2026-11-21",
+ "generatedOn": "2026-11-22",
  "config": {
   "E1": "A",
+  "breatherEasyOk": true,
+  "bEasyOkBelow": 10,
   "E3": false,
   "E5": true,
   "tableVersion": 2,
@@ -17,120 +19,118 @@
  "seed": "mulberry32(cyrb53(\"camp|game|L|profile|i\"))",
  "note": "bL = logit(1 − p_median) with θ_median = 0, a = 1; 2PL fit not run yet",
  "adapterOpts": {},
- "ok": false,
+ "ok": true,
+ "waived": [
+  "B"
+ ],
  "gates": [
   {
    "id": "B",
-   "name": "every level: |p_median − p*| ≤ 0.05",
-   "pass": false,
+   "name": "every level: |p_median − p*| ≤ 0.05 (breathers: only too hard fails) (L1–9: only p_median < p* − 0.05 fails)",
+   "pass": null,
    "fails": [
-    "L1 median 0.9942 vs p* 0.920",
-    "L2 median 0.9933 vs p* 0.888",
-    "L3 median 0.9967 vs p* 0.875",
-    "L4 median 0.9825 vs p* 0.865",
-    "L5 median 0.9692 vs p* 0.797",
-    "L6 median 0.9917 vs p* 0.849",
-    "L7 median 0.985 vs p* 0.843",
-    "L8 median 0.9833 vs p* 0.837",
-    "L9 median 0.9833 vs p* 0.831",
     "L10 median 0.9492 vs p* 0.765",
-    "L11 median 0.985 vs p* 0.820",
     "L12 median 0.97 vs p* 0.815",
     "L13 median 0.9817 vs p* 0.811",
     "L14 median 0.9775 vs p* 0.806",
     "L15 median 0.9317 vs p* 0.742",
-    "L16 median 0.9775 vs p* 0.798",
     "L17 median 0.9808 vs p* 0.794",
     "L18 median 0.9633 vs p* 0.790",
     "L19 median 0.9675 vs p* 0.786",
     "L20 median 0.9067 vs p* 0.722",
-    "L21 median 0.9608 vs p* 0.779",
     "L22 median 0.9642 vs p* 0.775",
     "L23 median 0.9658 vs p* 0.772",
     "L24 median 0.9508 vs p* 0.769",
     "L25 median 0.9042 vs p* 0.705",
-    "L26 median 0.9567 vs p* 0.762",
     "L27 median 0.9375 vs p* 0.759",
     "L28 median 0.9433 vs p* 0.756",
     "L29 median 0.9475 vs p* 0.753",
     "L30 median 0.9083 vs p* 0.690",
-    "L31 median 0.9317 vs p* 0.747",
     "L32 median 0.93 vs p* 0.744",
     "L33 median 0.935 vs p* 0.741",
     "L34 median 0.9233 vs p* 0.739",
     "L35 median 0.8733 vs p* 0.676",
-    "L36 median 0.925 vs p* 0.733",
     "L37 median 0.9092 vs p* 0.731",
     "L38 median 0.9033 vs p* 0.728",
     "L39 median 0.9092 vs p* 0.725",
     "L40 median 0.7975 vs p* 0.663",
-    "L41 median 0.9008 vs p* 0.720",
     "L42 median 0.9025 vs p* 0.718",
     "L43 median 0.8967 vs p* 0.715",
     "L44 median 0.9142 vs p* 0.713",
     "L45 median 0.8 vs p* 0.651",
-    "L46 median 0.905 vs p* 0.708",
     "L47 median 0.9183 vs p* 0.706",
     "L48 median 0.895 vs p* 0.704",
     "L49 median 0.8858 vs p* 0.701"
    ],
-   "note": ""
+   "note": "WAIVED: Duy 2026-11-21 (3): content-only game, no knob; with 6 tries and the hint open at once the bot median sits 7–22 points above p* on every level, and those bot parameters are not yet checked against real players (G7 SKIP). Rules stay as they are; revisit when G7 data exists.",
+   "waived": true,
+   "waiver": "Duy 2026-11-21 (3): content-only game, no knob; with 6 tries and the hint open at once the bot median sits 7–22 points above p* on every level, and those bot parameters are not yet checked against real players (G7 SKIP). Rules stay as they are; revisit when G7 data exists.",
+   "measuredPass": false,
+   "status": "WAIVED"
   },
   {
    "id": "G1",
    "name": "weak ≥ 85% on L1–5",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G2",
    "name": "median pass rate does not rise between consecutive step levels (tolerance = 2·SE)",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G3",
-   "name": "breather easier than the peak before it and harder than L−4",
+   "name": "breather easier than the peak before it",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G4",
    "name": "weak ≥ 60% on every breather",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G5",
    "name": "skilled ≥ 50% at L30 (E1 = A)",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G6",
    "name": "knobs within hardCap; targets ≥ 44 px at 320 and 390 px",
    "pass": true,
    "fails": [],
-   "note": "adapter has no geometry(): px part not checked"
+   "note": "adapter has no geometry(): px part not checked",
+   "status": "PASS"
   },
   {
    "id": "G7",
    "name": "Playwright parity, 3 seeds at L1/L15/L30",
    "pass": null,
    "fails": [],
-   "note": "SKIPPED: needs the game to read BBD.level() (per-game integration step)"
+   "note": "SKIPPED: needs the game to read BBD.level() (per-game integration step)",
+   "status": "SKIP"
   },
   {
    "id": "G8",
    "name": "first-attempt and ≤3-attempt pass reported; ≤3 never below first attempt",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   }
  ],
  "levels": [
@@ -320,57 +320,11 @@
   },
   {
    "L": 5,
-   "kind": "peak",
+   "kind": "step",
    "legacy": false,
-   "pStar": 0.7969,
+   "pStar": 0.8569,
    "D": 0.3714,
-   "bL": -3.449,
-   "knobs": {
-    "id": "p40",
-    "phrase": 40,
-    "letters": 8,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.8867,
-     "ci": [
-      0.8675,
-      0.9034
-     ],
-     "acc": 0.9278,
-     "msMedian": 26828,
-     "p3": 1
-    },
-    "median": {
-     "p": 0.9692,
-     "ci": [
-      0.9578,
-      0.9775
-     ],
-     "acc": 0.9821,
-     "msMedian": 21626,
-     "p3": 1
-    },
-    "skilled": {
-     "p": 0.9975,
-     "ci": [
-      0.9927,
-      0.9991
-     ],
-     "acc": 0.9988,
-     "msMedian": 19500,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 6,
-   "kind": "breather",
-   "legacy": false,
-   "pStar": 0.8494,
-   "D": 0.4152,
-   "bL": -4.783,
+   "bL": -3.504,
    "knobs": {
     "id": "p32",
     "phrase": 32,
@@ -379,23 +333,69 @@
    },
    "profiles": {
     "weak": {
-     "p": 0.8992,
+     "p": 0.8975,
      "ci": [
-      0.8808,
-      0.915
+      0.8791,
+      0.9134
      ],
-     "acc": 0.9267,
-     "msMedian": 24558,
-     "p3": 1
+     "acc": 0.9301,
+     "msMedian": 24496,
+     "p3": 0.9983
     },
     "median": {
-     "p": 0.9917,
+     "p": 0.9708,
      "ci": [
-      0.9847,
-      0.9955
+      0.9597,
+      0.979
      ],
-     "acc": 0.9957,
-     "msMedian": 19795,
+     "acc": 0.9815,
+     "msMedian": 19852,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9983,
+     "ci": [
+      0.9939,
+      0.9995
+     ],
+     "acc": 0.9988,
+     "msMedian": 17921,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 6,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.8494,
+   "D": 0.4152,
+   "bL": -4.24,
+   "knobs": {
+    "id": "p40",
+    "phrase": 40,
+    "letters": 8,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8917,
+     "ci": [
+      0.8728,
+      0.908
+     ],
+     "acc": 0.9269,
+     "msMedian": 26104,
+     "p3": 0.9992
+    },
+    "median": {
+     "p": 0.9858,
+     "ci": [
+      0.9774,
+      0.9911
+     ],
+     "acc": 0.9919,
+     "msMedian": 21373,
      "p3": 1
     },
     "skilled": {
@@ -404,8 +404,8 @@
       0.9953,
       0.9999
      ],
-     "acc": 0.9994,
-     "msMedian": 18069,
+     "acc": 0.9995,
+     "msMedian": 19488,
      "p3": 1
     }
    }

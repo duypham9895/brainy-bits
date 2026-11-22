@@ -93,17 +93,22 @@
       target: 10 + L,
     });
   }
-  // Table version 2 (2026-11-21): one sawtooth from L1, calibrated with scripts/sim/calibrate.mjs rain --n 1200.
-  // L1..6 = the old rows: gate G1 (weak ≥ 85% on L1–5) keeps them at ~100% median. In the simulator no knob mix
-  // gives weak ≥ 85% with median ≤ p* + 5 on L2–5, so gate B stays red there (decision for Duy, see the report).
-  // L7..30: rain runs near its speed cap from L7, so the climb is carried by the equation tier and the chain
-  // length. Tiers 6..9 (times tables) stay at ~100% even at the speed cap, so only tier 6 is played (L6);
-  // L7..9 replay tier 5 faster. Breathers (11, 16, 21, 26) open a new tier with the E4 safety net as knobs:
-  // a short chain (10 drops), one extra life (4) and slower rain, so weak players pass ≥ 60% (gate G4).
-  // That makes them easier than p* (gate B) and than L−4 (gate G3): in rain no breather can hold weak ≥ 60%
-  // with median ≤ p* + 5. Columns: ops, every (s), fall (s), target, lives.
+  // Table version 2 (2026-11-21): one sawtooth (L1–9 steps, first peak L10, first breather L11), calibrated with
+  // scripts/sim/calibrate.mjs rain --n 1200.
+  // L1..6 = the old rows. L7..9 keep tiers 7–9 (Duy 2026-11-21, decision 2: content back at L7–9) and, as the same
+  // decision says for B red on the easy side, are pulled toward the band with speed only: every and fall shrink
+  // step by step from L7 to L10 (2.6/8.0 → 2.45/7.55 → 2.4/7.3 → 2.4/7.25), so the weak curve goes 100 → 96 → 53 →
+  // 13% over L7–10 instead of 87 → 13% in one step (review 2026-11-22). B stays red at L1–9: tiers 6–8 keep a 100%
+  // median even at every hardCap (fall 6.8, every 2.2, 25 drops, 3 lives) and tier 9 bottoms at ~95%; under
+  // human.mjs no legal knob mix gives weak ≥ 85% (G1) with median ≤ p* + 5 on L1–5. From L10 on, a median at p*
+  // leaves weak at 10–20%: that plateau is the human.mjs weak/median gap, not a table row (decision for Duy).
+  // L10..30: the climb is carried by speed, the equation tier and the chain length. Breathers (11, 16, 21, 26)
+  // open a new tier with the E4 safety net as knobs: a short chain (10 drops), one extra life (4) and slower rain,
+  // so weak players pass ≥ 60% (gate G4). That makes them easier than p* (gate B) and than L−4 (gate G3): in rain
+  // no breather can hold weak ≥ 60% with median ≤ p* + 5. Columns: ops, every (s), fall (s), target, lives.
   const TABLE = {
-    7: [5, 2.35, 7.00, 17, 3], 8: [5, 2.35, 6.90, 18, 3], 9: [5, 2.35, 6.90, 19, 3], 10: [10, 2.40, 7.05, 20, 3],
+    7: [7, 2.60, 8.00, 17, 3], 8: [8, 2.45, 7.55, 18, 3], 9: [9, 2.40, 7.30, 19, 3],
+    10: [10, 2.40, 7.25, 20, 3],
     11: [11, 3.40, 9.00, 10, 4], 12: [11, 2.80, 8.15, 20, 3], 13: [11, 2.80, 8.15, 21, 3], 14: [11, 2.80, 8.15, 22, 3], 15: [11, 2.65, 7.85, 22, 3],
     16: [12, 3.20, 8.60, 10, 4], 17: [12, 2.70, 7.85, 22, 3], 18: [12, 2.70, 7.85, 23, 3], 19: [12, 2.65, 7.85, 23, 3], 20: [12, 2.55, 7.55, 24, 3],
     21: [13, 3.20, 8.60, 10, 4], 22: [13, 2.70, 7.90, 24, 3], 23: [13, 2.70, 7.90, 25, 3], 24: [13, 2.70, 7.85, 25, 3], 25: [13, 2.55, 7.55, 25, 3],
