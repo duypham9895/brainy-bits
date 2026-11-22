@@ -4,10 +4,14 @@ Viết 2026-11-21, viết lại cùng ngày sau khi Duy gỡ E3 (màn cũ đư�
 Nguồn: `docs/difficulty/MERGED-SPEC.md` §4, `gates/01-spec/DIFFICULTY-DECISIONS.md`. Đọc khoảng 7 phút.
 
 **TL;DR.**
-- Mọi game theo **một khuôn**: L1–9 là bước tăng đều, răng cưa bắt đầu từ L10 (đỉnh ở `5k` với k ≥ 2, màn thở
-  ở `5k+1` từ L11), tỉ lệ qua mục tiêu `p*(L)`, và mọi gate (B, G1–G6, G8) chấm **mọi màn** ở N đầy đủ
+- Mọi game theo **một khuôn**: L1–14 là bước tăng rất nhẹ, răng cưa bắt đầu từ L15 (đỉnh ở `5k` với k ≥ 3, màn
+  thở ở `5k+1` từ L16), tỉ lệ qua mục tiêu `p*(L)`, và mọi gate (B, G1–G6, G8, G9) chấm **mọi màn** ở N đầy đủ
   (1200, koi 2000). Bảng chỉ được miễn gate B, có lý do viết ra (`gateWaivers`, §2).
-- **Gate B một chiều ở hai chỗ (Duy chọn A, 2026-11-22):** L1–9 (trước đỉnh đầu) và mọi màn thở chỉ đánh trượt
+- **Mở màn dễ (Duy chọn B, 2026-11-22, mọi game):** `p*` đi thẳng 0,97 (L1) → 0,90 (L15), rồi 0,90 → 0,75 ở L30,
+  từ L31 theo đường √ cũ. Bot yếu phải qua ≥ 90% ở L1–5 và ≥ 82% ở L6–10 (G1), ≥ 70% ở đỉnh đầu L15 (G9).
+  Khi chỉnh L1–10: màn nào thêm yếu tố mới (ga, dạng phép tính, mồi nhử, lưới lớn hơn) thì giữ nhịp; màn sau mới
+  siết nhịp. Đây là hướng dẫn, không phải gate. Lý do: `docs/difficulty/research-early.html`.
+- **Gate B một chiều ở hai chỗ (Duy chọn A, 2026-11-22):** L1–14 (trước đỉnh đầu) và mọi màn thở chỉ đánh trượt
   khi màn **quá khó** (median < p* − 0,05); dễ hơn p* không bị bắt. Màn thở còn bỏ vế "khó hơn L−4" của G3, giữ
   "dễ hơn đỉnh trước"; G4 (weak ≥ 60%) không đổi. Từ đỉnh đầu, màn bước vẫn hai chiều như cũ. Hai công tắc:
   `B_EASY_OK_BEFORE_SAW`, `BREATHER_EASY_OK` trong `js/difficulty.js` (Phụ lục C).
@@ -34,11 +38,11 @@ Nguồn: `docs/difficulty/MERGED-SPEC.md` §4, `gates/01-spec/DIFFICULTY-DECISIO
 
 | Phần | Luật | Ở đâu |
 |---|---|---|
-| Nhịp | `kind(L)`: đỉnh khi `L ≥ 10` và `L % 5 = 0`; màn thở khi `L > 10` và `L % 5 = 1`; còn lại là bước. L1–9 là bước, không có đỉnh L5 (Duy 2026-11-21, để G1 giữ được). Đảo lại: `SAW_FROM_PERIODS: 1`. | `BBD.kind` |
-| Mục tiêu | `p*(L)` từ `D(L) = sqrt((L−1)/29)`; đỉnh trừ thêm, màn thở cộng thêm; không xuống dưới sàn E1 (0.65 với A). | `BBD.pStar` |
+| Nhịp | `kind(L)`: đỉnh khi `L ≥ 15` và `L % 5 = 0`; màn thở khi `L > 15` và `L % 5 = 1`; còn lại là bước. L1–14 là bước (Duy 2026-11-22, B; trước đó đỉnh đầu L10). `SAW_FROM_PERIODS: 3`. | `BBD.kind` |
+| Mục tiêu | `pBase(L)`: thẳng 0,97 → 0,90 trên L1–15, thẳng 0,90 → 0,75 trên L15–30, từ L31 theo `D(L) = sqrt((L−1)/29)` (liền ở L30). Đỉnh trừ 0,06; không xuống dưới sàn E1 (0.65 với A). | `BBD.pStar` |
 | Màn thở | Phải cắt chuỗi khó: nới knob chính (`relief`), có thể thêm mạng hoặc bớt mục tiêu (E4, chỉ là knob, không thêm luật mới); G3 ở màn thở chỉ cần dễ hơn đỉnh trước, bỏ vế khó hơn L−4 (`BREATHER_EASY_OK`, Phụ lục C). | `relief` trong spec |
 | Đỉnh | Đẩy một nấc (`peak`). | `peak` trong spec |
-| Gate | B, G1–G6, G8 trên mọi màn; G7 còn SKIP. B một chiều (chỉ bắt quá khó) ở L1–9 trước đỉnh đầu và ở mọi màn thở (Phụ lục B); từ đỉnh đầu, màn bước vẫn hai chiều. Ngưỡng đầy đủ ở Phụ lục B. Không nới gate, không sửa `human.mjs`, không sửa adapter để cho xanh. | `scripts/sim/calibrate.mjs` |
+| Gate | B, G1–G6, G8 trên mọi màn; G7 còn SKIP. B một chiều (chỉ bắt quá khó) ở L1–14 trước đỉnh đầu và ở mọi màn thở (Phụ lục B); từ đỉnh đầu, màn bước vẫn hai chiều. Ngưỡng đầy đủ ở Phụ lục B. Không nới gate, không sửa `human.mjs`, không sửa adapter để cho xanh. | `scripts/sim/calibrate.mjs` |
 | Vượt L30 | Engine chạy tiếp theo `priority`; knob chạm `hardCap` thì knob sau chạy; hết knob thì DỪNG. | `BBD.exhausted` |
 | Miễn gate | Bảng khai `gateWaivers: { B: '<lý do>' }`. Chỉ miễn được B, bắt buộc có lý do; gate khác hoặc thiếu lý do thì `register` và `calibrate` ném lỗi. Gate được miễn báo **WAIVED**, không bao giờ PASS: `pass: null`, `status: 'WAIVED'`, lý do và các màn trượt vẫn ghi trong `calibration-<game>.json`. Chỉ word được miễn (Duy 2026-11-21). | `validateWaivers` trong `calibrate.mjs` |
 
@@ -206,8 +210,8 @@ Game mà calibrate đang trượt ở màn cũ: run vẫn thêm màn mới nếu
 
 | Gate | Điều kiện | Áp cho |
 |---|---|---|
-| B | Hai chiều: `|p_median − p*| ≤ 0.05`. Một chiều, chỉ bắt `p_median < p* − 0.05` (dễ hơn không bắt), ở L1–9 trước đỉnh đầu (`B_EASY_OK_BEFORE_SAW`) và ở mọi màn thở (`BREATHER_EASY_OK`); từ đỉnh đầu, màn bước vẫn hai chiều. | mọi màn; bảng có `gateWaivers.B` thì báo WAIVED (chỉ word) |
-| G1 | weak ≥ 85% ở L1–5 | mọi game |
+| B | Hai chiều: `|p_median − p*| ≤ 0.05`. Một chiều, chỉ bắt `p_median < p* − 0.05` (dễ hơn không bắt), ở L1–14 trước đỉnh đầu (`B_EASY_OK_BEFORE_SAW`) và ở mọi màn thở (`BREATHER_EASY_OK`); từ đỉnh đầu, màn bước vẫn hai chiều. | mọi màn; bảng có `gateWaivers.B` thì báo WAIVED (chỉ word) |
+| G1 | weak ≥ 90% ở L1–5, ≥ 82% ở L6–10 (Duy 2026-11-22, B; trước đó ≥ 85% ở L1–5) | mọi game |
 | G2 | median không tăng giữa hai màn bước liền nhau (dung sai 2·SE) | mọi màn |
 | G3 | Mọi màn thở: dễ hơn đỉnh trước. Vế "khó hơn L−4" chỉ áp khi `BREATHER_EASY_OK: false` (luật cũ); mặc định đã bỏ (Duy 2026-11-22), G4 không đổi. | mọi màn thở |
 | G4 | weak ≥ 60% ở mọi màn thở | mọi màn thở |
@@ -215,6 +219,7 @@ Game mà calibrate đang trượt ở màn cũ: run vẫn thêm màn mới nếu
 | G6 | knob trong hardCap; mục tiêu chạm ≥ 44 px ở 320 và 390 px | mọi màn |
 | G7 | bot khớp game thật, 3 seed ở L1/L15/L30 | SKIP; word kiểm bằng Playwright |
 | G8 | báo qua lần đầu và trong ≤ 3 lần | mọi màn |
+| G9 | weak ≥ 70% ở đỉnh đầu (L15) (Duy 2026-11-22, B) | L15 |
 
 Gate B có ngưỡng cố định ±0,05, không tính sai số mẫu, nên N nhỏ có thể trượt giả. CI luôn chạy N đầy đủ.
 
@@ -227,8 +232,9 @@ Gate B có ngưỡng cố định ±0,05, không tính sai số mẫu, nên N nh
 | E3 | `E3_FREEZE_LEGACY: false` (Duy gỡ 2026-11-21) | chơi `levels` của bảng | `true` **không còn là đường lùi**: `max`/`start`/`relief` của knob đã chỉnh cho 30 dòng `levels`, nên với `legacyLevels` (10–13 dòng) các màn sau đó dễ đi (train L12–30, koi L11, mem L14, rain L11). Muốn lùi thì revert commit. |
 | E4 | `E4: { maxStars: 1, unlocksNext: true, slowTempo: 0.85 }` | 1 sao, mở màn kế, có Nhịp chậm | sửa từng trường; `slowTempo: null` tắt |
 | E5 | `E5_KNOBS_ONLY: true` | knob `rule: true` luôn tắt | `false`: bật luật mới (cần mockup đã duyệt) |
-| Đỉnh L5 | `SAW_FROM_PERIODS: 2` (Duy 2026-11-21) | đỉnh đầu L10, màn thở đầu L11 | `1`: đỉnh L5, màn thở L6 như cũ |
-| Gate B trước đỉnh đầu | `B_EASY_OK_BEFORE_SAW: true` (Duy 2026-11-22) | ở L1–9, B chỉ bắt `median < p* − 0.05` (quá khó) | `false`: trả B về hai chiều ở L1–9 |
+| Đỉnh đầu | `SAW_FROM_PERIODS: 3` (Duy 2026-11-22, B) | đỉnh đầu L15, màn thở đầu L16 | `2`: đỉnh L10 (2026-11-21); `1`: đỉnh L5 |
+| Dốc mở màn | `EARLY_TOP: 0.97`, `EARLY_KNEE_L: 15`, `EARLY_KNEE_P: 0.90` (Duy 2026-11-22, B) | p* 0,97 → 0,90 trên L1–15 | đổi số rồi chạy lại calibrate mọi game |
+| Gate B trước đỉnh đầu | `B_EASY_OK_BEFORE_SAW: true` (Duy 2026-11-22) | ở L1–14, B chỉ bắt `median < p* − 0.05` (quá khó) | `false`: trả B về hai chiều ở L1–9 |
 | Gate B/G3 màn thở | `BREATHER_EASY_OK: true` (Duy 2026-11-22) | mọi màn thở: B chỉ bắt quá khó; G3 bỏ vế khó hơn L−4, giữ dễ hơn đỉnh trước; G4 không đổi | `false`: trả về luật cũ (B hai chiều, G3 đủ cả hai vế) |
 
 Đổi một công tắc thì chạy lại `calibrate` cho mọi game, vì `p*` và gate đổi theo.

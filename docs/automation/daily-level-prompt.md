@@ -60,7 +60,7 @@ that merges only when every check is green. If one game's new level cannot be ma
 ## 2. Departments, in this order (one section each in the run report)
 
 1. **PM**: state today's target for each game: new level number L = maxLevel + 1, its kind from
-   `BBD.kind(L)` (peak at 5k and breather at 5k+1 from L10 on, else step; L1-9 are all steps, no peak at L5),
+   `BBD.kind(L)` (peak at 5k and breather at 5k+1 from L15 on, else step; L1-14 are all steps; Duy 2026-11-22 B),
    the target pass rate `BBD.pStar(L)`.
    Stop rules: if `BBD.exhausted(game, L)` is true (every knob at its hardCap, or for koi (`strictPeaks`) a
    generated peak that is not harder than the peak before it), do NOT invent a harder
@@ -86,10 +86,10 @@ that merges only when every check is green. If one game's new level cannot be ma
 4. **Data / calibration**: run `node scripts/sim/calibrate.mjs <game> --from <L-4> --to <L> --n 1200`
    (koi `--n 2000`) for every changed game. Rain: once `L` goes past 30, run with `--n 4000` instead of 1200
    (same `--from <L-4>` window) — a bigger N narrows gate G2's tolerance, so this is stricter, not looser.
-   **The new level L must keep every gate green**: B, G1-G6 and G8 pass (G7 stays SKIP) and the command exits 0.
+   **The new level L must keep every gate green**: B, G1-G6, G8 and G9 pass (G7 stays SKIP) and the command exits 0.
    Word: gate B is waived (Duy 2026-11-21); the run prints `WAIVED: B (not passed)` and exits 0. Report it as
-   WAIVED, never as PASS; G1-G6 and G8 must still pass.
-   train, koi, mem and rain pass every gate (word: every gate but B, which is WAIVED) on every shipped level today (gate B is one-sided on L1-9 and on every
+   WAIVED, never as PASS; G1-G6, G8 and G9 must still pass.
+   train, koi, mem and rain pass every gate (word: every gate but B, which is WAIVED) on every shipped level today (gate B is one-sided on L1-14 and on every
    breather, `B_EASY_OK_BEFORE_SAW` / `BREATHER_EASY_OK`, rules file §2-3), and CI blocks on all five, so any
    miss there fails the PR. For every game, judge the new level by its own lines: L must not appear in any
    gate's miss list. If a gate fails, adjust only the new level's knobs and rerun (max 5 attempts per game); if
