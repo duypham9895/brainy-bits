@@ -133,6 +133,7 @@ test('waiver rejected: any gate other than B, or no reason string, throws (table
     assert.throws(() => applyWaivers([], bad, 'x'));
   }
   assert.deepEqual(validateWaivers(undefined), {});
+  assert.deepEqual(validateWaivers({ G9: 'r' }), { G9: 'r' });        // Duy 2026-11-22: rain may waive G9
   assert.deepEqual(validateWaivers({ B: 'r' }), { B: 'r' });
 });
 

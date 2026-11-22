@@ -37,7 +37,7 @@
   //   L1–14 open easy: a new element (4th tile L3, 5×5 grid L6, 6×6 grid L9) comes with the tiles gathered
   //         (disp 0); the next steps spread them a little (disp +0.1). One knob per level, disp ≤ hardCap 0.5.
   //   L15+  6×6. A step spreads the tiles a little more (disp +0.05), a peak adds one tile,
-  //         a breather drops one tile and gathers the tiles again. L15 is a mild peak (4 tiles, gathered).
+  //         a breather drops one tile or eases disp. L15 is a mild peak (4 tiles, gathered).
   // In the sim, tile count and grid size move the pass rate; disp moves it only ~1 point per 0.1 at 3 tiles,
   // so L11–14 sit at median ~0.90–0.92 (B is one-sided before L15: easier than p* is not a miss).
   // Viewing time keeps the v1 rule (k = 0.3 s per tile): below ~7 tiles time never binds in the sim, so
@@ -49,7 +49,7 @@
     [4, 3, 0], [4, 3, 0.2], [4, 4, 0], [4, 4, 0.1], [4, 4, 0.2],            // L1–5 steps: 4×4, 4th tile at L3
     [5, 3, 0], [5, 3, 0.2], [5, 3, 0.4], [6, 3, 0], [6, 3, 0.1],            // L6–10 steps: 5×5 at L6, 6×6 at L9
     [6, 3, 0.2], [6, 3, 0.3], [6, 3, 0.4], [6, 3, 0.5], [6, 4, 0],          // L11–14 steps, L15 first peak (+1 tile)
-    [6, 3, 0.3], [6, 4, 0.05], [6, 4, 0.1], [6, 4, 0.15], [6, 5, 0.05],     // L16 breather … L20 peak
+    [6, 3, 0.3], [6, 3, 0.4], [6, 3, 0.5], [6, 4, 0.05], [6, 5, 0],         // L16 breather … L20 peak; L17–18 stay at 3 tiles so the wall is L15, not L17 (review)
     [6, 4, 0.1], [6, 4, 0.2], [6, 4, 0.25], [6, 4, 0.3], [6, 5, 0.15],      // L21 breather … L25 peak
     [6, 5, 0.05], [6, 6, 0], [6, 6, 0.05], [6, 6, 0.1], [6, 7, 0.1],       // L26 … L30
   ];

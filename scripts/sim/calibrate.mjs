@@ -29,9 +29,10 @@ export function wilson(k, n, z = 1.96) {
 const median = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
 const tolFor = (p1, p2, n) => Math.max(0.02, 2 * Math.sqrt(p1 * (1 - p1) / n + p2 * (1 - p2) / n));
 
-// Gate waivers a table declares (`gateWaivers: { B: '<reason>' }` in js/levels/<game>.js). Only B, only with a
+// Gate waivers a table declares (`gateWaivers: { B: '<reason>' }` in js/levels/<game>.js). Only B or G9 (Duy 2026-11-22,
+// rain), only with a
 // reason. A waived gate is reported as WAIVED (pass: null, its misses kept for reading) and never as PASS.
-export const WAIVABLE = ['B'];
+export const WAIVABLE = ['B', 'G9'];
 export function validateWaivers(waivers, game = '?') {
   if (waivers == null) return {};
   if (typeof waivers !== 'object' || Array.isArray(waivers)) throw new Error(`calibrate ${game}: gateWaivers must be an object { gateId: reason }`);

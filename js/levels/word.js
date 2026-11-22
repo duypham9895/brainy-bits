@@ -25,7 +25,7 @@
   // phrase added or dropped: L5 ↔ L11 (32 ↔ 36; only 18, 46, 48, 45, 36 clear weak 90% at L5) and L10 ↔ L14
   // (6 ↔ 11; the old L10 peak phrase now sits on the last step before the first peak). Stars follow the phrase id,
   // so no table version bump; `best` stays a level number, so nobody loses an unlocked level.
-  const PLAY = [18, 46, 48, 45, 36, 40, 20, 37, 41, 11, 32, 43, 42, 6, 19, 27, 17, 47, 44, 25, 39, 16, 31, 34, 26,
+  const PLAY = [18, 46, 48, 45, 36, 40, 20, 37, 41, 11, 32, 43, 42, 44, 19, 27, 17, 47, 6, 25, 39, 16, 31, 34, 26,
     5, 2, 3, 21, 0, 24, 22, 35, 15, 33, 14, 13, 23, 7, 10, 38, 1, 4, 8, 29, 28, 30, 12, 9, 49];
   const row = src => ({ id: 'p' + src, phrase: src, letters: lettersOf(src), maxTries: 6 });
   if (BBD && BBD.register) BBD.register('word', {

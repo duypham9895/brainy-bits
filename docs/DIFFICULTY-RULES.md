@@ -18,12 +18,11 @@ Nguồn: `docs/difficulty/MERGED-SPEC.md` §4, `gates/01-spec/DIFFICULTY-DECISIO
 - Màn nằm trong `js/levels/<game>.js`: `levels: [...]` cho L1..n viết tay, engine `js/difficulty.js`
   (`window.BBD`) sinh tiếp từ dòng n.
 - Đổi màn đã ship = tăng `version` + migration giữ số màn đã qua (§5). Thêm màn ở cuối thì không cần.
-- **4 game qua mọi gate, word qua mọi gate trừ B (WAIVED) (2026-11-22, N đầy đủ, sau hai công tắc trên).** train, koi, mem xanh L1–40; word
-  xanh L1–49 với B **WAIVED** (không tính là PASS); rain xanh L1–30 ở N 1200 và L26–40 ở N 4000 (ở N 1200, G2
-  L37→38 lật theo seed — N lớn hơn làm dung sai G2 hẹp hơn, tức khó hơn chứ không dễ hơn). Không nới gate,
-  không sửa `human.mjs`, không waiver mới. Còn mở (không phải gate trượt): từ L10, bot yếu ở rain chỉ qua
-  10–20% màn bước/đỉnh — khoảng cách trong `human.mjs`, chưa đối chiếu người thật (G7 SKIP, §3).
-  *(Lịch sử: 2026-11-21 → 22 trước hai công tắc trên, mem trượt B L4/L5 và rain trượt B/G3 — xem §3.)*
+- **Trạng thái 2026-11-22, sau mở màn dễ (B):** cả 5 game qua mọi gate ở N đầy đủ. train, koi, mem xanh L1–41;
+  rain xanh L1–30 (N 1200) và L26–41 (N 4000) với **G9 WAIVED** (Duy chọn A: bot yếu ở rain tính chậm hơn bot
+  trung bình ~1,4 lần, G9 và B không cùng giữ được ở L15); word xanh L1–50 với **B WAIVED**. WAIVED không bao giờ là
+  PASS. Bot yếu ở L10: 85–90% cả 5 game (trước đây 13–71%). Còn mở: rain bot yếu 58 → 32% ở L12–15, 27% ở L17.
+  *(§3 bên dưới là số đo trước B, giữ làm lịch sử; số mới ở `docs/difficulty/calibration-<game>.json`.)*
 
 ## 1. Đọc trước, theo thứ tự
 
@@ -42,9 +41,9 @@ Nguồn: `docs/difficulty/MERGED-SPEC.md` §4, `gates/01-spec/DIFFICULTY-DECISIO
 | Mục tiêu | `pBase(L)`: thẳng 0,97 → 0,90 trên L1–15, thẳng 0,90 → 0,75 trên L15–30, từ L31 theo `D(L) = sqrt((L−1)/29)` (liền ở L30). Đỉnh trừ 0,06; không xuống dưới sàn E1 (0.65 với A). | `BBD.pStar` |
 | Màn thở | Phải cắt chuỗi khó: nới knob chính (`relief`), có thể thêm mạng hoặc bớt mục tiêu (E4, chỉ là knob, không thêm luật mới); G3 ở màn thở chỉ cần dễ hơn đỉnh trước, bỏ vế khó hơn L−4 (`BREATHER_EASY_OK`, Phụ lục C). | `relief` trong spec |
 | Đỉnh | Đẩy một nấc (`peak`). | `peak` trong spec |
-| Gate | B, G1–G6, G8 trên mọi màn; G7 còn SKIP. B một chiều (chỉ bắt quá khó) ở L1–14 trước đỉnh đầu và ở mọi màn thở (Phụ lục B); từ đỉnh đầu, màn bước vẫn hai chiều. Ngưỡng đầy đủ ở Phụ lục B. Không nới gate, không sửa `human.mjs`, không sửa adapter để cho xanh. | `scripts/sim/calibrate.mjs` |
+| Gate | B, G1–G6, G8, G9 trên mọi màn; G7 còn SKIP. B một chiều (chỉ bắt quá khó) ở L1–14 trước đỉnh đầu và ở mọi màn thở (Phụ lục B); từ đỉnh đầu, màn bước vẫn hai chiều. Ngưỡng đầy đủ ở Phụ lục B. Không nới gate, không sửa `human.mjs`, không sửa adapter để cho xanh. | `scripts/sim/calibrate.mjs` |
 | Vượt L30 | Engine chạy tiếp theo `priority`; knob chạm `hardCap` thì knob sau chạy; hết knob thì DỪNG. | `BBD.exhausted` |
-| Miễn gate | Bảng khai `gateWaivers: { B: '<lý do>' }`. Chỉ miễn được B, bắt buộc có lý do; gate khác hoặc thiếu lý do thì `register` và `calibrate` ném lỗi. Gate được miễn báo **WAIVED**, không bao giờ PASS: `pass: null`, `status: 'WAIVED'`, lý do và các màn trượt vẫn ghi trong `calibration-<game>.json`. Chỉ word được miễn (Duy 2026-11-21). | `validateWaivers` trong `calibrate.mjs` |
+| Miễn gate | Bảng khai `gateWaivers: { B: '<lý do>' }`. Chỉ miễn được B hoặc G9 (G9 từ 2026-11-22, chỉ rain), bắt buộc có lý do; gate khác hoặc thiếu lý do thì `register` và `calibrate` ném lỗi. Gate được miễn báo **WAIVED**, không bao giờ PASS: `pass: null`, `status: 'WAIVED'`, lý do và các màn trượt vẫn ghi trong `calibration-<game>.json`. word miễn B (Duy 2026-11-21), rain miễn G9 (Duy 2026-11-22). | `validateWaivers` trong `calibrate.mjs` |
 
 ## 3. Bảng hiện tại và kết quả ở N đầy đủ (2026-11-22, sau `B_EASY_OK_BEFORE_SAW` + `BREATHER_EASY_OK`)
 

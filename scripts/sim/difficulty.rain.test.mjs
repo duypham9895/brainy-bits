@@ -185,11 +185,13 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
   // Full N (≈5 s). Duy 2026-11-22 cleared the two rain blocks: (A) B is one-sided on L1–9 (every miss there was
   // easy side) and (A) breathers may be as easy as needed, B only fails them when too hard, G3 keeps "easier than
   // the peak" only, G4 (weak ≥ 60%) stays. Every gate passes with zero waivers.
-  test('rain v2: zero failed gates, zero waivers at N=1200', async () => {
+  test('rain v2: zero failed gates at N=1200, only G9 waived (Duy 2026-11-22, A) and never counted as PASS', async () => {
     const r = await calibrate('rain', { n: 1200, write: false, quiet: true });
     assert.deepEqual(failsByGate(r), {});
     assert.equal(r.gates.find(g => g.id === 'G7').pass, null);
-    assert.deepEqual(r.waived, []);                                         // rain declares no waiver
+    assert.deepEqual(r.waived, ['G9']);                                     // the only waiver rain declares
+    const g9 = r.gates.find(g => g.id === 'G9');
+    assert.equal(g9.status, 'WAIVED'); assert.equal(g9.pass, null);
     assert.equal(r.config.tableVersion, 2);
   });
 

@@ -77,7 +77,8 @@ function pStar(L) {
 const specs = new Map();
 const isInt = n => Number.isInteger(n) && n >= 1;
 // Gates a table may waive, each with a written reason (Duy 2026-11-21 (3): word waives B). Every other gate stays binding.
-const WAIVABLE_GATES = Object.freeze(['B']);
+// G9 added Duy 2026-11-22 (rain only, A): the weak/median gap in human.mjs makes G9 and B exclusive at rain's L15.
+const WAIVABLE_GATES = Object.freeze(['B', 'G9']);
 function checkWaivers(g, w) {
   if (w == null) return Object.freeze({});
   if (typeof w !== 'object' || Array.isArray(w)) throw new Error(`BBD.register(${g}): gateWaivers must be an object { gateId: reason }`);
