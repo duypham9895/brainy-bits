@@ -112,7 +112,8 @@ describe('word: 50 phrases ordered by measured difficulty, stars keyed by phrase
   });
   // Duy 2026-11-21 (3): word waives B (reported WAIVED, never PASS) and must pass G1–G6, G8 and G9. Duy (1) moved the
   // first peak to L10, so L5/L6 swapped phrases; Duy B (2026-11-22) moved it to L15 and raised G1 to weak ≥ 90% on
-  // L1–5, so L5↔L11 and L10↔L14 swapped. L1–5 phrases sit at weak 0.91–0.94, too close to 0.90 for N=150 noise:
+  // L1–5, so L5↔L11, L10↔L14 and then L14↔L19 swapped. L1–5 phrases sit at weak 0.90–0.94 (L5 at 0.9025, the first
+  // to fail if human.mjs or the adapter change), too close to 0.90 for N=150 noise:
   // the run uses the CI N (1200), the same seeds `node scripts/sim/calibrate.mjs word --n 1200` uses.
   test('word (table v2): zero failed gates, only B waived and never counted as PASS', async () => {
     const B = loadBBD();

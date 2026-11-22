@@ -20,7 +20,8 @@ jobs:
       - name: Install platform detection tests
         run: npm run test:install
       # Calibration gates (seeded, full N = 1200 per MERGED-SPEC §6; koi 2000), every gate on every level.
-      # A game whose calibrate exits 0 is BLOCKING; word exits 0 with gate B WAIVED (Duy 2026-11-21, decision 3),
+      # A game whose calibrate exits 0 is BLOCKING; word exits 0 with gate B WAIVED (Duy 2026-11-21, decision 3) and
+      # rain with G9 WAIVED (Duy 2026-11-22, A),
       # which is reported as WAIVED, never PASS. Green games run to max(40, maxLevel + 10), so the shipped levels,
       # the next 10 the engine would generate ("thêm 10 màn" from the rule alone) and the seam between them stay green.
       # Since 2026-11-22 every game is blocking; none is report-only. calibrate.mjs exits 2 when --n/--from/--to is
@@ -29,11 +30,11 @@ jobs:
         run: node scripts/sim/calibrate.mjs train --n 1200 --to "$(node -e "import('./scripts/sim/load-bbd.mjs').then(m => console.log(Math.max(40, m.loadBBD().maxLevel('train') + 10)))")" --no-write
       - name: Calibration — koi L1 to max(40, maxLevel+10)
         run: node scripts/sim/calibrate.mjs koi --n 2000 --to "$(node -e "import('./scripts/sim/load-bbd.mjs').then(m => console.log(Math.max(40, m.loadBBD().maxLevel('koi') + 10)))")" --no-write
-      - name: Calibration — word L1-49 (B WAIVED, G1-G6 + G8 must pass)
+      - name: Calibration — word L1-maxLevel (B WAIVED, G1-G6, G8, G9 must pass)
         run: node scripts/sim/calibrate.mjs word --n 1200 --no-write
-      - name: Calibration — mem L1 to max(40, maxLevel+10) (B one-sided on L1-9, Duy 2026-11-22)
+      - name: Calibration — mem L1 to max(40, maxLevel+10) (B one-sided on L1-14, Duy 2026-11-22)
         run: node scripts/sim/calibrate.mjs mem --n 1200 --to "$(node -e "import('./scripts/sim/load-bbd.mjs').then(m => console.log(Math.max(40, m.loadBBD().maxLevel('mem') + 10)))")" --no-write
-      - name: Calibration — rain L1-30 (breathers may be easy, Duy 2026-11-22)
+      - name: Calibration — rain L1-30 (breathers may be easy; G9 WAIVED, Duy 2026-11-22)
         run: node scripts/sim/calibrate.mjs rain --n 1200 --to 30 --no-write
       # N=4000 here: generated L37/L38 are near-identical rows and G2 flips on seed at N=1200. Bigger N narrows the
       # G2 tolerance (2·SE), so this is stricter, not looser.

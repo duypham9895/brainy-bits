@@ -71,7 +71,10 @@ that merges only when every check is green. If one game's new level cannot be ma
    level: raise `maxLevel` by one and let the engine generate it from the formula and priority order; add a
    hand-written row at the end of `levels` only if the generated one fails a gate. A knob `start` only applies
    while `levels` has exactly `startAt` rows: after you append a row, the next generated level anchors on your
-   row, so check it with `BBD.level` and set a new `start`/`startAt` if your row is a peak. Change at most 1-2 knobs
+   row, so check it with `BBD.level` and set a new `start`/`startAt` if your row is a peak. A hand-written breather
+   row moves the anchor too: after appending any row, compare `BBD.level(game, L+1..L+10)` before and after; if the
+   next generated levels got easier (fewer drops, an extra life, slower trains) or `BBD.exhausted` moved earlier, do
+   not ship the row (review 2026-11-22). Change at most 1-2 knobs
    versus the previous level; breathers ease the main knob (and may add a life or cut the target, E4); peaks
    push one notch. Never edit an existing row in `levels`, never change `version`: stars and "levels passed"
    are keyed to shipped levels, and a retune needs a migration this run is not allowed to write. Respect every hardCap and the human limits cited in the rules file
@@ -86,10 +89,12 @@ that merges only when every check is green. If one game's new level cannot be ma
 4. **Data / calibration**: run `node scripts/sim/calibrate.mjs <game> --from <L-4> --to <L> --n 1200`
    (koi `--n 2000`) for every changed game. Rain: once `L` goes past 30, run with `--n 4000` instead of 1200
    (same `--from <L-4>` window) — a bigger N narrows gate G2's tolerance, so this is stricter, not looser.
-   **The new level L must keep every gate green**: B, G1-G6, G8 and G9 pass (G7 stays SKIP) and the command exits 0.
+   **The new level L must keep every gate green**: B, G1-G6, G8 and G9 pass (G7 stays SKIP; G1/G9 SKIP when the window
+   does not reach L1-10/L15) and the command exits 0. Rain waives G9 (Duy 2026-11-22, A): when L15 is in the window
+   the run prints `WAIVED: G9 (not passed)`; report it as WAIVED, never PASS.
    Word: gate B is waived (Duy 2026-11-21); the run prints `WAIVED: B (not passed)` and exits 0. Report it as
    WAIVED, never as PASS; G1-G6, G8 and G9 must still pass.
-   train, koi, mem and rain pass every gate (word: every gate but B, which is WAIVED) on every shipped level today (gate B is one-sided on L1-14 and on every
+   train, koi and mem pass every gate (rain: every gate but G9, WAIVED; word: every gate but B, WAIVED) on every shipped level today (gate B is one-sided on L1-14 and on every
    breather, `B_EASY_OK_BEFORE_SAW` / `BREATHER_EASY_OK`, rules file §2-3), and CI blocks on all five, so any
    miss there fails the PR. For every game, judge the new level by its own lines: L must not appear in any
    gate's miss list. If a gate fails, adjust only the new level's knobs and rerun (max 5 attempts per game); if

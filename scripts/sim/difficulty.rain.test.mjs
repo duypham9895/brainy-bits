@@ -91,7 +91,7 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
   });
 
   // Was "L11..30 … steps never get easier" with tiers 1..10 on L1..10. Decision 2 (Duy 2026-11-21): tiers 7..9
-  // are back at L7..9 (level L = tier L up to L10); rain speeds up step by step over L7..10 (review 2026-11-22); inside a
+  // are back at L7..9 (level L = tier L up to L10); since the 2026-11-22 easy opening (B) L7..11 hold the L6 pace while the tier changes; inside a
   // block the steps never get easier; breathers open the next tier with the E4 safety net as knobs:
   // a 10-drop chain, 4 lives instead of 3, slower rain than the peak before.
   test('L1..30 (v2): tiers per block, breathers = 10 drops + 4 lives + slower rain, steps never get easier, caps hold', () => {
@@ -182,9 +182,9 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
     assert.equal(n.ls.get('bb_tablev_rain'), '3');
   });
 
-  // Full N (≈5 s). Duy 2026-11-22 cleared the two rain blocks: (A) B is one-sided on L1–9 (every miss there was
+  // Full N (≈5 s). Duy 2026-11-22 cleared the two rain blocks: (A) B is one-sided before the first peak (L1–14 since B; every miss there was
   // easy side) and (A) breathers may be as easy as needed, B only fails them when too hard, G3 keeps "easier than
-  // the peak" only, G4 (weak ≥ 60%) stays. Every gate passes with zero waivers.
+  // the peak" only, G4 (weak ≥ 60%) stays. Every gate passes; G9 is the one waiver (Duy 2026-11-22, A).
   test('rain v2: zero failed gates at N=1200, only G9 waived (Duy 2026-11-22, A) and never counted as PASS', async () => {
     const r = await calibrate('rain', { n: 1200, write: false, quiet: true });
     assert.deepEqual(failsByGate(r), {});
@@ -219,8 +219,8 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
     const r = await calibrate('rain', { n: 4000, from: 31, to: 45, write: false, quiet: true });
     assert.deepEqual(failsByGate(r), {});
     for (const id of ['G4', 'G6', 'G8']) assert.equal(r.gates.find(g => g.id === id).pass, true, id);
-    // L1–5 and L30 are not in this run: G1 and G5 report SKIP (pass: null), never PASS (review 2026-11-22).
-    for (const id of ['G1', 'G5']) assert.deepEqual([r.gates.find(g => g.id === id).status, r.gates.find(g => g.id === id).pass], ['SKIP', null], id);
+    // L1–10, L15 and L30 are not in this run: G1, G9 and G5 report SKIP (pass: null), never PASS or WAIVED (review 2026-11-22).
+    for (const id of ['G1', 'G5', 'G9']) assert.deepEqual([r.gates.find(g => g.id === id).status, r.gates.find(g => g.id === id).pass], ['SKIP', null], id);
     r.levels.filter(l => l.kind !== 'breather').forEach(l =>
       assert.ok(Math.abs(l.profiles.median.p - l.pStar) <= 0.05, `L${l.L} median ${l.profiles.median.p} vs p* ${l.pStar}`));
   });

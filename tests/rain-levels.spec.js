@@ -102,7 +102,7 @@ test('breather stars: winning L16 with 2 misses still gives 1 star; L17 is back 
   await expect(page.locator('#rrTitle')).toContainText('Qua Level 16');
   await expect(page.locator('#rrStars')).toHaveAttribute('aria-label', '1 trên 3 sao');
   await page.click('#rrNext');
-  expect(await dbg(page)).toMatchObject({ state: 'play', level: 17, target: 22, lives: 3 });
+  expect(await dbg(page)).toMatchObject({ state: 'play', level: 17, target: 18, lives: 3 });
   await expect(page.locator('#rLives')).toHaveAttribute('aria-label', 'Còn 3 mạng');
 });
 
@@ -220,7 +220,7 @@ test('next-level flow: L10 leads to L11; L30 leads to L31; passing L31 records s
   await expect(page.locator('#rrNext')).toHaveText('Level 11 →');
   // the "next level" line names every change: tier, faster rain, chain, lives (review NIT 9)
   const info = await page.evaluate(() => [6, 11, 15, 16, 29].map(L => window.__rainTest.nextInfo(L)));
-  expect(info).toEqual(['bảng nhân 2–9', 'mưa nhanh hơn', 'thêm tìm số còn thiếu, giải 10 phép, 4 mạng', 'mưa nhanh hơn, giải 22 phép, còn 3 mạng', 'mưa nhanh hơn']);
+  expect(info).toEqual(['bảng nhân 2–9', 'mưa nhanh hơn', 'thêm tìm số còn thiếu, giải 10 phép, 4 mạng', 'mưa nhanh hơn, giải 18 phép, còn 3 mạng', 'mưa nhanh hơn']);
   await page.click('#rrNext');
   expect(await dbg(page)).toMatchObject({ state: 'play', level: 11, target: 16, lives: 3 });   // early ramp: L11 is a step
 

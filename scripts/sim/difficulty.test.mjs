@@ -468,7 +468,7 @@ test('mem L31–41 generated from the engine: zero failed gates, zero waivers at
   const r = await calibrate('mem', { n: 1200, from: 26, to: 41, write: false, quiet: true });
   assert.deepEqual(failsByGate(r), {});
   assert.deepEqual(r.waived, []);
-  assert.equal(r.gates.find(g => g.id === 'G1').status, 'SKIP', 'L1–5 not in this run');
+  assert.equal(r.gates.find(g => g.id === 'G1').status, 'SKIP', 'L1–10 not in this run');
   assert.equal(r.gates.find(g => g.id === 'G5').status, 'PASS', 'L30 is');
 });
 
@@ -630,7 +630,7 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
   });
 });
 
-// ---------- engine: Duy 2026-11-21 (1) sawtooth from L10, (3) gate waivers. Tests in difficulty.sawtooth.test.mjs. ----------
+// ---------- engine: sawtooth from L15 (Duy 2026-11-22 B; L10 from 2026-11-21 (1)), gate waivers. Tests in difficulty.sawtooth.test.mjs. ----------
 (await import('./difficulty.sawtooth.test.mjs')).registerSawtooth();
 
 // ---------- koi (owner: koi levels branch). Table v2: L1..30 authored on the sawtooth, L31+ from the engine (2026-11-21). ----------

@@ -6,7 +6,7 @@ Nguồn: `docs/difficulty/MERGED-SPEC.md` §4, `gates/01-spec/DIFFICULTY-DECISIO
 **TL;DR.**
 - Mọi game theo **một khuôn**: L1–14 là bước tăng rất nhẹ, răng cưa bắt đầu từ L15 (đỉnh ở `5k` với k ≥ 3, màn
   thở ở `5k+1` từ L16), tỉ lệ qua mục tiêu `p*(L)`, và mọi gate (B, G1–G6, G8, G9) chấm **mọi màn** ở N đầy đủ
-  (1200, koi 2000). Bảng chỉ được miễn gate B, có lý do viết ra (`gateWaivers`, §2).
+  (1200, koi 2000). Bảng chỉ được miễn gate B (mọi bảng) hoặc G9 (chỉ rain), có lý do viết ra (`gateWaivers`, §2).
 - **Mở màn dễ (Duy chọn B, 2026-11-22, mọi game):** `p*` đi thẳng 0,97 (L1) → 0,90 (L15), rồi 0,90 → 0,75 ở L30,
   từ L31 theo đường √ cũ. Bot yếu phải qua ≥ 90% ở L1–5 và ≥ 82% ở L6–10 (G1), ≥ 70% ở đỉnh đầu L15 (G9).
   Khi chỉnh L1–10: màn nào thêm yếu tố mới (ga, dạng phép tính, mồi nhử, lưới lớn hơn) thì giữ nhịp; màn sau mới
@@ -21,7 +21,8 @@ Nguồn: `docs/difficulty/MERGED-SPEC.md` §4, `gates/01-spec/DIFFICULTY-DECISIO
 - **Trạng thái 2026-11-22, sau mở màn dễ (B):** cả 5 game qua mọi gate ở N đầy đủ. train, koi, mem xanh L1–41;
   rain xanh L1–30 (N 1200) và L26–41 (N 4000) với **G9 WAIVED** (Duy chọn A: bot yếu ở rain tính chậm hơn bot
   trung bình ~1,4 lần, G9 và B không cùng giữ được ở L15); word xanh L1–50 với **B WAIVED**. WAIVED không bao giờ là
-  PASS. Bot yếu ở L10: 85–90% cả 5 game (trước đây 13–71%). Còn mở: rain bot yếu 58 → 32% ở L12–15, 27% ở L17.
+  PASS. Bot yếu ở L10: 85–90% cả 5 game (trước đây 13–71%). Còn mở: rain bot yếu tụt 85 → 32% qua L10–15 và
+  34 → 22% ở L17–19; L11–14 không gate nào chặn sàn bot yếu (G1 dừng ở L10, B một chiều tới L14).
   *(§3 bên dưới là số đo trước B, giữ làm lịch sử; số mới ở `docs/difficulty/calibration-<game>.json`.)*
 
 ## 1. Đọc trước, theo thứ tự
@@ -85,10 +86,11 @@ Vì sao giờ xanh, và lịch sử trước đó:
 - **Còn mở, không phải gate trượt**: từ L10, median rain bám p* thì bot yếu chỉ còn 10–20% đến L40 — khoảng cách
   weak/median của `human.mjs`, không gate nào bắt vì B chỉ xét median. Chưa đối chiếu người thật (G7 SKIP).
 
-CI: train, koi, mem, rain (L1–40) và word (L1–49, B WAIVED) là bước calibration **chặn**, không còn bước
+CI: train, koi, mem, rain (L1–41, rain G9 WAIVED) và word (L1–50, B WAIVED) là bước calibration **chặn**, không còn bước
 report-only. `calibrate.mjs` thoát 2 khi `--n`/`--from`/`--to` rỗng, NaN hay < 1, hoặc `--from` > `--to` (kể cả
-`--to` bỏ trống, tức maxLevel), nên bound `$(node -e …)` lỗi làm bước đỏ. G1 / G5 báo SKIP (không phải PASS) khi
-L1–5 / L30 nằm ngoài khoảng chạy. Test `KNOWN-FAIL` cũ (ghim danh sách trượt của mem và rain) đã thay bằng test không còn trượt nào:
+`--to` bỏ trống, tức maxLevel), nên bound `$(node -e …)` lỗi làm bước đỏ. G1 / G5 / G9 báo SKIP (không phải PASS) khi
+L1–10 / L30 / L15 nằm ngoài khoảng chạy; G3 / G4 báo SKIP khi không có màn thở (hoặc đỉnh trước nó) trong khoảng chạy;
+gate được miễn mà không chạy tới vẫn là SKIP, không phải WAIVED. Test `KNOWN-FAIL` cũ (ghim danh sách trượt của mem và rain) đã thay bằng test không còn trượt nào:
 `node --test scripts/sim/*.test.mjs` = 75/75 (2026-11-22).
 
 ## 4. "Thêm 10 màn cho mỗi game"
@@ -121,6 +123,11 @@ N 1200) để G2 L37→38 ổn định xanh (§3).
 ## 5. Đổi màn đã ship: phiên bản bảng và migration
 
 Áp dụng khi chỉnh màn đã có (đổi giá trị, đổi thứ tự, chèn màn). Thêm màn ở cuối mà không đổi màn cũ thì không cần.
+
+**Khi nào KHÔNG cần tăng `version` (Duy 2026-11-22, B):** chỉ chỉnh giá trị knob mà số màn giữ nguyên nghĩa và
+khoá sao không đổi (train/koi/mem/rain khoá theo số màn; word khoá theo `id` cụm từ) thì giữ `version`. `version`
+chỉ để chạy migration dời khoá sao. Đổi chỗ cụm từ của word không mất sao, nhưng con trỏ "màn kế" và "màn cao nhất"
+có thể dời theo vị trí mới của cụm từ đã qua. Lần chỉnh mở màn dễ 2026-11-22 giữ `version: 2` vì lý do này.
 
 | # | Làm | Ghi chú |
 |---|---|---|
@@ -185,7 +192,7 @@ Game mà calibrate đang trượt ở màn cũ: run vẫn thêm màn mới nếu
 | Game | Knob | Hướng khó | max / hardCap | Ghi chú |
 |---|---|---|---|---|
 | train | stations | ↑ | 15 / 15 | code `MAX_STATIONS` |
-| train | base | ↓ | 3.36 / 2.30 | khoảng cách tàu; đỉnh −0.20, màn thở +0.08 |
+| train | base | ↓ | 3.36 / 2.30 | khoảng cách tàu; đỉnh −0.20, màn thở +0.20 (L31+, daily 2026-11-22) |
 | train | speedF | ↑ | 0.28 (giữ) / 0.28 | đo bằng sim |
 | train | burstP | ↑ | 0.05 / 0.30 | dự trữ cho L31+ |
 | train | twoTone | ↑ | 0.45 | `rule`, khoá bởi E5 |
@@ -218,7 +225,7 @@ Game mà calibrate đang trượt ở màn cũ: run vẫn thêm màn mới nếu
 | G6 | knob trong hardCap; mục tiêu chạm ≥ 44 px ở 320 và 390 px | mọi màn |
 | G7 | bot khớp game thật, 3 seed ở L1/L15/L30 | SKIP; word kiểm bằng Playwright |
 | G8 | báo qua lần đầu và trong ≤ 3 lần | mọi màn |
-| G9 | weak ≥ 70% ở đỉnh đầu (L15) (Duy 2026-11-22, B) | L15 |
+| G9 | weak ≥ 70% ở đỉnh đầu (L15) (Duy 2026-11-22, B) | L15; rain miễn (WAIVED, Duy 2026-11-22, A) |
 
 Gate B có ngưỡng cố định ±0,05, không tính sai số mẫu, nên N nhỏ có thể trượt giả. CI luôn chạy N đầy đủ.
 
@@ -233,7 +240,7 @@ Gate B có ngưỡng cố định ±0,05, không tính sai số mẫu, nên N nh
 | E5 | `E5_KNOBS_ONLY: true` | knob `rule: true` luôn tắt | `false`: bật luật mới (cần mockup đã duyệt) |
 | Đỉnh đầu | `SAW_FROM_PERIODS: 3` (Duy 2026-11-22, B) | đỉnh đầu L15, màn thở đầu L16 | `2`: đỉnh L10 (2026-11-21); `1`: đỉnh L5 |
 | Dốc mở màn | `EARLY_TOP: 0.97`, `EARLY_KNEE_L: 15`, `EARLY_KNEE_P: 0.90` (Duy 2026-11-22, B) | p* 0,97 → 0,90 trên L1–15 | đổi số rồi chạy lại calibrate mọi game |
-| Gate B trước đỉnh đầu | `B_EASY_OK_BEFORE_SAW: true` (Duy 2026-11-22) | ở L1–14, B chỉ bắt `median < p* − 0.05` (quá khó) | `false`: trả B về hai chiều ở L1–9 |
+| Gate B trước đỉnh đầu | `B_EASY_OK_BEFORE_SAW: true` (Duy 2026-11-22) | ở L1–14, B chỉ bắt `median < p* − 0.05` (quá khó) | `false`: trả B về hai chiều ở L1–14 |
 | Gate B/G3 màn thở | `BREATHER_EASY_OK: true` (Duy 2026-11-22) | mọi màn thở: B chỉ bắt quá khó; G3 bỏ vế khó hơn L−4, giữ dễ hơn đỉnh trước; G4 không đổi | `false`: trả về luật cũ (B hai chiều, G3 đủ cả hai vế) |
 
 Đổi một công tắc thì chạy lại `calibrate` cho mọi game, vì `p*` và gate đổi theo.

@@ -16,15 +16,17 @@
   const lettersOf = src => { const i = ORDER.indexOf(src); return i >= 0 ? LETTERS[i] : EXTRA_LETTERS[src]; };
   // Version 2 play order. Bot estimate per phrase (scripts/sim/adapters/word.mjs, 4000 players per profile,
   // seeds independent of the slot), then rank-matched to p*(L): the easiest phrase goes to the highest p*,
-  // so peaks get a harder phrase than the breather after them. L1–5 need weak ≥ 85% (G1) and
+  // so peaks get a harder phrase than the breather after them. L1–5 need weak ≥ 90% and L6–10 ≥ 82% (G1, since
+  // 2026-11-22 B; it was ≥ 85% on L1–5), and
   // breathers weak ≥ 60% (G4). Gate results: docs/difficulty/calibration-word.json.
   // 2026-11-21, Duy (1): no peak at L5, first peak L10, first breather L11. L5 and L6 swapped phrases (32 ↔ 40)
   // so the old L5→L6 peak-to-breather drop does not read as a rising step (G2). v2 never shipped, so no new
   // table version: stars are keyed by phrase id and the v1 → v2 migration is unchanged.
-  // 2026-11-22, Duy B: first peak moved to L15 and G1 became weak ≥ 90% on L1–5, ≥ 82% on L6–10. Two swaps, no
-  // phrase added or dropped: L5 ↔ L11 (32 ↔ 36; only 18, 46, 48, 45, 36 clear weak 90% at L5) and L10 ↔ L14
-  // (6 ↔ 11; the old L10 peak phrase now sits on the last step before the first peak). Stars follow the phrase id,
-  // so no table version bump; `best` stays a level number, so nobody loses an unlocked level.
+  // 2026-11-22, Duy B: first peak moved to L15 and G1 became weak ≥ 90% on L1–5, ≥ 82% on L6–10. Three swaps, no
+  // phrase added or dropped: L5 ↔ L11 (32 ↔ 36; only 18, 46, 48, 45, 36 clear weak 90% at L5), L10 ↔ L14 (6 ↔ 11)
+  // and then L14 ↔ L19 (6 ↔ 44, review: p6 played like a peak right before the L15 peak; it now leads into the L20
+  // peak). Stars follow the phrase id, so no table version bump; `best` stays a level number, so nobody loses an
+  // unlocked level. The "next" and "highest" pointers can move with the phrases a player already cleared.
   const PLAY = [18, 46, 48, 45, 36, 40, 20, 37, 41, 11, 32, 43, 42, 44, 19, 27, 17, 47, 6, 25, 39, 16, 31, 34, 26,
     5, 2, 3, 21, 0, 24, 22, 35, 15, 33, 14, 13, 23, 7, 10, 38, 1, 4, 8, 29, 28, 30, 12, 9, 49];
   const row = src => ({ id: 'p' + src, phrase: src, letters: lettersOf(src), maxTries: 6 });
@@ -33,7 +35,7 @@
     legacyLevels: ORDER.map(row),             // ids here too, so E3_FREEZE_LEGACY = true keeps stars on their phrase
     levels: PLAY.map(row),
     knobs: [],
-    // Duy 2026-11-21 (3), gates/01-spec/DIFFICULTY-DECISIONS.md: B reported WAIVED, never PASS. G1–G6, G8 still bind.
+    // Duy 2026-11-21 (3), gates/01-spec/DIFFICULTY-DECISIONS.md: B reported WAIVED, never PASS. G1–G6, G8, G9 still bind.
     gateWaivers: { B: 'Duy 2026-11-21 (3): content-only game, no knob; with 6 tries and the hint open at once the bot '
       + 'median sits 7–22 points above p* on every level, and those bot parameters are not yet checked against real '
       + 'players (G7 SKIP). Rules stay as they are; revisit when G7 data exists.' },

@@ -1,4 +1,4 @@
-// Duy's 2026-11-21 decisions on the engine: (1) the sawtooth starts at L10, (3) a table may waive gate B with a
+// Duy's 2026-11-21 decisions on the engine (first peak L10 then, L15 since 2026-11-22 B): (3) a table may waive gate B with a
 // reason, and a waived gate is never reported as passed. Registered from difficulty.test.mjs so `npm run test:sim` runs it.
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -126,6 +126,22 @@ test('G1 has two tiers (L1–5 ≥ 0.90, L6–10 ≥ 0.82) and G9 checks the wea
   assert.equal(g([row(14, 0.9)], 'G9').status, 'SKIP');
 });
 
+// Review 2026-11-22: G9 may be waived by rain only; a gate the run never reached stays SKIP even when waived;
+// G3/G4 with no breather (or no peak before it) in range are SKIP, and G1 names a tier it did not check.
+test('G9 waiver: rain only, SKIP beats WAIVED, G3/G4 skip without breathers, G1 notes an unchecked tier', () => {
+  assert.deepEqual(validateWaivers({ G9: 'r' }, 'rain'), { G9: 'r' });
+  assert.throws(() => validateWaivers({ G9: 'r' }, 'koi'), /cannot be waived by koi/);
+  const B = loadBBD({ games: [] });
+  assert.throws(() => B.register('koi2', { levels: [{}], knobs: [], gateWaivers: { G9: 'r' } }), /cannot be waived/);
+  B.register('rain', { levels: [{}, {}, {}], knobs: [], gateWaivers: { G9: 'gap' } });
+  const st = (rows, id) => checkGates(rows, B, 'rain', {}, 1200).find(g => g.id === id);
+  assert.equal(st([row(26, 0.8)], 'G9').status, 'SKIP');                                     // L15 not run: SKIP
+  assert.equal(st([{ ...row(15, 0.84, 0.3), kind: 'peak' }], 'G9').status, 'WAIVED');        // run and waived
+  assert.equal(st([row(12, 0.9)], 'G3').status, 'SKIP'); assert.equal(st([row(12, 0.9)], 'G4').status, 'SKIP');
+  assert.equal(st([{ ...row(31, 0.5), kind: 'breather' }], 'G3').status, 'SKIP');            // peak L30 not in range
+  assert.match(st([row(1, 0.97, 0.95)], 'G1').note, /tier L6–10 not checked/);
+});
+
 test('waiver rejected: any gate other than B, or no reason string, throws (table load and calibrate)', () => {
   for (const bad of [{ G1: 'r' }, { G3: 'r' }, { G7: 'r' }, { B: '' }, { B: '   ' }, { B: true }, { B: 1 }, ['B'], 'B']) {
     assert.throws(() => fakeBBD(bad), /gateWaivers|cannot be waived|reason/, JSON.stringify(bad));
@@ -133,7 +149,6 @@ test('waiver rejected: any gate other than B, or no reason string, throws (table
     assert.throws(() => applyWaivers([], bad, 'x'));
   }
   assert.deepEqual(validateWaivers(undefined), {});
-  assert.deepEqual(validateWaivers({ G9: 'r' }), { G9: 'r' });        // Duy 2026-11-22: rain may waive G9
   assert.deepEqual(validateWaivers({ B: 'r' }), { B: 'r' });
 });
 

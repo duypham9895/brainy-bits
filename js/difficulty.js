@@ -36,7 +36,7 @@ const CONFIG = {
   EARLY_KNEE_P: 0.90,
   P_TOP: 0.92,             // √-curve top, used from L31 on (it meets the early ramp at L30), R:dda
   PEAK_DIP: 0.06,          // peak levels: p* − 0.06 (A)
-  BREATHER_OFFSET: 0,      // A-1 fix: breathers get no p* bonus (applies from the first breather, L11)
+  BREATHER_OFFSET: 0,      // A-1 fix: breathers get no p* bonus (applies from the first breather, L16)
   LIGHTER: { maxRelief: 0.15, failsInRow: 2, pBelow: 0.5, suggestPrevAfter: 3 },  // §4.5, R:dda, Hunicke
   ELO: { uSlope: 0.05, key: 'bbd_theta' },                                         // Pelánek U(n)=1/(1+0.05n)
 };
@@ -78,12 +78,14 @@ const specs = new Map();
 const isInt = n => Number.isInteger(n) && n >= 1;
 // Gates a table may waive, each with a written reason (Duy 2026-11-21 (3): word waives B). Every other gate stays binding.
 // G9 added Duy 2026-11-22 (rain only, A): the weak/median gap in human.mjs makes G9 and B exclusive at rain's L15.
-const WAIVABLE_GATES = Object.freeze(['B', 'G9']);
+// A gate listed with games may be waived only by those games (review 2026-11-22: G9 must not open for every table).
+const WAIVABLE_GATES = Object.freeze({ B: null, G9: Object.freeze(['rain']) });
+const waivableBy = (id, g) => Object.prototype.hasOwnProperty.call(WAIVABLE_GATES, id) && (WAIVABLE_GATES[id] === null || WAIVABLE_GATES[id].includes(g));
 function checkWaivers(g, w) {
   if (w == null) return Object.freeze({});
   if (typeof w !== 'object' || Array.isArray(w)) throw new Error(`BBD.register(${g}): gateWaivers must be an object { gateId: reason }`);
   Object.keys(w).forEach(id => {
-    if (!WAIVABLE_GATES.includes(id)) throw new Error(`BBD.register(${g}): gate "${id}" cannot be waived (only ${WAIVABLE_GATES.join(', ')})`);
+    if (!waivableBy(id, g)) throw new Error(`BBD.register(${g}): gate "${id}" cannot be waived by ${g} (B by any table, G9 by rain only)`);
     if (typeof w[id] !== 'string' || !w[id].trim()) throw new Error(`BBD.register(${g}): waiver for gate ${id} needs a reason string`);
   });
   return Object.freeze({ ...w });

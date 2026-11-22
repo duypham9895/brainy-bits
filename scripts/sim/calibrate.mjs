@@ -29,22 +29,24 @@ export function wilson(k, n, z = 1.96) {
 const median = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
 const tolFor = (p1, p2, n) => Math.max(0.02, 2 * Math.sqrt(p1 * (1 - p1) / n + p2 * (1 - p2) / n));
 
-// Gate waivers a table declares (`gateWaivers: { B: '<reason>' }` in js/levels/<game>.js). Only B or G9 (Duy 2026-11-22,
-// rain), only with a
-// reason. A waived gate is reported as WAIVED (pass: null, its misses kept for reading) and never as PASS.
-export const WAIVABLE = ['B', 'G9'];
+// Gate waivers a table declares (`gateWaivers: { B: '<reason>' }` in js/levels/<game>.js), only with a reason.
+// B: any table (word uses it, Duy 2026-11-21). G9: rain only (Duy 2026-11-22, A). A waived gate is reported as WAIVED
+// (pass: null, its misses kept for reading) and never as PASS. A gate the run did not reach stays SKIP, waiver or not.
+export const WAIVABLE = { B: null, G9: ['rain'] };
+const waivableBy = (id, game) => Object.prototype.hasOwnProperty.call(WAIVABLE, id) && (WAIVABLE[id] === null || WAIVABLE[id].includes(game));
 export function validateWaivers(waivers, game = '?') {
   if (waivers == null) return {};
   if (typeof waivers !== 'object' || Array.isArray(waivers)) throw new Error(`calibrate ${game}: gateWaivers must be an object { gateId: reason }`);
   for (const [id, reason] of Object.entries(waivers)) {
-    if (!WAIVABLE.includes(id)) throw new Error(`calibrate ${game}: gate "${id}" cannot be waived (only ${WAIVABLE.join(', ')})`);
+    if (!waivableBy(id, game)) throw new Error(`calibrate ${game}: gate "${id}" cannot be waived by ${game} (B by any table, G9 by rain only)`);
     if (typeof reason !== 'string' || !reason.trim()) throw new Error(`calibrate ${game}: waiver for gate ${id} needs a reason string`);
   }
   return { ...waivers };
 }
 export function applyWaivers(gates, waivers, game) {
   const w = validateWaivers(waivers, game);
-  return gates.map(g => (w[g.id] === undefined ? g
+  // A SKIP (pass: null, no level in range) is not evaluated, so it stays SKIP: WAIVED would read as "checked, then waived".
+  return gates.map(g => (w[g.id] === undefined || (g.pass === null && !g.fails.length) ? g
     : { ...g, pass: null, waived: true, waiver: w[g.id], measuredPass: g.pass, note: `WAIVED: ${w[g.id]}` }));
 }
 // Gate B misses. Duy 2026-11-22: before the first peak (L < PERIOD·SAW_FROM_PERIODS) a level that is easier than p*
@@ -100,21 +102,28 @@ export function checkGates(rows, BBD, game, adapter, n) {
   if (!g1Rows.length) skip('G1', g1Name, `L1–${g1Last} not in range`);
   else gate('G1', g1Name,
     g1Rows.filter(r => r.profiles.weak.p < tierOf(r.L).min).map(r => `L${r.L} weak ${r.profiles.weak.p} < ${tierOf(r.L).min}`),
-    g1Rows.length < g1Last ? `only L${g1Rows[0].L}–${g1Rows[g1Rows.length - 1].L} in range` : '');
+    g1Rows.length < g1Last ? [`only L${g1Rows[0].L}–${g1Rows[g1Rows.length - 1].L} in range`,
+      ...G1_TIERS.filter(t => !g1Rows.some(r => r.L >= t.from && r.L <= t.to)).map(t => `tier L${t.from}–${t.to} not checked`)].join('; ') : '');
   gate('G2', 'median pass rate does not rise between consecutive step levels (tolerance = 2·SE)',
     rows.filter(r => r.kind !== 'breather' && byL.has(r.L - 1)).filter(r => {
       const a = P(r.L - 1, 'median'), b = r.profiles.median.p;
       return b > a + tolFor(a, b, n);
     }).map(r => `L${r.L - 1}→L${r.L}: ${P(r.L - 1, 'median')} → ${r.profiles.median.p}`));
-  gate('G3', `breather easier than the peak before it${BBD.CONFIG.BREATHER_EASY_OK ? '' : ' and harder than L−4'}`,
-    rows.filter(r => r.kind === 'breather').flatMap(r => {
+  // No breather in range, or none with its peak in range: SKIP, never PASS (review 2026-11-22).
+  const brRows = rows.filter(r => r.kind === 'breather');
+  const g3Name = `breather easier than the peak before it${BBD.CONFIG.BREATHER_EASY_OK ? '' : ' and harder than L−4'}`;
+  const g3Blind = brRows.filter(r => !byL.has(r.L - 1)).map(r => `L${r.L}`);
+  if (!brRows.length || g3Blind.length === brRows.length) skip('G3', g3Name, brRows.length ? `peak before ${g3Blind.join(', ')} not in range` : 'no breather in range');
+  else gate('G3', g3Name,
+    brRows.flatMap(r => {
       const f = [], b = r.profiles.median.p, pk = P(r.L - 1, 'median'), l4 = P(r.L - 4, 'median');
       if (pk !== undefined && b < pk - tolFor(b, pk, n)) f.push(`L${r.L} ${b} harder than peak L${r.L - 1} ${pk}`);
       if (!BBD.CONFIG.BREATHER_EASY_OK && l4 !== undefined && b > l4 + tolFor(b, l4, n)) f.push(`L${r.L} ${b} easier than L${r.L - 4} ${l4}`);
       return f;
-    }));
-  gate('G4', 'weak ≥ 60% on every breather',
-    rows.filter(r => r.kind === 'breather' && r.profiles.weak.p < G4_WEAK).map(r => `L${r.L} weak ${r.profiles.weak.p}`));
+    }), g3Blind.length ? `not checked (peak before not in range): ${g3Blind.join(', ')}` : '');
+  if (!brRows.length) skip('G4', 'weak ≥ 60% on every breather', 'no breather in range');
+  else gate('G4', 'weak ≥ 60% on every breather',
+    brRows.filter(r => r.profiles.weak.p < G4_WEAK).map(r => `L${r.L} weak ${r.profiles.weak.p}`));
   const r30 = byL.get(30), skilledMin = BBD.e1().skilledL30;
   const g5Name = `skilled ≥ ${skilledMin * 100}% at L30 (E1 = ${BBD.CONFIG.E1})`;
   if (!r30) skip('G5', g5Name, 'L30 not in range');

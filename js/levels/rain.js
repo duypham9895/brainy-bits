@@ -93,6 +93,7 @@
       target: 10 + L,
     });
   }
+  // HISTORY, superseded by the 2026-11-22 easy-opening block below (first peak L15, breathers 16/21/26):
   // Table version 2 (2026-11-21): one sawtooth (L1–9 steps, first peak L10, first breather L11), calibrated with
   // scripts/sim/calibrate.mjs rain --n 1200.
   // L1..6 = the old rows. L7..9 keep tiers 7–9 (Duy 2026-11-21, decision 2: content back at L7–9) and, as the same
@@ -114,11 +115,13 @@
   //    reaches weak ≥ 70% (G9) with median ≤ p* + 5 at tier 11 (best ≈ 40%, 5 drops at every hardCap).
   //  · L16 breather falls slower (8.60 → 9.20 s) so it stays slower than the L15 peak in both speed knobs.
   //  · L17–25 only ease `every` 0.05–0.2 s so the median sits on the new p* (B).
+  //  · L17–19 climb back from the L16 breather one step at a time (chain 18 → 20 → 22, fall 8.20 → 7.85) instead of
+  //    jumping from 10 to 22 drops in one level (review 2026-11-22).
   const TABLE = {
     7: [7, 3.80, 10.25, 16, 3], 8: [8, 3.80, 10.25, 16, 3], 9: [9, 3.80, 10.25, 16, 3],
     10: [10, 3.80, 10.25, 16, 3],
     11: [11, 3.80, 10.25, 16, 3], 12: [11, 3.40, 10.25, 16, 3], 13: [11, 3.00, 10.25, 16, 3], 14: [11, 3.00, 9.00, 16, 3], 15: [11, 2.30, 9.00, 8, 3],
-    16: [12, 3.20, 9.20, 10, 4], 17: [12, 2.90, 7.85, 22, 3], 18: [12, 2.90, 7.85, 23, 3], 19: [12, 2.85, 7.85, 23, 3], 20: [12, 2.65, 7.55, 24, 3],
+    16: [12, 3.20, 9.20, 10, 4], 17: [12, 2.90, 8.20, 18, 3], 18: [12, 2.90, 7.85, 20, 3], 19: [12, 2.85, 7.85, 22, 3], 20: [12, 2.65, 7.55, 24, 3],
     21: [13, 3.20, 8.60, 10, 4], 22: [13, 2.80, 7.90, 24, 3], 23: [13, 2.80, 7.90, 25, 3], 24: [13, 2.75, 7.85, 25, 3], 25: [13, 2.65, 7.55, 25, 3],
     26: [14, 3.30, 8.80, 10, 4], 27: [14, 2.65, 7.85, 25, 3], 28: [14, 2.65, 7.80, 25, 3], 29: [14, 2.65, 7.75, 25, 3], 30: [14, 2.55, 7.45, 25, 3],
   };
@@ -158,7 +161,7 @@
       lighterKnobs: ['every', 'fall'],
       // Peak = every −0.08 s, fall −0.30 s on top of the step: ~5 points of median pass, the p* peak dip (L35, L40, L45).
       peak: [{ knob: 'every', by: 0.08 }, { knob: 'fall', by: 0.30 }],
-      // Breather = the E4 safety net, as at L11/16/21/26: short chain (25 → 10 drops), one extra life, slower rain.
+      // Breather = the E4 safety net, as at L16/21/26: short chain (25 → 10 drops), one extra life, slower rain.
       relief: [{ knob: 'target', by: 15 }, { knob: 'lives', by: 1 }, { knob: 'fall', by: 0.95 }, { knob: 'every', by: 0.6 }],
       meta: { table: 'js/levels/rain.js', game: 'js/rain.js', maxDrops: 5, maxAnswer: 999 },
     });
