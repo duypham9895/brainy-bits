@@ -374,7 +374,7 @@ test('maxLevel follows E2 and content-only games refuse to invent levels', () =>
   const B = loadBBD();
   assert.equal(B.maxLevel('word'), 49);
   B.CONFIG.E2_WORD_LEVELS = 30; assert.equal(B.maxLevel('word'), 30);
-  const MAX = { train: 31, koi: 31, mem: 30, rain: 30 };
+  const MAX = { train: 31, koi: 31, mem: 31, rain: 30 };
   for (const g of KNOB_GAMES) assert.equal(B.maxLevel(g), MAX[g], g);
   assert.throws(() => B.level('word', 50), /content-only/);   // vm realm: match by message
   assert.throws(() => B.level('mem', 0), /integer ≥ 1/);
@@ -462,8 +462,8 @@ test('mem v2: zero failed gates, zero waivers, weak ≥ 0.85 on L1–5 at N=1200
 
 // "+10 levels from the rule alone": generated L31–40 (engine knobs, no authored rows) pass every gate.
 // Run from L26 so G2/G3 also judge the L30 → L31 seam against the authored rows.
-test('mem L31–40 generated from the engine: zero failed gates, zero waivers at N=1200', async () => {
-  const r = await calibrate('mem', { n: 1200, from: 26, to: 40, write: false, quiet: true });
+test('mem L31–41 generated from the engine: zero failed gates, zero waivers at N=1200', async () => {
+  const r = await calibrate('mem', { n: 1200, from: 26, to: 41, write: false, quiet: true });
   assert.deepEqual(failsByGate(r), {});
   assert.deepEqual(r.waived, []);
   assert.equal(r.gates.find(g => g.id === 'G1').status, 'SKIP', 'L1–5 not in this run');
@@ -534,9 +534,9 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
   // tiles or gathers them again. At t ≤ 7 disp is a real step in the sim (s6 t4: median 87% at disp 0 → 82%
   // at 0.35); the 2026-11-21 review that disp is "not a step" measured t = 15, where tiles chunk anyway.
   const harder = (a, b) => a.t > b.t || (a.t === b.t && (a.size > b.size || a.disp > b.disp + 1e-9));
-  test('v2: L1..30 authored, max 30, version 2, show = 1 + 0.3·t, tiles fit, size ≤ 6', () => {
+  test('v2: L1..30 authored, max 31, version 2, show = 1 + 0.3·t, tiles fit, size ≤ 6', () => {
     const B = loadBBD();
-    assert.equal(B.maxLevel('mem'), 30); assert.equal(B.version('mem'), 2); assert.equal(B.authoredCount('mem'), 30);
+    assert.equal(B.maxLevel('mem'), 31); assert.equal(B.version('mem'), 2); assert.equal(B.authoredCount('mem'), 30);
     for (let L = 1; L <= 30; L++) {
       const r = B.level('mem', L);
       assert.equal(r.legacy, false, `L${L}`); assert.equal(r.authored, true, `L${L}`);
