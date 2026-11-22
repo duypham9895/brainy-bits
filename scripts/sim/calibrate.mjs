@@ -11,7 +11,11 @@ import { loadBBD, ROOT } from './load-bbd.mjs';
 import { PROFILES, PROFILE_NAMES, rngFor, samplePlayer } from './human.mjs';
 
 export const BAND = 0.05;        // §4.4 step 4: |p_median − p*| ≤ 5 points, every level (E3 lifted 2026-11-21)
-export const G1_WEAK = 0.85;     // weak ≥ 85% on L1–5 (Roohi 2020 churn lesson)
+// Weak-player floors for the opening (Duy 2026-11-22, B: research docs/difficulty/research-early.html).
+// Early levels hold the weakest players the game will see (Roohi 2020), so the weak bot, not the median, sets the floor.
+export const G1_TIERS = Object.freeze([{ from: 1, to: 5, min: 0.90 }, { from: 6, to: 10, min: 0.82 }]);
+export const G1_WEAK = G1_TIERS[0].min;   // kept for callers that read the L1–5 floor
+export const G9_FIRST_PEAK_WEAK = 0.70;   // weak ≥ 70% at the first peak (L15): mild, not a wall
 export const G4_WEAK = 0.60;     // weak ≥ 60% on every breather (A, R:simulation proposal)
 export const TOUCH_PX = 44;      // Parhi 2006 ≈ 9.2–9.6 mm
 
@@ -88,11 +92,14 @@ export function checkGates(rows, BBD, game, adapter, n) {
       .map(r => `L${r.L} median ${r.profiles.median.p} vs p* ${r.pStar.toFixed(3)}`));
   // A gate whose levels are not in the run is SKIP (pass: null), never PASS: a partial run proves nothing about them.
   const skip = (id, name, note) => out.push({ id, name, pass: null, fails: [], note });
-  const g1Rows = rows.filter(r => r.L <= 5);
-  if (!g1Rows.length) skip('G1', 'weak ≥ 85% on L1–5', 'L1–5 not in range');
-  else gate('G1', 'weak ≥ 85% on L1–5',
-    g1Rows.filter(r => r.profiles.weak.p < G1_WEAK).map(r => `L${r.L} weak ${r.profiles.weak.p}`),
-    g1Rows.length < 5 ? `only L${g1Rows[0].L}–${g1Rows[g1Rows.length - 1].L} in range` : '');
+  const tierOf = L => G1_TIERS.find(t => L >= t.from && L <= t.to);
+  const g1Name = `weak floor: ${G1_TIERS.map(t => `≥ ${t.min * 100}% on L${t.from}–${t.to}`).join(', ')}`;
+  const g1Rows = rows.filter(r => tierOf(r.L));
+  const g1Last = G1_TIERS[G1_TIERS.length - 1].to;
+  if (!g1Rows.length) skip('G1', g1Name, `L1–${g1Last} not in range`);
+  else gate('G1', g1Name,
+    g1Rows.filter(r => r.profiles.weak.p < tierOf(r.L).min).map(r => `L${r.L} weak ${r.profiles.weak.p} < ${tierOf(r.L).min}`),
+    g1Rows.length < g1Last ? `only L${g1Rows[0].L}–${g1Rows[g1Rows.length - 1].L} in range` : '');
   gate('G2', 'median pass rate does not rise between consecutive step levels (tolerance = 2·SE)',
     rows.filter(r => r.kind !== 'breather' && byL.has(r.L - 1)).filter(r => {
       const a = P(r.L - 1, 'median'), b = r.profiles.median.p;
@@ -125,6 +132,10 @@ export function checkGates(rows, BBD, game, adapter, n) {
       });
       return f;
     }), adapter.geometry ? '' : 'adapter has no geometry(): px part not checked');
+  const firstPeak = bOneSidedBelow(BBD), rPk = byL.get(firstPeak);
+  const g9Name = `weak ≥ ${G9_FIRST_PEAK_WEAK * 100}% at the first peak (L${firstPeak})`;
+  if (!rPk) skip('G9', g9Name, `L${firstPeak} not in range`);
+  else gate('G9', g9Name, rPk.profiles.weak.p < G9_FIRST_PEAK_WEAK ? [`L${firstPeak} weak ${rPk.profiles.weak.p}`] : []);
   out.push({ id: 'G7', name: 'Playwright parity, 3 seeds at L1/L15/L30', pass: null, fails: [],
     note: 'SKIPPED: needs the game to read BBD.level() (per-game integration step)' });
   gate('G8', 'first-attempt and ≤3-attempt pass reported; ≤3 never below first attempt',

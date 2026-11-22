@@ -25,11 +25,16 @@ const CONFIG = {
 
   // Curve constants (MERGED-SPEC §4.1). Not owner decisions; change only with a calibration run.
   REF_L: 30,               // D(REF_L) = 1
-  PERIOD: 5,               // peak at 5k, breather at 5k+1, both only from 2·PERIOD on (first peak L10, first breather L11)
+  PERIOD: 5,               // peak at 5k, breather at 5k+1, both only from SAW_FROM_PERIODS·PERIOD on (first peak L15, first breather L16)
   BREATHER_EASY_OK: true,  // Duy 2026-11-22 (rain, A): a breather may be as easy as needed. B fails it only when too hard; G3 drops 'easier than L−4'. G4 stays.
   B_EASY_OK_BEFORE_SAW: true, // Duy 2026-11-22 (Gen Z players): on L1..sawStart-1 gate B fails only when median < p* − BAND (too hard). false = two-sided.
-  SAW_FROM_PERIODS: 2,     // Duy 2026-11-21 (1)=A: no peak at L5; L1–9 rise as steps so G1 (weak ≥ 0.85, L1–5) holds. 1 = old L5 peak.
-  P_TOP: 0.92,             // p*(1), R:dda
+  SAW_FROM_PERIODS: 3,     // Duy 2026-11-22 (B, all games): first peak L15. Was 2 (L10) from 2026-11-21 (1); 1 = old L5 peak.
+  // Early ramp, Duy 2026-11-22 (B): p* falls in a straight line 0.97 (L1) → 0.90 (EARLY_KNEE_L), then 0.90 → the L30
+  // step value, then the √ curve below from L31 on (continuous at L30). Research: docs/difficulty/research-early.html.
+  EARLY_TOP: 0.97,
+  EARLY_KNEE_L: 15,
+  EARLY_KNEE_P: 0.90,
+  P_TOP: 0.92,             // √-curve top, used from L31 on (it meets the early ramp at L30), R:dda
   PEAK_DIP: 0.06,          // peak levels: p* − 0.06 (A)
   BREATHER_OFFSET: 0,      // A-1 fix: breathers get no p* bonus (applies from the first breather, L11)
   LIGHTER: { maxRelief: 0.15, failsInRow: 2, pBelow: 0.5, suggestPrevAfter: 3 },  // §4.5, R:dda, Hunicke
@@ -46,7 +51,7 @@ const e1 = () => E1_PRESETS[CONFIG.E1] || E1_PRESETS.A;
 const RESERVED = new Set(['L', 'kind', 'legacy', 'authored', 'id', 'D', 'pStar', 'exhausted', 'assist']);
 function D(L) { return Math.sqrt(Math.max(0, L - 1) / (CONFIG.REF_L - 1)); }          // A, R:dda (abagames, MIT)
 // Sawtooth: peak at L % PERIOD === 0, breather right after it, but only from L = SAW_FROM_PERIODS·PERIOD on.
-// Default (PERIOD 5, from 2): L1–9 steps, L10 peak, L11 breather, L15 peak, L16 breather, …
+// Default (PERIOD 5, from 3): L1–14 steps, L15 peak, L16 breather, L20 peak, L21 breather, …
 function sawStart() { return CONFIG.PERIOD * CONFIG.SAW_FROM_PERIODS; }
 function kind(L) {
   const P = CONFIG.PERIOD, S = sawStart();
@@ -54,13 +59,18 @@ function kind(L) {
   if (L > S && L % P === 1) return 'breather';
   return 'step';
 }
+// Step value of p* before the peak dip / breather offset.
+function pBase(L) {
+  const pBottom = e1().l30Peak + CONFIG.PEAK_DIP;                  // A: 0.75 ⇒ L30 peak 0.69
+  const { EARLY_TOP: top, EARLY_KNEE_L: kL, EARLY_KNEE_P: kP, REF_L: ref } = CONFIG;
+  if (L <= kL) return top - (top - kP) * (Math.max(1, L) - 1) / (kL - 1);
+  if (L <= ref) return kP - (kP - pBottom) * (L - kL) / (ref - kL);
+  return CONFIG.P_TOP - (CONFIG.P_TOP - pBottom) * D(L);          // = pBottom at L30, so the seam is continuous
+}
 function pStar(L) {
-  const { l30Peak, floor } = e1();
-  const pBottom = l30Peak + CONFIG.PEAK_DIP;                       // A: 0.75 ⇒ L30 peak 0.69
   const k = kind(L);
-  const p = CONFIG.P_TOP - (CONFIG.P_TOP - pBottom) * D(L)
-    - (k === 'peak' ? CONFIG.PEAK_DIP : 0) + (k === 'breather' ? CONFIG.BREATHER_OFFSET : 0);
-  return Math.max(floor, p);
+  const p = pBase(L) - (k === 'peak' ? CONFIG.PEAK_DIP : 0) + (k === 'breather' ? CONFIG.BREATHER_OFFSET : 0);
+  return Math.max(e1().floor, p);
 }
 
 // ---------- registry ----------
