@@ -63,7 +63,7 @@ test('menu copy states a rule that holds for table v2 (no "mỗi level thêm 1 �
   const how = page.locator('#mmenu .how');
   await expect(how).toContainText('Level sau thường nhiều ô hơn hoặc ô nằm xa nhau hơn.');
   await expect(how).not.toContainText('mỗi level thêm 1 ô');
-  await expect(page.locator('#mLvTxt')).toHaveText('Lưới 4×4 · 3 ô sáng · nhìn 1,9 giây · ô rải xa');
+  await expect(page.locator('#mLvTxt')).toHaveText('Lưới 4×4 · 3 ô sáng · nhìn 1,9 giây');
 });
 
 test('level grid shows 31 levels; L31 (breather) is startable and plays with its BBD parameters', async ({ page }) => {
@@ -85,7 +85,7 @@ test('v1 progress survives the v2 table: mem_lv = 14 + old stars → 13 levels p
   await open(page, { mem_lv: '14', bb_stats: JSON.stringify({ mem: { best: 13, stars: { 13: 2, 5: 3 } } }) });
   await expect(page.locator('#mlvgrid .lv.done')).toHaveCount(13);
   await expect(page.locator('#mBestTxt')).toHaveText('Đã qua tới Level 13');
-  await expect(page.locator('#mStart')).toHaveText('Chơi Level 14 · 4 ô');
+  await expect(page.locator('#mStart')).toHaveText('Chơi Level 14 · 3 ô');
   await expect(page.locator('#mlvgrid .lv').nth(12)).toHaveAttribute('data-st', '★★');
   await expect(page.locator('#mlvgrid .lv').nth(4)).toHaveAttribute('data-st', '★★★');
   expect(await page.evaluate(() => [window.memBest(), BB.gameStats('mem').stars[5], localStorage.getItem('bb_tablev_mem'), localStorage.getItem('mem_lv')]))
@@ -111,7 +111,7 @@ test('next-level flow: pass L13 → L14 → result names what changes next', asy
   await page.click('#mrNext');
   expect(await page.evaluate(() => window.__mem.level)).toBe(14);
   await winRound(page); await winRound(page);
-  await expect(page.locator('#mrDetail')).toContainText('Level 15 có 5 ô sáng.');
+  await expect(page.locator('#mrDetail')).toContainText('Level 15 có 4 ô sáng.');
   expect(await page.evaluate(() => localStorage.getItem('mem_lv'))).toBe('15');
 });
 
