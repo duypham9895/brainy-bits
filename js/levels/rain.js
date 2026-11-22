@@ -129,12 +129,13 @@
       knobs: [
         { name: 'ops', int: true, hardCap: 14, changeOn: 'breather', source: 'A+B tiers O11–O14' },
         // fall and every move as a pair: their ratio is the number of drops on screen (rain is exempt from 1-knob rule).
-        // L31+ (engine, not shipped): steps start at the L29 step value and `max` is the step value at L40, so steps
+        // L31+ (engine, not shipped): steps start at the L29 step value (startAt: 30 = written for a 30-row table;
+        // append rows and it stops applying) and `max` is the step value at L40, so steps
         // follow the slow fall of p* (~0.03 per 10 levels); `peak` below adds most of the L29 → L30 gap on top.
-        { name: 'fall', start: 7.741, max: 7.636, hardCap: 6.8, step: 0.01, notch: 0.5, curve: 'linear', source: 'A, cap is a guess; calibrated' },
+        { name: 'fall', start: 7.741, startAt: 30, max: 7.636, hardCap: 6.8, step: 0.01, notch: 0.5, curve: 'linear', source: 'A, cap is a guess; calibrated' },
         // 0.01 s grid on both: 0.05 s of every moves the median ~2.5 points, too coarse to follow p* level by level.
         // every reaches hardCap at L120, so BBD.exhausted(rain, 120) stops the +10 rule there.
-        { name: 'every', start: 2.652, max: 2.602, hardCap: 2.2, step: 0.01, notch: 0.2, curve: 'linear', source: 'A, cap is a guess; calibrated' },
+        { name: 'every', start: 2.652, startAt: 30, max: 2.602, hardCap: 2.2, step: 0.01, notch: 0.2, curve: 'linear', source: 'A, cap is a guess; calibrated' },
         { name: 'target', int: true, max: 25, hardCap: 25, source: 'A' },
         // Misses allowed before losing. Fewer = harder (dir −1). Steps and peaks keep 3; breathers get +1 (E4 net).
         { name: 'lives', int: true, min: LIVES, max: LIVES, hardCap: LIVES, dir: -1, source: 'E4 safety net, 2026-11-21' },

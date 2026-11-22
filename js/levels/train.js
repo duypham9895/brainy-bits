@@ -32,12 +32,15 @@
   //    to cross a 15-station map (max ≈ 41 s, v1 ≈ 17/26 s), so the wait after the 90 s timer is longer.
   //  · burstP 0 (v1: 0.15): "dồn dập" bursts hit weak players hardest (−9 weak points at the same median).
   //    Bursts are the reserve knob for L31+.
+  //  · L2 keeps L1's 5 stations, so it sends trains a little closer (3.37 vs 3.41; 3.46 made L2 easier than L1
+  //    and the result screen said "tàu ra thưa hơn", review 2026-11-22). Rule, tested: on the same station count a
+  //    non-breather never raises base over the level before it, nor over the step before it.
   //  · base: the difficulty knob. Peak = step − ~0.23, breather = step + ~0.12 (the breather cuts the chain:
   //    sparser trains, fewer plans held at once). Steps on 15 stations barely move (3.60 → 3.51) because
   //    p* itself only falls 79% → 75% between L17 and L29.
   const STATIONS = L => (L <= 2 || L === 5 ? 5 : L <= 6 ? 6 : Math.min(L, 15));
   const BASE = [
-    3.41, 3.46, 3.49, 3.43, 3.27,     // L1–5   (all steps since 2026-11-21; L5 on 5 stations, see above)
+    3.41, 3.37, 3.49, 3.43, 3.27,     // L1–5   (all steps since 2026-11-21; L5 on 5 stations, see above)
     2.91, 2.93, 2.88, 2.81, 2.63,     // L6–10  (L10 = first peak)
     3.12, 3.30, 3.26, 3.40, 3.49,     // L11–15
     3.70, 3.60, 3.59, 3.58, 3.36,     // L16–20

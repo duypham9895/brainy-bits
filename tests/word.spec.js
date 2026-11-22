@@ -242,9 +242,12 @@ test('Neon #1: core/hub/chia sẻ đếm đúng 49 level của Đoán Cụm Từ
   await page.addInitScript(() => localStorage.setItem('word_lv', '25'));
   await page.goto('/');
   const r = await page.evaluate(() => ({ core: window.BB.LV_MAX.word, game: window.__word.LV_MAX, phrases: window.__word.PHRASES.length,
-    best: window.wordBest(), share: window.BB.shareText() }));
+    best: window.wordBest(), share: window.BB.shareText(), p: window.BB.progressOf('word'),
+    topStars: window.BB.starsAt('word', window.BB.progressOf('word').best) }));
   expect(r).toMatchObject({ core: 49, game: 49, phrases: 49, best: 24 });
-  expect(r.share).toContain('Đoán Cụm Từ: Lv 24');
+  // Share names the highest level passed in today's (v2) order and the stars of that level's own phrase.
+  expect(r.p).toMatchObject({ done: 24, registered: true });
+  expect(r.share).toContain(`Đoán Cụm Từ: Lv ${r.p.best} (${r.topStars}/3 ★)`);
   await expect(page.locator('#hubWord')).toContainText('24/49');
   await page.click('#openWord');
   await expect(page.locator('#wBestTxt')).toHaveText('Đã qua 24/49 level');

@@ -56,6 +56,26 @@ describe('koi: table v2, one template for every level', () => {
       if (r.kind === 'step' && L !== 19) assert.equal(r.decoys, p.decoys, `L${L}: a step does not add grey fish`);
     }
   });
+  // Review 2026-11-22 (#6): L35 was easier than L30 (turning back to ×1.2), L60/65/70 copied the step before while
+  // exhausted() was still false, and L55+ brought 15 fast fish. Walk every generated level up to exhaustion.
+  test('koi L31+: every peak beats the level before it and the previous peak until exhausted(); ≤ 14 fast fish', () => {
+    const B = loadBBD();
+    let L = 31;
+    for (; L <= 400 && !B.exhausted('koi', L); L++) {
+      const r = B.level('koi', L);
+      if (r.spdMul > 1.25) assert.ok(r.koi <= 14, `L${L}: ${r.koi} fast fish`);
+      if (r.kind !== 'peak') continue;
+      assert.ok(B.strictlyHarder('koi', r, B.level('koi', L - 1)), `L${L} peak not harder than L${L - 1}`);
+      assert.ok(B.strictlyHarder('koi', r, B.level('koi', L - 5)), `L${L} peak not harder than peak L${L - 5}`);
+    }
+    assert.ok(L > 40 && L <= 400, `exhausted from L${L}`);
+    // exhausted() is true from the first peak that cannot rise, so that peak is never added by the +10 rule
+    assert.equal(B.level('koi', L).kind, 'peak');
+    const flat = B.level('koi', L);
+    assert.ok(!B.strictlyHarder('koi', flat, B.level('koi', L - 1)) || !B.strictlyHarder('koi', flat, B.level('koi', L - 5)));
+    for (let x = L; x <= L + 20; x++) assert.equal(B.exhausted('koi', x), true, `L${x} stays exhausted`);
+    assert.ok(B.strictlyHarder('koi', B.level('koi', 35), B.level('koi', 30)), 'L35 harder than the written L30 peak');
+  });
   test('koi progress: old keys (v1, no marker) → v2 keeps best, stars and koi_lv2; corrupt data does not crash', () => {
     const v1 = { bb_stats: JSON.stringify({ koi: { best: 7, stars: { 1: 3, 2: 2, 7: 1 } }, mem: { best: 2, stars: { 1: 1 } } }), koi_lv2: '8', koi_best: '7' };
     const { BB, ls } = loadCore({ init: v1 });

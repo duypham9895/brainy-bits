@@ -37,7 +37,9 @@ test('daily challenge for Word is not capped at 12 for a player past level 12 (f
       BB.store.del('bb_daily_pin');
       if (BB.daily(k).game === 'word') date = k;
     }
-    BB.store.setJson('bb_stats', { word: { best: 30, stars: {} } });
+    // Word counts phrases passed (BB.setProgress, table v2 order), not best: pass v2 L1..30 by their phrase keys.
+    const stars = {}; for (let L = 1; L <= 30; L++) stars[BB.levelKey('word', L)] = 1;
+    BB.store.setJson('bb_stats', { word: { best: 30, stars } });
     BB.store.del('bb_daily_pin');
     return { date, level: BB.daily(date).level };
   });

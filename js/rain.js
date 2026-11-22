@@ -383,7 +383,8 @@ function ensureResultExtras(){
   st.innerHTML = '<span>★</span><span>★</span><span>★</span>';
   const rule = document.createElement('p');
   rule.id = 'rrRule'; rule.className = 'muted rrule';
-  rule.textContent = 'Không để rơi giọt nào: 3 sao. Rơi 1 giọt: 2 sao. Rơi 2 giọt: 1 sao.';
+  // Màn thở có 4 mạng: rơi 3 giọt vẫn qua, nên "từ 2 giọt" chứ không phải "2 giọt".
+  rule.textContent = 'Không để rơi giọt nào: 3 sao. Rơi 1 giọt: 2 sao. Rơi từ 2 giọt mà vẫn qua: 1 sao.';
   big.after(st, rule);
 }
 
@@ -436,11 +437,13 @@ function finish(win){
 // ---------- menu ----------
 function renderLevels(){
   const done = getLv() - 1, grid = $('rlvgrid'), stars = BB.gameStats('rain').stars;
+  // Sao theo khoá ổn định của level (BB.levelKey), như bốn game kia: hôm nay là số level, mai có thể là id.
+  const starsAt = L => stars[BB.levelKey ? BB.levelKey('rain', L) : L] || 0;
   grid.innerHTML = '';
   if (!ready()) { if (loadDone) $('rLvTxt').textContent = 'Chưa tải được level. Kiểm tra mạng rồi mở lại.'; return; }
   for (let L=1; L<=lvMax(); L++){
     const el = document.createElement('button');
-    const st = stars[L] || 0, isDone = L <= done;
+    const st = starsAt(L), isDone = L <= done;
     el.className = 'lv' + (isDone ? ' done' : '') + (L === chosen ? ' on' : '');
     el.innerHTML = `${L}<small>${spec(L).target} phép</small>` +
       (st ? `<span class="lvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span>` : '');

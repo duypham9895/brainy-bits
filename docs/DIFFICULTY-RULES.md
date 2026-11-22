@@ -83,9 +83,10 @@ Vì sao giờ xanh, và lịch sử trước đó:
   weak/median của `human.mjs`, không gate nào bắt vì B chỉ xét median. Chưa đối chiếu người thật (G7 SKIP).
 
 CI: train, koi, mem, rain (L1–40) và word (L1–49, B WAIVED) là bước calibration **chặn**, không còn bước
-report-only. `calibrate.mjs` thoát 2 khi `--n`/`--from`/`--to` rỗng, NaN hay < 1, nên bound `$(node -e …)` lỗi
-làm bước đỏ. Test `KNOWN-FAIL` cũ (ghim danh sách trượt của mem và rain) đã thay bằng test không còn trượt nào:
-`node --test scripts/sim/*.test.mjs` = 67/67.
+report-only. `calibrate.mjs` thoát 2 khi `--n`/`--from`/`--to` rỗng, NaN hay < 1, hoặc `--from` > `--to` (kể cả
+`--to` bỏ trống, tức maxLevel), nên bound `$(node -e …)` lỗi làm bước đỏ. G1 / G5 báo SKIP (không phải PASS) khi
+L1–5 / L30 nằm ngoài khoảng chạy. Test `KNOWN-FAIL` cũ (ghim danh sách trượt của mem và rain) đã thay bằng test không còn trượt nào:
+`node --test scripts/sim/*.test.mjs` = 75/75 (2026-11-22).
 
 ## 4. "Thêm 10 màn cho mỗi game"
 
@@ -93,10 +94,10 @@ làm bước đỏ. Test `KNOWN-FAIL` cũ (ghim danh sách trượt của mem v�
 |---|---|---|
 | 1 | Nâng `maxLevel` trong spec của `js/levels/<game>.js` lên N+10 (mặc định = max(30, số dòng `levels`)). **Không sửa dòng `levels` đã ship.** Word là game nội dung: thêm cụm mới vào cuối `PLAY` với `id` mới, không đổi thứ tự cũ. | `BBD.maxLevel(g) === N+10` |
 | 2 | Nhịp và `p*` engine tự lo. `D(L)` vượt 1 sau L30 là bình thường. | — |
-| 3 | `BBD.exhausted(g, N+10)` phải là `false`. | — |
+| 3 | `BBD.exhausted(g, N+10)` phải là `false`. Koi (`strictPeaks: true`) còn báo `true` từ đỉnh sinh ra đầu tiên không khó hơn màn trước nó hoặc đỉnh trước (hiện là L65). | — |
 | 4 | **Nếu `exhausted` là true, hoặc chỉ còn knob `rule: true`: DỪNG.** Đề xuất knob/luật mới cho Duy, mỗi phương án một mockup HTML (Quy tắc Vibe 9). Không tự nâng `hardCap`. | Duy đã chọn |
 | 5 | `node scripts/sim/calibrate.mjs <g> --from N-4 --to N+10 --n 1200` (koi `--n 2000`) | Exit 0 trên các màn mới |
-| 6 | Gate trượt ở màn mới: chỉnh `max`, `start`, `peak`, `relief` hoặc `overrides` của **màn mới**, chạy lại. Màn mới cần dòng viết tay thì thêm vào cuối `levels`. | Exit 0 |
+| 6 | Gate trượt ở màn mới: chỉnh `max`, `start`, `peak`, `relief` hoặc `overrides` của **màn mới**, chạy lại. Màn mới cần dòng viết tay thì thêm vào cuối `levels`. `start` chỉ áp dụng khi `levels` có đúng `startAt` dòng: thêm dòng thì màn sinh ra kế tiếp neo vào dòng mới; dòng mới là đỉnh thì đặt `start`/`startAt` mới. | Exit 0 |
 | 7 | `node --test scripts/sim/difficulty.test.mjs` và `PW_PORT=8920 npx playwright test`; sửa số 30 ghi cứng trong `tests/<g>-levels.spec.js`. | Xanh hết |
 | 8 | Không cần sửa game: game đọc `BBD.maxLevel(g)` và gọi `BB.setLvMax`. | Màn mới hiện trong hub |
 | 9 | Nhánh `feat/levels-<g>-<to>`, PR vào `main` (LUẬT 12), một dòng có ngày vào Log của `PIPELINE.md`. | PR xanh |
@@ -106,8 +107,8 @@ làm bước đỏ. Test `KNOWN-FAIL` cũ (ghim danh sách trượt của mem v�
 | Game | L31–40 | Chỉnh gì |
 |---|---|---|
 | train | xanh (cả L1–40 một lượt) | `base.max` 3.30 → 3.36, `burstP.max` 0.10 → 0.05, `relief` base 0.10 → 0.08 |
-| koi | xanh (cả L1–40 một lượt) | `koi` start 12 / max 12.3 `quad`, `turnMul` start 1.2 / max 1.28, `spdMul.max` 1.42, `decoys.max` 5.4, `peak` koi +1, `relief` spdMul −0.1 |
-| mem | xanh | không đổi |
+| koi | xanh (cả L1–40 một lượt) | `koi` start 12 / max 12.3 `quad`, `turnMul` start 1.2, +0.05 mỗi màn thở, `spdMul.max` 1.42, `decoys.max` 5.4, `peak` koi +1 và turnMul +0.1, `relief` spdMul −0.1; đỉnh sau luôn khó hơn đỉnh trước (2026-11-22) |
+| mem | xanh | `disp` start 0.05 → 0.1 (bằng L29), `quad` max 0.13: bước L31+ không dễ hơn L29, màn thở L31 bằng L26 (2026-11-22) |
 | rain | xanh ở N 4000 (L31, L36 là màn thở, qua nhờ `BREATHER_EASY_OK`); ở N 1200 chỉ G2 L37→38 lật theo seed | `B_EASY_OK_BEFORE_SAW` / `BREATHER_EASY_OK` (§3); chạy ở N 4000 để G2 ổn định |
 | word | không có màn engine sinh; L31–40 là cụm viết tay, xanh với B WAIVED | — |
 
@@ -120,12 +121,12 @@ N 1200) để G2 L37→38 ổn định xanh (§3).
 
 | # | Làm | Ghi chú |
 |---|---|---|
-| 1 | Viết lại dòng trong `levels: [...]` (mỗi dòng đủ mọi knob không phải `rule`). Chuyển bảng cũ sang `legacyLevels` để tham chiếu. | `E3_FREEZE_LEGACY: true` chơi lại `legacyLevels` |
+| 1 | Viết lại dòng trong `levels: [...]` (mỗi dòng đủ mọi knob không phải `rule`). Chuyển bảng cũ sang `legacyLevels` để tham chiếu. | `legacyLevels` chỉ là dữ liệu tham chiếu; `E3_FREEZE_LEGACY: true` không còn là đường lùi (Phụ lục C) |
 | 2 | Tăng `version` lên 1. | `BBD.version(g)` |
 | 3 | Đổi thứ tự hoặc chèn màn: gắn `id` ổn định cho từng dòng (chuỗi không phải số, không trùng, ví dụ `'p12'`). | Sao lưu theo `id`; không có `id` thì khoá = số màn |
 | 4 | Sao cần dời khoá: viết `migrate({ from, to, best, stars, remapLevels }) → { best, stars }`. Không đổi thứ tự thì bỏ trống. | `remapLevels` chỉ dời khoá số; chạy lại không đổi gì |
 | 5 | Game gọi `BB.migrateProgress(g)` một lần lúc tải, sau `js/levels/<g>.js`, trước khi đọc `BB.gameStats`. | Ghi cờ `bb_tablev_<g>` |
-| 6 | Game đổi thứ tự màn: hub và thử thách ngày vẫn đọc `best` (số màn cao nhất đã qua), chưa đếm theo nội dung. `BB.setProgress` mà `js/word.js` gọi chưa có trong core (mở). | xem §8 |
+| 6 | Game đổi thứ tự màn: đăng ký cách đếm bằng `BB.setProgress(g, () => ({ done, next, best }))`. Hub, thử thách ngày và thẻ chia sẻ đọc `BB.progressOf(g)`; game không đăng ký thì vẫn đọc `best`. Word đã đăng ký. | xem §8 |
 | 7 | Thêm test: dữ liệu version cũ → mới, số màn đã qua không giảm, dữ liệu hỏng không làm sập. | `scripts/sim/difficulty*.test.mjs` |
 
 Engine bảo đảm: `best` (số màn đã qua) không bao giờ giảm; `bb_stats` hỏng (`'{bad'`, `'[]'`, `'5'`) đọc thành
@@ -168,7 +169,7 @@ Game mà calibrate đang trượt ở màn cũ: run vẫn thêm màn mới nếu
 
 - Mọi tham số người chơi ghi `[NEW]` trong `human.mjs` là prior, chưa đo trên người thật.
 - G7 (bot khớp game thật) vẫn SKIP; chỉ word có parity Playwright.
-- Word: hub và thử thách ngày đọc `best`, còn màn chơi đếm cụm đã qua theo id, nên hai số có thể lệch 1–2 màn. Thử nối `BB.setProgress` vào hub thì người chỉ có `best` (không sao, không `word_lv`) thấy số màn đã qua giảm, nên chưa làm.
+- Word: hub, thử thách ngày và thẻ chia sẻ đếm cụm đã qua theo id (`BB.setProgress`, 2026-11-22). Người chỉ có `best` mà không có sao lẫn `word_lv` (dữ liệu bị xoá một phần) sẽ thấy số màn đã qua ở hub giảm; chưa gặp trường hợp thật.
 - Dòng `bb_log` cũ ghi `lv` theo bảng v1, nên `elo.replay` tính `b_L` sai cho chúng.
 - Ghi stats rồi ghi cờ là hai lệnh tách nhau; chỉ `remapLevels` an toàn khi bị chạy lại.
 - Sao của "L5 cũ" hiện ở "L5 mới" (train, koi, mem, rain) dù nội dung màn đã đổi: chọn có chủ đích, chưa hỏi Duy.
@@ -185,16 +186,16 @@ Game mà calibrate đang trượt ở màn cũ: run vẫn thêm màn mới nếu
 | train | speedF | ↑ | 0.28 (giữ) / 0.28 | đo bằng sim |
 | train | burstP | ↑ | 0.05 / 0.30 | dự trữ cho L31+ |
 | train | twoTone | ↑ | 0.45 | `rule`, khoá bởi E5 |
-| koi | koi | ↑ | 12.3 (start 12, `quad`) / 15 | L1–30 viết tay; L31+ đỉnh +1 con |
+| koi | koi | ↑ | 12.3 (start 12, `quad`) / 15 | L1–30 viết tay; L31+ đỉnh +1 con; cá ≥ ×1.25 thì tối đa 14 con (`derive`) |
 | koi | cd | ↑ | 3.2 / 3.2 | code koi.js |
 | koi | decoys | ↑ | 5.4 / 6 | đổi ở màn thở |
 | koi | spdMul | ↑ | 1.42 / 1.5 | đoán; màn thở L31+ −0.1 |
-| koi | turnMul | ↑ | 1.28 (start 1.2) / 1.6 | viết tay từ L9 |
+| koi | turnMul | ↑ | start 1.2, +0.05 mỗi màn thở / 1.6 | viết tay từ L9; đỉnh L31+ +0.1 |
 | koi | scatter | ↑ | 0.3 | `rule`, khoá bởi E5 |
 | mem | t | ↑ | 6.12 / 15 | `quad`; đỉnh +1, màn thở −1 |
 | mem | size | ↑ | 6 / 6 | ô ≥ 44 px ở 320 px |
 | mem | k | ↓ | 0.298 / 0.18 | giây nhìn mỗi ô, `quad` |
-| mem | disp | ↑ | 0.12 / 0.50 | màn thở −0.05 |
+| mem | disp | ↑ | 0.13 (start 0.1, `quad`) / 0.50 | màn thở −0.05 |
 | rain | ops | ↑ | 14 | tầng phép tính |
 | rain | fall / every | ↓ | 7.64 / 6.8 · 2.60 / 2.2 | lưới 0.01; đỉnh −0.30 / −0.08; màn thở +0.95 / +0.6 |
 | rain | target | ↑ | 25 / 25 | màn thở −15 |
@@ -223,7 +224,7 @@ Gate B có ngưỡng cố định ±0,05, không tính sai số mẫu, nên N nh
 |---|---|---|---|
 | E1 | `E1: 'A'` | L30 ≈ 69%, sàn 0.65, G5 50% | `'B'`: 58%, sàn 0.45, G5 80% |
 | E2 | `E2_WORD_LEVELS: 49` | giữ 49 | `30` |
-| E3 | `E3_FREEZE_LEGACY: false` (Duy gỡ 2026-11-21) | chơi `levels` của bảng | `true`: chơi lại `legacyLevels` |
+| E3 | `E3_FREEZE_LEGACY: false` (Duy gỡ 2026-11-21) | chơi `levels` của bảng | `true` **không còn là đường lùi**: `max`/`start`/`relief` của knob đã chỉnh cho 30 dòng `levels`, nên với `legacyLevels` (10–13 dòng) các màn sau đó dễ đi (train L12–30, koi L11, mem L14, rain L11). Muốn lùi thì revert commit. |
 | E4 | `E4: { maxStars: 1, unlocksNext: true, slowTempo: 0.85 }` | 1 sao, mở màn kế, có Nhịp chậm | sửa từng trường; `slowTempo: null` tắt |
 | E5 | `E5_KNOBS_ONLY: true` | knob `rule: true` luôn tắt | `false`: bật luật mới (cần mockup đã duyệt) |
 | Đỉnh L5 | `SAW_FROM_PERIODS: 2` (Duy 2026-11-21) | đỉnh đầu L10, màn thở đầu L11 | `1`: đỉnh L5, màn thở L6 như cũ |

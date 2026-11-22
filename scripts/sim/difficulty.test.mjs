@@ -307,6 +307,69 @@ test('core: BB.migrateProgress runs once per table version, keeps levels passed,
   assert.equal(loadCore({ withBBD: false }).BB.migrateProgress('mem').reason, 'no-engine');
 });
 
+// Review 2026-11-22 (#4): word reorders phrases (table v2) while bb_stats.word.best keeps v1 level numbers. A game
+// registers its own count (BB.setProgress); hub, daily and share read BB.progressOf; the rest fall back to best.
+test('core: progress registry drives daily level and share stars; unregistered games keep best', () => {
+  // v1 word player: passed L1–5 with 3 stars, train L3 with 2 stars. Migration moves word stars to phrase ids.
+  const v1 = { bb_stats: JSON.stringify({ word: { best: 5, stars: { 1: 3, 2: 3, 3: 3, 4: 3, 5: 3 } }, train: { best: 3, stars: { 3: 2 } } }) };
+  const { BB } = loadCore({ init: v1 });
+  BB.migrateProgress('word');
+  assert.deepEqual(J(BB.progressOf('word')), { done: 5, next: 6, best: 5, registered: false });   // fallback = best
+  assert.equal(BB.starsAt('word', 5), 0, 'v2 L5 is another phrase: the bug the registry fixes');
+  // The counter word.js registers: a level is done when its phrase has stars (same shape as js/word.js).
+  const max = BB.LV_MAX.word, done = L => BB.starsAt('word', L) > 0;
+  assert.equal(BB.setProgress('word', () => {
+    let n = 0, next = 1, top = 0;
+    for (let L = 1; L <= max; L++) if (done(L)) { n++; top = L; }
+    while (next < max && done(next)) next++;
+    return { done: n, next, best: top };
+  }), true);
+  const p = BB.progressOf('word');
+  assert.equal(p.registered, true); assert.equal(p.done, 5);
+  assert.equal(BB.starsAt('word', p.best), 3, 'share names a level whose phrase was really played');
+  assert.equal(p.next, Array.from({ length: max }, (_, i) => i + 1).find(L => !done(L)));
+  const share = BB.shareText();
+  assert.match(share, new RegExp(`Đoán Cụm Từ: Lv ${p.best} \\(3/3 ★\\)`));
+  assert.match(share, /Đường Ray: Lv 3 \(2\/3 ★\)/);                       // train: unregistered, best as before
+  // Daily challenge: on a Word day the level is the registered next level, not best + 1.
+  let date = null;
+  for (let i = 0; i < 400 && !date; i++) { const k = BB.dayKey(new Date(2027, 0, 1 + i)); BB.store.del('bb_daily_pin'); if (BB.daily(k).game === 'word') date = k; }
+  assert.ok(date); BB.store.del('bb_daily_pin');
+  assert.equal(BB.daily(date).level, p.next);
+  // Bad registrations never break the hub: unknown game refused, a throwing or junk counter falls back to best.
+  assert.equal(BB.setProgress('nope', () => ({})), false);
+  BB.setProgress('word', () => { throw new Error('x'); });
+  assert.equal(BB.progressOf('word').registered, false);
+  BB.setProgress('word', () => ({ done: 'x', next: 2 }));
+  assert.equal(BB.progressOf('word').registered, false);
+  BB.setProgress('word', () => ({ done: 999, next: -4 }));
+  assert.deepEqual(J(BB.progressOf('word')), { done: max, next: 1, best: max, registered: true });   // clamped
+});
+
+test('core: resetAll also removes table-version markers (bb_tablev_*) and seed flags', () => {
+  const { BB, ls } = loadCore({ init: { bb_stats: '{}', bb_tablev_word: '3', bb_tablev_koi: '2', bb_seed_mem: '1', bb_sound: '0' } });
+  BB.resetAll();
+  assert.deepEqual([...ls.keys()].filter(k => /^bb_(tablev|seed|stats)/.test(k)), []);
+  assert.equal(ls.get('bb_sound'), '0', 'settings stay');
+});
+
+// Review 2026-11-22 (#7): `start` hard-codes the value of the last step row of a table of `startAt` rows. Appending
+// rows must not pull the next generated level back to it.
+test('anchor: knob start applies only while levels has startAt rows; start without startAt is refused', () => {
+  const B = loadBBD({ games: [] });
+  const rows = n => Array.from({ length: n }, (_, i) => ({ a: 10 + i }));
+  const k = { name: 'a', int: true, start: 5, startAt: 30, step: 1, hardCap: 200 };
+  B.register('s30', { levels: rows(30), knobs: [k] });
+  assert.equal(B.level('s30', 31).a, 6, 'written for 30 rows: L31 steps on from start');
+  B.register('s35', { levels: rows(35), knobs: [k] });
+  assert.equal(B.level('s35', 36).a, 45, 'rows appended: L36 continues from row 35 (44), not from start');
+  assert.throws(() => B.register('bad', { levels: rows(30), knobs: [{ ...k, startAt: undefined }] }), /startAt/);
+  for (const g of ['koi', 'mem', 'rain']) {
+    const real = loadBBD();
+    real.spec(g).knobs.filter(x => x.start !== null).forEach(x => assert.equal(x.startAt, real.authoredCount(g), `${g}.${x.name}`));
+  }
+});
+
 test('maxLevel follows E2 and content-only games refuse to invent levels', () => {
   const B = loadBBD();
   assert.equal(B.maxLevel('word'), 49);
@@ -402,6 +465,8 @@ test('mem L31–40 generated from the engine: zero failed gates, zero waivers at
   const r = await calibrate('mem', { n: 1200, from: 26, to: 40, write: false, quiet: true });
   assert.deepEqual(failsByGate(r), {});
   assert.deepEqual(r.waived, []);
+  assert.equal(r.gates.find(g => g.id === 'G1').status, 'SKIP', 'L1–5 not in this run');
+  assert.equal(r.gates.find(g => g.id === 'G5').status, 'PASS', 'L30 is');
 });
 
 test('TODO adapters fail loudly instead of passing', async () => {
@@ -494,17 +559,30 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
     assert.deepEqual([1, 2, 3, 4, 5].map(L => B.level('mem', L).size), [4, 5, 6, 6, 6]);
   });
   // L31+ follows the table template, anchored at the last step row (L29), not at the L30 peak.
-  // Pinned rows = the ones calibrated green at N=1200 (calibrate mem --from 26 --to 45, 2026-11-21).
+  // Pinned rows = the ones calibrated green at N=1200 (calibrate mem --from 26 --to 45, 2026-11-22: disp start 0.1).
   test('L31–45: same template as the table (t 6 steps, peak +1 tile, breather −1 tile and gathered)', () => {
     const B = loadBBD();
     const got = []; for (let L = 31; L <= 45; L++) { const r = B.level('mem', L); got.push([r.t, r.disp]); }
-    assert.deepEqual(got, [[5, 0], [6, 0.05], [6, 0.05], [6, 0.1], [7, 0.1], [5, 0.05], [6, 0.1], [6, 0.1], [6, 0.1], [7, 0.1],
+    assert.deepEqual(got, [[5, 0.05], [6, 0.1], [6, 0.1], [6, 0.1], [7, 0.1], [5, 0.05], [6, 0.1], [6, 0.1], [6, 0.1], [7, 0.15],
       [5, 0.1], [6, 0.15], [6, 0.15], [6, 0.15], [7, 0.15]]);
     for (let L = 31; L <= 45; L++) {
       const r = B.level('mem', L), p = B.level('mem', L - 1);
       assert.equal(r.authored, undefined); assert.equal(r.size, 6); assert.ok(r.k >= 0.29, `L${L} k`);
       if (r.kind === 'peak') assert.equal(r.t, p.t + 1, `L${L} peak adds one tile`);
       if (r.kind === 'breather') assert.ok(harder(p, r), `L${L} breather lighter than peak`);
+    }
+  });
+  // Review 2026-11-22: disp start 0.05 and a breather guard that skipped authored rows let L31 (disp 0) and L32–33
+  // (disp 0.05) fall below the written L26 breather / L29 step. Every knob, every generated level up to L120.
+  test('generated steps are never easier than the L29 step, breathers never easier than the L26 breather', () => {
+    const B = loadBBD(), knobs = B.spec('mem').knobs;
+    const notEasier = (a, b, what) => knobs.forEach(k => assert.ok(harderOrEqual(k, a[k.name], b[k.name]), `${what}: ${k.name} ${a[k.name]} vs ${b[k.name]}`));
+    const l29 = B.level('mem', 29), l26 = B.level('mem', 26);
+    let lastB = l26;
+    for (let L = 31; L <= 120; L++) {
+      const r = B.level('mem', L);
+      if (r.kind === 'step') notEasier(r, l29, `L${L} step vs L29`);
+      if (r.kind === 'breather') { notEasier(r, lastB, `L${L} breather vs L${lastB.L}`); lastB = r; }
     }
   });
   test('L46..120 stays within hardCaps and reaches them by L120 (the +10 rule ends)', () => {
@@ -628,6 +706,21 @@ describe('train: table v2, one template for every level', () => {
       if (r.kind === 'peak') assert.ok(r.base < p.base || r.stations > p.stations, `L${L}: a peak adds a station or sends trains closer`);
     }
     assert.equal(B.level('train', 30).base, 3.27);   // played peak (override); the row keeps the 3.50 trend for L31+
+  });
+  // Review 2026-11-22: L2 (5 stations, base 3.46) was easier than L1 (5 stations, 3.41) and the result screen
+  // said "tàu ra thưa hơn". On the same station count a non-breather never raises base over the level before
+  // it, nor a step over the previous step (L1..40, so the generated L31+ are held to it too).
+  test('train: no step is easier than the step before (same stations: base never rises)', () => {
+    const B = loadBBD();
+    let prevStep = B.level('train', 1);
+    for (let L = 2; L <= 40; L++) {
+      const r = B.level('train', L), p = B.level('train', L - 1);
+      if (r.kind !== 'breather' && r.stations === p.stations) assert.ok(r.base <= p.base + 1e-9, `L${L} base ${r.base} > L${L - 1} ${p.base}`);
+      if (r.kind === 'step' && r.stations === prevStep.stations)
+        assert.ok(r.base <= prevStep.base + 1e-9, `L${L} base ${r.base} > step L${prevStep.L} ${prevStep.base}`);
+      if (r.kind === 'step') prevStep = r;
+    }
+    assert.ok(B.level('train', 2).base < B.level('train', 1).base, 'L2 sends trains closer than L1');
   });
 
   test('train progress: real old keys (v1, no marker) → v2 keep best, stars and rtd_*; corrupt data does not crash', () => {

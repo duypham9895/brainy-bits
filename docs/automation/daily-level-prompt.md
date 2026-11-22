@@ -62,13 +62,16 @@ that merges only when every check is green. If one game's new level cannot be ma
 1. **PM**: state today's target for each game: new level number L = maxLevel + 1, its kind from
    `BBD.kind(L)` (peak at 5k and breather at 5k+1 from L10 on, else step; L1-9 are all steps, no peak at L5),
    the target pass rate `BBD.pStar(L)`.
-   Stop rules: if `BBD.exhausted(game, L)` is true (every knob at its hardCap), do NOT invent a harder
+   Stop rules: if `BBD.exhausted(game, L)` is true (every knob at its hardCap, or for koi (`strictPeaks`) a
+   generated peak that is not harder than the peak before it), do NOT invent a harder
    level: skip that game and add it to "needs Duy" (a new mechanic or knob is an owner decision, E5).
    Global cap: if any game would exceed 100 levels, skip it and ask Duy (the level grid and pacing were
    designed for far fewer).
 2. **Game design** (train, koi, mem, rain): extend the knob table in `js/levels/<game>.js` by exactly one
    level: raise `maxLevel` by one and let the engine generate it from the formula and priority order; add a
-   hand-written row at the end of `levels` only if the generated one fails a gate. Change at most 1-2 knobs
+   hand-written row at the end of `levels` only if the generated one fails a gate. A knob `start` only applies
+   while `levels` has exactly `startAt` rows: after you append a row, the next generated level anchors on your
+   row, so check it with `BBD.level` and set a new `start`/`startAt` if your row is a peak. Change at most 1-2 knobs
    versus the previous level; breathers ease the main knob (and may add a life or cut the target, E4); peaks
    push one notch. Never edit an existing row in `levels`, never change `version`: stars and "levels passed"
    are keyed to shipped levels, and a retune needs a migration this run is not allowed to write. Respect every hardCap and the human limits cited in the rules file

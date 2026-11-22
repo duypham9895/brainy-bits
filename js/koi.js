@@ -475,7 +475,10 @@ function renderKHow(){
   for (let lv = 1; lv <= LV_MAX && !grey; lv++) if (params(lv).decoys) grey = lv;
   rows[1].innerHTML = 'Chờ <b>vòng hẹn giờ</b> ở dưới đầy lại mới chạm tiếp.' +
     (grey ? ` Từ level ${grey} có <b>cá xám</b> bơi lẫn, đừng chạm vào.` : '');
-  rows[2].innerHTML = `Nhầm <b>tối đa 1 lần</b> là qua hồ. Level 1 có ${params(1).koi} cá koi. Cá đông dần rồi bơi nhanh dần. Cứ 5 level có một màn khó, ngay sau là một màn nhẹ.`;
+  let peak = 0;                                    // màn khó đầu tiên (L10 từ 2026-11-21, không còn ở L5)
+  for (let lv = 1; lv <= LV_MAX && !peak; lv++) if (BBD.level('koi', lv).kind === 'peak') peak = lv;
+  rows[2].innerHTML = `Nhầm <b>tối đa 1 lần</b> là qua hồ. Level 1 có ${params(1).koi} cá koi. Cá đông dần rồi bơi nhanh dần.` +
+    (peak ? ` Từ level ${peak}, cứ 5 level có một màn khó, ngay sau là một màn nhẹ.` : '');
 }
 let chosenK = 1, kPassed = false;
 function renderKLevels(){

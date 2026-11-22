@@ -275,7 +275,8 @@ test('review 2026-11-21: menu copy matches the level table (fish at L1, first gr
   const how = page.locator('#kmenu .how');
   await expect(how).toContainText(`Level 1 có ${want.koi1} cá koi.`);
   await expect(how).toContainText(`Từ level ${want.grey} có cá xám`);
-  await expect(how).toContainText('Cứ 5 level có một màn khó, ngay sau là một màn nhẹ.');
+  // First peak is L10 since 2026-11-21 (no peak at L5): the copy names it instead of "every 5 levels" from L1.
+  await expect(how).toContainText('Từ level 10, cứ 5 level có một màn khó, ngay sau là một màn nhẹ.');
   await expect(how).not.toContainText('mỗi level tăng thêm 1 con');
   expect(want).toEqual({ koi1: 12, grey: 10 });
   expect(errors).toEqual([]);

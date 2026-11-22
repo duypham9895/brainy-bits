@@ -299,10 +299,12 @@ test('re-seeds a word best clamped to 12 by an older build (review #1)', async (
   await page.goto('/');
   await expect(page.locator('#hubWord')).toHaveText('Đã qua 24/49 level');
   expect(await page.evaluate(() => [BB.gameStats('word').best, localStorage.getItem('bb_seeded_v2')])).toEqual([24, '1']);
-  // Seeding only raises: a stored best above legacy stays.
+  // Seeding only raises: a stored best above legacy stays. The hub counts phrases actually passed (word registers
+  // BB.setProgress since table v2 reordered them), so a bare best of 30 with no stars still shows the 24 from word_lv.
   await page.evaluate(() => { localStorage.setItem('bb_stats', JSON.stringify({ word: { best: 30, stars: {} } })); localStorage.removeItem('bb_seeded_v2'); });
   await page.reload();
-  await expect(page.locator('#hubWord')).toHaveText('Đã qua 30/49 level');
+  expect(await page.evaluate(() => BB.gameStats('word').best)).toBe(30);
+  await expect(page.locator('#hubWord')).toHaveText('Đã qua 24/49 level');
 });
 
 for (const [btn, menu] of [['openTrain', 'menu'], ['openKoi', 'kmenu'], ['openMem', 'mmenu'], ['openRain', 'rmenu'], ['openWord', 'wmenu']]) {

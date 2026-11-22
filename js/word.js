@@ -130,8 +130,10 @@ const isDone = L => starsOf(L) > 0 || LEGACY_KEYS.slice(0, legacyDone()).include
 const doneCount = () => { let n = 0; for (let L = 1; L <= LV_MAX; L++) if (isDone(L)) n++; return n; };
 const bestLv = () => Math.min(LV_MAX, Math.max(BB.gameStats('word').best, legacyDone()));
 const nextOpen = () => { let L = 1; while (L < LV_MAX && isDone(L)) L++; return L; };
-// Hub và thử thách ngày đọc tiến độ theo màn đã qua, không theo best (thứ tự đã đổi). Chỉ chạy khi core có registry.
-if (BB.setProgress) BB.setProgress('word', () => ({ done: doneCount(), next: nextOpen() }));
+const topDone = () => { let L = LV_MAX; while (L > 0 && !isDone(L)) L--; return L; };
+// Hub, thử thách ngày và thẻ chia sẻ đọc tiến độ theo màn đã qua, không theo best (thứ tự đã đổi).
+// best = màn cao nhất đã qua theo thứ tự hiện tại: thẻ chia sẻ lấy sao của đúng cụm ở màn đó.
+if (BB.setProgress) BB.setProgress('word', () => ({ done: doneCount(), next: nextOpen(), best: topDone() }));
 const starsFor = tries => tries <= 3 ? 3 : tries <= 5 ? 2 : 1;
 const STAR_RULE = '3 sao: tối đa 3 lượt · 2 sao: 4–5 lượt · 1 sao: 6 lượt';
 
@@ -478,7 +480,7 @@ function syncCopy(){
   const how = document.querySelectorAll('#wmenu .how > div > span:last-child');
   if (how[0]) how[0].innerHTML = 'Gõ chữ cái, bấm <b>â ê ô / ă / ơ ư</b> để đổi nguyên âm và <b>á à ả ã ạ</b> để thêm dấu thanh. Dấu tự vào đúng chữ như bộ gõ: <b>mua</b> + <b>à</b> ra <b>mùa</b>. Bàn phím máy tính gõ được VNI: a1 = á, o6 = ô, u7 = ư, d9 = đ.';
   if (how[1]) how[1].innerHTML = '<b>Xanh lá</b>: đúng chữ, đúng chỗ. <b>Vàng</b>: có chữ đó nhưng sai chỗ. <b>Xanh dương</b>: có nguyên âm đó nhưng khác dấu (o, ô, ơ tính chung), có thể ở chỗ khác. <b>Xám</b>: không có.';
-  if (how[2]) how[2].innerHTML = 'Mỗi level 1 cụm từ, càng lên càng dài. Từ đoán phải đánh vần được thành tiếng Việt. Kẹt quá thì bấm <b>💡</b> xem chủ đề.';
+  if (how[2]) how[2].innerHTML = 'Mỗi level 1 cụm từ, xếp theo độ khó. Từ đoán phải đánh vần được thành tiếng Việt. Kẹt quá thì bấm <b>💡</b> xem chủ đề.';
   const lg = document.querySelector('#wordApp .wlegend');
   // Nhãn đầy đủ và nhãn ngắn (cùng chữ với RES_TXT); css/word.css chọn cái nào hiện theo bề ngang.
   if (lg) lg.innerHTML = [['green', 'Đúng chữ, đúng chỗ', 'Đúng chỗ'], ['yellow', 'Đúng chữ, sai chỗ', 'Sai chỗ'], ['blue', 'Có nguyên âm, khác dấu', 'Khác dấu'], ['gray', 'Không có', 'Không có']]

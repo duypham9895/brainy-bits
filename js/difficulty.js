@@ -15,7 +15,10 @@ const CONFIG = {
   E1: 'A',                 // L30 peak median pass: 'A' ≈ 0.69 (default) | 'B' ≈ 0.58. Presets in E1_PRESETS.
   E2_WORD_LEVELS: 49,      // Đoán Cụm Từ: keep all 49 (default) or cut to 30.
   // E3 lifted by Duy 2026-11-21: a table plays its `levels` rows (L1..n, retuned to the template) and keeps
-  // `legacyLevels` as reference data for parity tests and progress migration. true = play legacy rows again.
+  // `legacyLevels` as reference data for parity tests and progress migration. true = play legacy rows again,
+  // but it is NOT a valid rollback: knob max/start/relief were retuned for the 30 `levels` rows, so after the
+  // 10–13 legacy rows the generated levels get easier (train L12–30, koi L11, mem L14, rain L11). Roll back by
+  // reverting the commit instead. Kept only so parity tests can replay the v1 rows.
   E3_FREEZE_LEGACY: false,
   E4: { maxStars: 1, unlocksNext: true, slowTempo: 0.85 },  // win on "lighter": star cap, unlock L+1, slow tempo (null = off)
   E5_KNOBS_ONLY: true,     // true = knobs only; knobs flagged rule:true (new mechanics) stay off.
@@ -98,7 +101,7 @@ function register(gameKey, spec) {
     relief: Object.freeze(fx(spec.relief)), peak: Object.freeze(fx(spec.peak)),
     lighterKnobs: Object.freeze((spec.lighterKnobs || priority).slice()),
     derive: typeof spec.derive === 'function' ? spec.derive : null,
-    maxLevel: spec.maxLevel, overrides: Object.freeze({ ...(spec.overrides || {}) }),
+    maxLevel: spec.maxLevel, strictPeaks: !!spec.strictPeaks, overrides: Object.freeze({ ...(spec.overrides || {}) }),
     meta: Object.freeze({ ...(spec.meta || {}) }),
     gateWaivers: checkWaivers(gameKey, spec.gateWaivers),
   });
@@ -112,11 +115,15 @@ function normKnob(g, k, legacy) {
   const last = legacy.length ? legacy[legacy.length - 1][k.name] : undefined;
   const min = typeof k.min === 'number' ? k.min : last;
   if (typeof min !== 'number') throw new Error(`BBD.register(${g}): knob "${k.name}" needs min (or a legacy value)`);
+  // `start` is written for one table length: the row count it steps back from. Appending rows moves the anchor,
+  // so `start` stops applying there instead of pulling L(n+1) back to an old value (review 2026-11-22).
+  if (typeof k.start === 'number' && !isInt(k.startAt)) throw new Error(`BBD.register(${g}): knob "${k.name}" has start but no startAt (the levels count it was written for)`);
   const dir = Math.sign(k.hardCap - min) || Math.sign((k.max ?? k.hardCap) - min) || (k.dir || 1);
   const step = k.int ? Math.max(1, k.step || 1) : (k.step || 0);
   return Object.freeze({
     name: k.name, min, max: typeof k.max === 'number' ? k.max : null, hardCap: k.hardCap,
     start: typeof k.start === 'number' ? k.start : null,
+    startAt: k.startAt === undefined ? null : k.startAt,
     off: typeof k.off === 'number' ? k.off : min, curve: k.curve || 'sqrt', unlockAt: k.unlockAt || 0,
     step, notch: k.notch || step, int: !!k.int, dir, rule: !!k.rule, reserve: !!k.reserve, changeOn: k.changeOn || 'any',
     source: k.source || '',
@@ -170,7 +177,8 @@ function anchor(s, k) {
   const seed = seedOf(s), n = seed.length;
   const fromLegacy = n && typeof seed[n - 1][k.name] === 'number';
   let aL = fromLegacy ? n : 1, aV = fromLegacy ? seed[n - 1][k.name] : k.min;
-  if (typeof k.start === 'number' && fromLegacy) aV = k.start;   // first generated level jumps here (harder side only)
+  // First generated level jumps to `start`, but only while the table still ends where `start` was written for.
+  if (k.start !== null && fromLegacy && n === k.startAt) aV = k.start;
   if (k.unlockAt && k.unlockAt - 1 > aL) { aL = k.unlockAt - 1; aV = k.off; }
   if (k.reserve) {
     const i = s.priority.indexOf(k.name);
@@ -231,10 +239,11 @@ function compute(s, L) {
   if (kd === 'breather') s.relief.forEach(r => {
     const k = s.knobs.find(x => x.name === r.knob);
     const relieved = quant(k, row[k.name] - k.dir * (r.by ?? k.step));
-    // Breathers stay monotone among themselves: never easier than the previous generated breather.
-    // Whether a breather sits between its peak and L−4 is a pass-rate question: gate G3 in the simulator.
-    const prevL = L - CONFIG.PERIOD;                     // the previous breather, when it is generated and is one
-    const prevB = prevL > n && kind(prevL) === 'breather' ? levelRow(s, prevL)[k.name] : undefined;
+    // Breathers stay monotone among themselves: never easier than the previous breather, authored or generated
+    // (so L31 is never easier than a written L26). Whether a breather sits between its peak and L−4 is a
+    // pass-rate question: gate G3 in the simulator.
+    const prevL = L - CONFIG.PERIOD;
+    const prevB = prevL >= 1 && kind(prevL) === 'breather' ? levelRow(s, prevL)[k.name] : undefined;
     row[k.name] = typeof prevB === 'number' ? harder(k, relieved, prevB) : relieved;
   });
   Object.assign(row, s.overrides[L] || {});              // authored exceptions, e.g. a hand-set L30
@@ -269,10 +278,32 @@ const version = gameKey => get(gameKey).version;
 // Number of levels read from a written table (levels or legacyLevels) before the formula takes over.
 const authoredCount = gameKey => legacyN(get(gameKey));
 // True when every non-rule knob sits at its hardCap: the "+10 levels" rule must STOP and ask Duy.
+// A table with `strictPeaks: true` is also exhausted from the first generated peak that is not strictly harder
+// than both the level before it and the previous peak (no knob easier, at least one harder): a flat peak.
+const liveKnobs = s => s.knobs.filter(k => !(k.rule && CONFIG.E5_KNOBS_ONLY));
+function strictlyHarder(s, a, b) {
+  let more = false;
+  for (const k of liveKnobs(s)) {
+    const d = k.dir * (a[k.name] - b[k.name]);
+    if (d < -1e-9) return false;
+    if (d > 1e-9) more = true;
+  }
+  return more;
+}
+function firstFlatPeak(s, L) {
+  for (let P = legacyN(s) + 1; P <= L; P++) {
+    if (kind(P) !== 'peak') continue;
+    const row = levelRow(s, P), prevPeak = P - CONFIG.PERIOD;
+    if (!strictlyHarder(s, row, levelRow(s, P - 1))) return P;
+    if (prevPeak >= 1 && kind(prevPeak) === 'peak' && !strictlyHarder(s, row, levelRow(s, prevPeak))) return P;
+  }
+  return 0;
+}
 function exhausted(gameKey, L) {
   const s = get(gameKey);
-  const live = s.knobs.filter(k => !(k.rule && CONFIG.E5_KNOBS_ONLY));
-  return live.length > 0 && live.every(k => atCap(k, raw(s, k, L)));
+  const live = liveKnobs(s);
+  if (live.length > 0 && live.every(k => atCap(k, raw(s, k, L)))) return true;
+  return s.strictPeaks && isInt(L) && firstFlatPeak(s, L) > 0;
 }
 
 // ---------- lighter variant (E4, §4.5): one notch easier on the first knob that can move ≤ 15% ----------
@@ -411,7 +442,7 @@ const progress = {
 
 return Object.freeze({
   CONFIG, E1_PRESETS, e1, D, kind, pStar, register, WAIVABLE_GATES, level, maxLevel, exhausted, lighter, elo,
-  levelId, version, authoredCount, progress,
+  levelId, version, authoredCount, progress, strictlyHarder: (g, a, b) => strictlyHarder(get(g), a, b),
   games: () => [...specs.keys()],
   spec: gameKey => get(gameKey),
   clearCache: () => cache.clear(),

@@ -3,7 +3,9 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadBBD } from './load-bbd.mjs';
-import { checkGates, applyWaivers, validateWaivers, gateStatus } from './calibrate.mjs';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { checkGates, applyWaivers, validateWaivers, gateStatus, calibrate, UsageError } from './calibrate.mjs';
 
 export function registerSawtooth() {
 describe('engine: sawtooth from L10 and gate waivers', () => {
@@ -115,6 +117,30 @@ test('waiver rejected: any gate other than B, or no reason string, throws (table
   }
   assert.deepEqual(validateWaivers(undefined), {});
   assert.deepEqual(validateWaivers({ B: 'r' }), { B: 'r' });
+});
+
+// Review 2026-11-22 (#1): an inverted range simulated zero levels, every gate read PASS and calibrate exited 0.
+test('calibrate: --from > --to (also --from past maxLevel with --to left out) is a usage error, exit 2', async () => {
+  const cli = fileURLToPath(new URL('./calibrate.mjs', import.meta.url));
+  const run = args => spawnSync(process.execPath, [cli, ...args, '--no-write', '--quiet'], { encoding: 'utf8' });
+  for (const args of [['rain', '--from', '35', '--to', '30'], ['rain', '--from', '35'], ['mem', '--from', '2', '--to', '1']]) {
+    const r = run(args);
+    assert.equal(r.status, 2, `${args.join(' ')}: ${r.stderr}`);
+    assert.match(r.stderr, /empty level range/);
+  }
+  await assert.rejects(calibrate('rain', { n: 5, from: 35, write: false, quiet: true }), UsageError);
+  assert.equal(run(['rain', '--from', '30', '--to', '30', '--n', '5']).status === 2, false, 'a one-level range is fine');
+});
+
+// Review 2026-11-22 (#9): a gate whose levels are not in the run reports SKIP, never PASS.
+test('calibrate: G1 skips without L1–5 and G5 skips without L30; a partial L1–5 range still judges G1', async () => {
+  const st = (r, id) => r.gates.find(g => g.id === id);
+  const late = await calibrate('rain', { n: 5, from: 31, to: 32, write: false, quiet: true });
+  for (const id of ['G1', 'G5']) assert.deepEqual([st(late, id).status, st(late, id).pass], ['SKIP', null], id);
+  const early = await calibrate('mem', { n: 5, from: 4, to: 6, write: false, quiet: true });
+  assert.notEqual(st(early, 'G1').status, 'SKIP');
+  assert.match(st(early, 'G1').note, /only L4–5/);
+  assert.equal(st(early, 'G5').status, 'SKIP');
 });
 });
 }

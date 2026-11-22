@@ -86,8 +86,13 @@ export function checkGates(rows, BBD, game, adapter, n) {
   gate('B', `every level: |p_median − p*| ≤ 0.05${BBD.CONFIG.BREATHER_EASY_OK ? ' (breathers: only too hard fails)' : ''}${BBD.CONFIG.B_EASY_OK_BEFORE_SAW ? ` (L1–${bOneSidedBelow(BBD) - 1}: only p_median < p* − 0.05 fails)` : ''}`,
     rows.filter(r => bMiss(r, BBD))
       .map(r => `L${r.L} median ${r.profiles.median.p} vs p* ${r.pStar.toFixed(3)}`));
-  gate('G1', 'weak ≥ 85% on L1–5',
-    rows.filter(r => r.L <= 5 && r.profiles.weak.p < G1_WEAK).map(r => `L${r.L} weak ${r.profiles.weak.p}`));
+  // A gate whose levels are not in the run is SKIP (pass: null), never PASS: a partial run proves nothing about them.
+  const skip = (id, name, note) => out.push({ id, name, pass: null, fails: [], note });
+  const g1Rows = rows.filter(r => r.L <= 5);
+  if (!g1Rows.length) skip('G1', 'weak ≥ 85% on L1–5', 'L1–5 not in range');
+  else gate('G1', 'weak ≥ 85% on L1–5',
+    g1Rows.filter(r => r.profiles.weak.p < G1_WEAK).map(r => `L${r.L} weak ${r.profiles.weak.p}`),
+    g1Rows.length < 5 ? `only L${g1Rows[0].L}–${g1Rows[g1Rows.length - 1].L} in range` : '');
   gate('G2', 'median pass rate does not rise between consecutive step levels (tolerance = 2·SE)',
     rows.filter(r => r.kind !== 'breather' && byL.has(r.L - 1)).filter(r => {
       const a = P(r.L - 1, 'median'), b = r.profiles.median.p;
@@ -103,9 +108,9 @@ export function checkGates(rows, BBD, game, adapter, n) {
   gate('G4', 'weak ≥ 60% on every breather',
     rows.filter(r => r.kind === 'breather' && r.profiles.weak.p < G4_WEAK).map(r => `L${r.L} weak ${r.profiles.weak.p}`));
   const r30 = byL.get(30), skilledMin = BBD.e1().skilledL30;
-  gate('G5', `skilled ≥ ${skilledMin * 100}% at L30 (E1 = ${BBD.CONFIG.E1})`,
-    r30 ? (r30.profiles.skilled.p < skilledMin ? [`L30 skilled ${r30.profiles.skilled.p}`] : []) : [],
-    r30 ? '' : 'L30 not in range');
+  const g5Name = `skilled ≥ ${skilledMin * 100}% at L30 (E1 = ${BBD.CONFIG.E1})`;
+  if (!r30) skip('G5', g5Name, 'L30 not in range');
+  else gate('G5', g5Name, r30.profiles.skilled.p < skilledMin ? [`L30 skilled ${r30.profiles.skilled.p}`] : []);
   const spec = BBD.spec(game);
   gate('G6', `knobs within hardCap; targets ≥ ${TOUCH_PX} px at 320 and 390 px`,
     rows.flatMap(r => {
@@ -127,10 +132,16 @@ export function checkGates(rows, BBD, game, adapter, n) {
   return applyWaivers(out, spec.gateWaivers, game).map(g => ({ ...g, status: gateStatus(g) }));
 }
 
+export class UsageError extends Error {}
+
 export async function calibrate(game, { n = 400, from = 1, to, write = true, quiet = false, adapterOpts = {} } = {}) {
   const BBD = loadBBD();
   const adapter = await loadAdapter(game);
   to = to || BBD.maxLevel(game);
+  // An empty range checks nothing, so every gate would read PASS: refuse it (CLI exit 2, usage error).
+  if (!(Number.isInteger(from) && from >= 1 && Number.isInteger(to) && from <= to)) {
+    throw new UsageError(`empty level range: --from ${from} > --to ${to} (--to defaults to maxLevel ${BBD.maxLevel(game)})`);
+  }
   const rows = [];
   for (let L = from; L <= to; L++) {
     const spec = BBD.level(game, L);

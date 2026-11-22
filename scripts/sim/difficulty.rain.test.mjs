@@ -212,7 +212,9 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
     // L38 seeds). A bigger N narrows the G2 tolerance, so this is stricter. CI runs the same N.
     const r = await calibrate('rain', { n: 4000, from: 31, to: 45, write: false, quiet: true });
     assert.deepEqual(failsByGate(r), {});
-    for (const id of ['G1', 'G4', 'G5', 'G6', 'G8']) assert.equal(r.gates.find(g => g.id === id).pass, true, id);
+    for (const id of ['G4', 'G6', 'G8']) assert.equal(r.gates.find(g => g.id === id).pass, true, id);
+    // L1–5 and L30 are not in this run: G1 and G5 report SKIP (pass: null), never PASS (review 2026-11-22).
+    for (const id of ['G1', 'G5']) assert.deepEqual([r.gates.find(g => g.id === id).status, r.gates.find(g => g.id === id).pass], ['SKIP', null], id);
     r.levels.filter(l => l.kind !== 'breather').forEach(l =>
       assert.ok(Math.abs(l.profiles.median.p - l.pStar) <= 0.05, `L${l.L} median ${l.profiles.median.p} vs p* ${l.pStar}`));
   });
