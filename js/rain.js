@@ -82,7 +82,7 @@ const spec = L => { const D = table(); return D ? D.level('rain', L) : legacySpe
 // Mỗi tầng phép tính có một tên; L1..10 là đúng tên cũ.
 const levelName = L => window.BBRain.TIER_NAME[spec(L).ops];
 const makeEq = L => window.BBRain.makeEq(spec(L).ops, Math.random);
-// Số giọt được để rơi trước khi thua. Bảng v2: màn thở (11, 16, 21, 26) cho 4, còn lại 3 (lưới đỡ E4).
+// Số giọt được để rơi trước khi thua. Bảng v2: màn thở (16, 21, 26, từ 2026-11-22) cho 4, còn lại 3 (lưới đỡ E4).
 const livesOf = L => { const n = spec(L).lives; return Number.isInteger(n) && n > 0 ? n : LIVES; };
 // Dòng "level kế tiếp" ở màn kết quả: tên tầng khi đổi phép tính, rồi cái gì đổi (mưa, số phép, số mạng).
 function nextInfo(L){

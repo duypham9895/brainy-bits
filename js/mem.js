@@ -238,8 +238,9 @@ const DISP_SHOWN = 0.2;
 // What changes on the next level, in one short line (feedforward).
 function nextTxt(){
   const a = spec(level), b = spec(level + 1);
+  // A bigger grid is the new thing even when the tile count drops with it (L6: 4×4 → 5×5, 4 → 3 tiles).
+  if (b.size > a.size) return b.t !== a.t ? `Level ${level+1}: lưới ${b.size}×${b.size}, ${b.t} ô sáng.` : `Level ${level+1} vẫn ${b.t} ô, trên lưới ${b.size}×${b.size}.`;
   if (b.t !== a.t) return `Level ${level+1} có ${b.t} ô sáng.`;
-  if (b.size > a.size) return `Level ${level+1} vẫn ${b.t} ô, trên lưới ${b.size}×${b.size}.`;
   if (b.show < a.show) return `Level ${level+1} vẫn ${b.t} ô, chỉ được nhìn ${secTxt(b.show)} giây.`;
   if (b.disp > a.disp && b.disp >= DISP_SHOWN) return `Level ${level+1} vẫn ${b.t} ô, nằm rải xa nhau hơn.`;
   return `Level ${level+1} có ${b.t} ô sáng.`;

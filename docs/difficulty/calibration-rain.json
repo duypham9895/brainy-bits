@@ -8,7 +8,7 @@
  "config": {
   "E1": "A",
   "breatherEasyOk": true,
-  "bEasyOkBelow": 10,
+  "bEasyOkBelow": 15,
   "E3": false,
   "E5": true,
   "tableVersion": 2,
@@ -20,11 +20,13 @@
  "note": "bL = logit(1 − p_median) with θ_median = 0, a = 1; 2PL fit not run yet",
  "adapterOpts": {},
  "ok": true,
- "waived": [],
+ "waived": [
+  "G9"
+ ],
  "gates": [
   {
    "id": "B",
-   "name": "every level: |p_median − p*| ≤ 0.05 (breathers: only too hard fails) (L1–9: only p_median < p* − 0.05 fails)",
+   "name": "every level: |p_median − p*| ≤ 0.05 (breathers: only too hard fails) (L1–14: only p_median < p* − 0.05 fails)",
    "pass": true,
    "fails": [],
    "note": "",
@@ -32,7 +34,7 @@
   },
   {
    "id": "G1",
-   "name": "weak ≥ 85% on L1–5",
+   "name": "weak floor: ≥ 90% on L1–5, ≥ 82% on L6–10",
    "pass": true,
    "fails": [],
    "note": "",
@@ -79,6 +81,19 @@
    "status": "PASS"
   },
   {
+   "id": "G9",
+   "name": "weak ≥ 70% at the first peak (L15)",
+   "pass": null,
+   "fails": [
+    "L15 weak 0.3183"
+   ],
+   "note": "WAIVED: Duy 2026-11-22 (A): under human.mjs the weak bot computes ~1.4x slower than the median bot, so at the L15 peak weak tops out near 0.65 (tier 10) while the median is already 0.97 and fails B; no table row holds G9 and B together. Revisit with real-player data (G7).",
+   "waived": true,
+   "waiver": "Duy 2026-11-22 (A): under human.mjs the weak bot computes ~1.4x slower than the median bot, so at the L15 peak weak tops out near 0.65 (tier 10) while the median is already 0.97 and fails B; no table row holds G9 and B together. Revisit with real-player data (G7).",
+   "measuredPass": false,
+   "status": "WAIVED"
+  },
+  {
    "id": "G7",
    "name": "Playwright parity, 3 seeds at L1/L15/L30",
    "pass": null,
@@ -100,7 +115,7 @@
    "L": 1,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.92,
+   "pStar": 0.97,
    "D": 0,
    "bL": -6.907,
    "knobs": {
@@ -148,7 +163,7 @@
    "L": 2,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8884,
+   "pStar": 0.965,
    "D": 0.1857,
    "bL": -6.907,
    "knobs": {
@@ -196,7 +211,7 @@
    "L": 3,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8754,
+   "pStar": 0.96,
    "D": 0.2626,
    "bL": -6.907,
    "knobs": {
@@ -244,7 +259,7 @@
    "L": 4,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8653,
+   "pStar": 0.955,
    "D": 0.3216,
    "bL": -6.907,
    "knobs": {
@@ -292,7 +307,7 @@
    "L": 5,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8569,
+   "pStar": 0.95,
    "D": 0.3714,
    "bL": -6.907,
    "knobs": {
@@ -340,7 +355,7 @@
    "L": 6,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8494,
+   "pStar": 0.945,
    "D": 0.4152,
    "bL": -6.907,
    "knobs": {
@@ -388,26 +403,26 @@
    "L": 7,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8427,
+   "pStar": 0.94,
    "D": 0.4549,
    "bL": -6.907,
    "knobs": {
     "ops": 7,
-    "fall": 8,
-    "every": 2.6,
-    "target": 17,
+    "fall": 10.25,
+    "every": 3.8,
+    "target": 16,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.9967,
+     "p": 1,
      "ci": [
-      0.9915,
-      0.9987
+      0.9968,
+      1
      ],
-     "acc": 0.9601,
-     "msMedian": 44338,
+     "acc": 0.9606,
+     "msMedian": 59513,
      "p3": 1
     },
     "median": {
@@ -416,8 +431,8 @@
       0.9968,
       1
      ],
-     "acc": 0.9751,
-     "msMedian": 43455,
+     "acc": 0.9752,
+     "msMedian": 58832,
      "p3": 1
     },
     "skilled": {
@@ -427,7 +442,7 @@
       1
      ],
      "acc": 0.9835,
-     "msMedian": 43350,
+     "msMedian": 58730,
      "p3": 1
     }
    }
@@ -436,26 +451,26 @@
    "L": 8,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8365,
+   "pStar": 0.935,
    "D": 0.4913,
    "bL": -6.907,
    "knobs": {
     "ops": 8,
-    "fall": 7.55,
-    "every": 2.45,
-    "target": 18,
+    "fall": 10.25,
+    "every": 3.8,
+    "target": 16,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.9592,
+     "p": 1,
      "ci": [
-      0.9464,
-      0.969
+      0.9968,
+      1
      ],
-     "acc": 0.9622,
-     "msMedian": 44703,
+     "acc": 0.9605,
+     "msMedian": 59713,
      "p3": 1
     },
     "median": {
@@ -464,8 +479,8 @@
       0.9968,
       1
      ],
-     "acc": 0.9756,
-     "msMedian": 43705,
+     "acc": 0.9758,
+     "msMedian": 58966,
      "p3": 1
     },
     "skilled": {
@@ -474,8 +489,8 @@
       0.9968,
       1
      ],
-     "acc": 0.9862,
-     "msMedian": 43299,
+     "acc": 0.9866,
+     "msMedian": 58670,
      "p3": 1
     }
    }
@@ -484,132 +499,36 @@
    "L": 9,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8307,
+   "pStar": 0.93,
    "D": 0.5252,
-   "bL": -3.852,
+   "bL": -6.907,
    "knobs": {
     "ops": 9,
-    "fall": 7.3,
-    "every": 2.4,
-    "target": 19,
+    "fall": 10.25,
+    "every": 3.8,
+    "target": 16,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.53,
+     "p": 0.9925,
      "ci": [
-      0.5017,
-      0.5581
+      0.9858,
+      0.996
      ],
-     "acc": 0.9383,
-     "msMedian": 45946,
-     "p3": 0.9483
-    },
-    "median": {
-     "p": 0.9792,
-     "ci": [
-      0.9694,
-      0.9858
-     ],
-     "acc": 0.9628,
-     "msMedian": 45832,
+     "acc": 0.9464,
+     "msMedian": 60429,
      "p3": 1
     },
-    "skilled": {
-     "p": 0.9983,
-     "ci": [
-      0.9939,
-      0.9995
-     ],
-     "acc": 0.9786,
-     "msMedian": 45194,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 10,
-   "kind": "peak",
-   "legacy": false,
-   "pStar": 0.7653,
-   "D": 0.5571,
-   "bL": -1.247,
-   "knobs": {
-    "ops": 10,
-    "fall": 7.25,
-    "every": 2.4,
-    "target": 20,
-    "lives": 3,
-    "storm": 0
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.1325,
-     "ci": [
-      0.1145,
-      0.1529
-     ],
-     "acc": 0.9215,
-     "msMedian": 26961,
-     "p3": 0.4467
-    },
     "median": {
-     "p": 0.7767,
+     "p": 1,
      "ci": [
-      0.7522,
-      0.7993
+      0.9968,
+      1
      ],
-     "acc": 0.9538,
-     "msMedian": 48723,
-     "p3": 0.9925
-    },
-    "skilled": {
-     "p": 0.9792,
-     "ci": [
-      0.9694,
-      0.9858
-     ],
-     "acc": 0.974,
-     "msMedian": 48190,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 11,
-   "kind": "breather",
-   "legacy": false,
-   "pStar": 0.8202,
-   "D": 0.5872,
-   "bL": -4.436,
-   "knobs": {
-    "ops": 11,
-    "fall": 9,
-    "every": 3.4,
-    "target": 10,
-    "lives": 4,
-    "storm": 0
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.7183,
-     "ci": [
-      0.6922,
-      0.7431
-     ],
-     "acc": 0.9144,
-     "msMedian": 36683,
-     "p3": 0.9875
-    },
-    "median": {
-     "p": 0.9883,
-     "ci": [
-      0.9805,
-      0.993
-     ],
-     "acc": 0.9418,
-     "msMedian": 33896,
+     "acc": 0.9643,
+     "msMedian": 59477,
      "p3": 1
     },
     "skilled": {
@@ -618,8 +537,104 @@
       0.9968,
       1
      ],
-     "acc": 0.964,
-     "msMedian": 33112,
+     "acc": 0.9785,
+     "msMedian": 58944,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 10,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.925,
+   "D": 0.5571,
+   "bL": -6.375,
+   "knobs": {
+    "ops": 10,
+    "fall": 10.25,
+    "every": 3.8,
+    "target": 16,
+    "lives": 3,
+    "storm": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8542,
+     "ci": [
+      0.8331,
+      0.873
+     ],
+     "acc": 0.9332,
+     "msMedian": 61406,
+     "p3": 0.9992
+    },
+    "median": {
+     "p": 0.9983,
+     "ci": [
+      0.9939,
+      0.9995
+     ],
+     "acc": 0.9558,
+     "msMedian": 59964,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 1,
+     "ci": [
+      0.9968,
+      1
+     ],
+     "acc": 0.9749,
+     "msMedian": 59432,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 11,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.92,
+   "D": 0.5872,
+   "bL": -4.595,
+   "knobs": {
+    "ops": 11,
+    "fall": 10.25,
+    "every": 3.8,
+    "target": 16,
+    "lives": 3,
+    "storm": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.75,
+     "ci": [
+      0.7247,
+      0.7737
+     ],
+     "acc": 0.9131,
+     "msMedian": 61529,
+     "p3": 0.9875
+    },
+    "median": {
+     "p": 0.99,
+     "ci": [
+      0.9826,
+      0.9943
+     ],
+     "acc": 0.9421,
+     "msMedian": 60154,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 1,
+     "ci": [
+      0.9968,
+      1
+     ],
+     "acc": 0.9664,
+     "msMedian": 59649,
      "p3": 1
     }
    }
@@ -628,46 +643,46 @@
    "L": 12,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8153,
+   "pStar": 0.915,
    "D": 0.6159,
-   "bL": -1.511,
+   "bL": -4.028,
    "knobs": {
     "ops": 11,
-    "fall": 8.15,
-    "every": 2.8,
-    "target": 20,
+    "fall": 10.25,
+    "every": 3.4,
+    "target": 16,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.1775,
+     "p": 0.5767,
      "ci": [
-      0.1569,
-      0.2001
+      0.5485,
+      0.6043
      ],
-     "acc": 0.9026,
-     "msMedian": 33467,
-     "p3": 0.5692
+     "acc": 0.9059,
+     "msMedian": 55110,
+     "p3": 0.9517
     },
     "median": {
-     "p": 0.8192,
+     "p": 0.9825,
      "ci": [
-      0.7964,
-      0.8399
+      0.9734,
+      0.9885
      ],
-     "acc": 0.9415,
-     "msMedian": 56759,
-     "p3": 0.9933
+     "acc": 0.9448,
+     "msMedian": 54415,
+     "p3": 1
     },
     "skilled": {
-     "p": 0.9833,
+     "p": 0.9992,
      "ci": [
-      0.9744,
-      0.9892
+      0.9953,
+      0.9999
      ],
-     "acc": 0.9658,
-     "msMedian": 56013,
+     "acc": 0.967,
+     "msMedian": 53673,
      "p3": 1
     }
    }
@@ -676,46 +691,46 @@
    "L": 13,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8106,
+   "pStar": 0.91,
    "D": 0.6433,
-   "bL": -1.522,
+   "bL": -2.797,
    "knobs": {
     "ops": 11,
-    "fall": 8.15,
-    "every": 2.8,
-    "target": 21,
+    "fall": 10.25,
+    "every": 3,
+    "target": 16,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.1933,
+     "p": 0.4333,
      "ci": [
-      0.172,
-      0.2166
+      0.4056,
+      0.4615
      ],
-     "acc": 0.8988,
-     "msMedian": 33803,
-     "p3": 0.5533
+     "acc": 0.9054,
+     "msMedian": 48318,
+     "p3": 0.875
     },
     "median": {
-     "p": 0.8208,
+     "p": 0.9425,
      "ci": [
-      0.7981,
-      0.8415
+      0.9279,
+      0.9543
      ],
-     "acc": 0.9424,
-     "msMedian": 59263,
-     "p3": 0.9933
+     "acc": 0.9438,
+     "msMedian": 48630,
+     "p3": 1
     },
     "skilled": {
-     "p": 0.98,
+     "p": 0.9967,
      "ci": [
-      0.9704,
-      0.9865
+      0.9915,
+      0.9987
      ],
-     "acc": 0.9686,
-     "msMedian": 58775,
+     "acc": 0.9678,
+     "msMedian": 47560,
      "p3": 1
     }
    }
@@ -724,46 +739,46 @@
    "L": 14,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8062,
+   "pStar": 0.905,
    "D": 0.6695,
-   "bL": -1.439,
+   "bL": -2.453,
    "knobs": {
     "ops": 11,
-    "fall": 8.15,
-    "every": 2.8,
-    "target": 22,
+    "fall": 9,
+    "every": 3,
+    "target": 16,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.1542,
+     "p": 0.3317,
      "ci": [
-      0.1348,
-      0.1757
+      0.3056,
+      0.3588
      ],
-     "acc": 0.8986,
-     "msMedian": 33265,
-     "p3": 0.5475
+     "acc": 0.9026,
+     "msMedian": 44443,
+     "p3": 0.84
     },
     "median": {
-     "p": 0.8083,
+     "p": 0.9208,
      "ci": [
-      0.7851,
-      0.8296
+      0.9042,
+      0.9348
      ],
-     "acc": 0.9392,
-     "msMedian": 62037,
-     "p3": 0.9933
+     "acc": 0.9394,
+     "msMedian": 48449,
+     "p3": 0.9992
     },
     "skilled": {
-     "p": 0.9817,
+     "p": 0.995,
      "ci": [
-      0.9724,
-      0.9879
+      0.9891,
+      0.9977
      ],
-     "acc": 0.9646,
-     "msMedian": 61478,
+     "acc": 0.9653,
+     "msMedian": 47583,
      "p3": 1
     }
    }
@@ -772,46 +787,46 @@
    "L": 15,
    "kind": "peak",
    "legacy": false,
-   "pStar": 0.7419,
+   "pStar": 0.84,
    "D": 0.6948,
-   "bL": -1.007,
+   "bL": -1.843,
    "knobs": {
     "ops": 11,
-    "fall": 7.85,
-    "every": 2.65,
-    "target": 22,
+    "fall": 9,
+    "every": 2.3,
+    "target": 8,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.115,
+     "p": 0.3183,
      "ci": [
-      0.0982,
-      0.1343
+      0.2926,
+      0.3452
      ],
-     "acc": 0.9033,
-     "msMedian": 28597,
-     "p3": 0.4067
+     "acc": 0.904,
+     "msMedian": 22952,
+     "p3": 0.7558
     },
     "median": {
-     "p": 0.7325,
+     "p": 0.8633,
      "ci": [
-      0.7067,
-      0.7568
+      0.8427,
+      0.8816
      ],
-     "acc": 0.938,
-     "msMedian": 59050,
-     "p3": 0.9883
+     "acc": 0.9427,
+     "msMedian": 21010,
+     "p3": 0.9992
     },
     "skilled": {
-     "p": 0.965,
+     "p": 0.9775,
      "ci": [
-      0.953,
-      0.974
+      0.9675,
+      0.9845
      ],
-     "acc": 0.9663,
-     "msMedian": 58340,
+     "acc": 0.965,
+     "msMedian": 18999,
      "p3": 1
     }
    }
@@ -820,12 +835,12 @@
    "L": 16,
    "kind": "breather",
    "legacy": false,
-   "pStar": 0.7977,
+   "pStar": 0.89,
    "D": 0.7192,
-   "bL": -4.369,
+   "bL": -4.436,
    "knobs": {
     "ops": 12,
-    "fall": 8.6,
+    "fall": 9.2,
     "every": 3.2,
     "target": 10,
     "lives": 4,
@@ -833,23 +848,23 @@
    },
    "profiles": {
     "weak": {
-     "p": 0.69,
+     "p": 0.7283,
      "ci": [
-      0.6633,
-      0.7155
+      0.7025,
+      0.7527
      ],
-     "acc": 0.9214,
-     "msMedian": 34877,
-     "p3": 0.9842
+     "acc": 0.9222,
+     "msMedian": 35149,
+     "p3": 0.9892
     },
     "median": {
-     "p": 0.9875,
+     "p": 0.9883,
      "ci": [
-      0.9795,
-      0.9924
+      0.9805,
+      0.993
      ],
      "acc": 0.9518,
-     "msMedian": 31960,
+     "msMedian": 31965,
      "p3": 1
     },
     "skilled": {
@@ -868,46 +883,46 @@
    "L": 17,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7937,
+   "pStar": 0.88,
    "D": 0.7428,
-   "bL": -1.505,
+   "bL": -2.314,
    "knobs": {
     "ops": 12,
-    "fall": 7.85,
-    "every": 2.7,
-    "target": 22,
+    "fall": 8.2,
+    "every": 2.9,
+    "target": 18,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.1867,
+     "p": 0.3383,
      "ci": [
-      0.1656,
-      0.2097
+      0.3121,
+      0.3656
      ],
-     "acc": 0.9189,
-     "msMedian": 34254,
-     "p3": 0.5633
+     "acc": 0.9185,
+     "msMedian": 43474,
+     "p3": 0.7833
     },
     "median": {
-     "p": 0.8183,
+     "p": 0.91,
      "ci": [
-      0.7955,
-      0.8391
+      0.8925,
+      0.9249
      ],
-     "acc": 0.9484,
-     "msMedian": 60063,
-     "p3": 0.9958
+     "acc": 0.9489,
+     "msMedian": 52725,
+     "p3": 0.9992
     },
     "skilled": {
-     "p": 0.9842,
+     "p": 0.995,
      "ci": [
-      0.9754,
-      0.9898
+      0.9891,
+      0.9977
      ],
-     "acc": 0.9718,
-     "msMedian": 59370,
+     "acc": 0.9715,
+     "msMedian": 51844,
      "p3": 1
     }
    }
@@ -916,46 +931,46 @@
    "L": 18,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7898,
+   "pStar": 0.87,
    "D": 0.7656,
-   "bL": -1.366,
+   "bL": -1.953,
    "knobs": {
     "ops": 12,
     "fall": 7.85,
-    "every": 2.7,
-    "target": 23,
+    "every": 2.9,
+    "target": 20,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.1667,
+     "p": 0.2792,
      "ci": [
-      0.1467,
-      0.1888
+      0.2545,
+      0.3052
      ],
-     "acc": 0.9135,
-     "msMedian": 33718,
-     "p3": 0.5267
+     "acc": 0.911,
+     "msMedian": 40919,
+     "p3": 0.7083
     },
     "median": {
-     "p": 0.7967,
+     "p": 0.8758,
      "ci": [
-      0.773,
-      0.8185
+      0.856,
+      0.8933
      ],
-     "acc": 0.9471,
-     "msMedian": 62628,
-     "p3": 0.9967
+     "acc": 0.9461,
+     "msMedian": 58517,
+     "p3": 1
     },
     "skilled": {
-     "p": 0.9842,
+     "p": 0.9892,
      "ci": [
-      0.9754,
-      0.9898
+      0.9816,
+      0.9937
      ],
-     "acc": 0.9719,
-     "msMedian": 61979,
+     "acc": 0.971,
+     "msMedian": 57704,
      "p3": 1
     }
    }
@@ -964,46 +979,46 @@
    "L": 19,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7861,
+   "pStar": 0.86,
    "D": 0.7878,
-   "bL": -1.241,
+   "bL": -1.829,
    "knobs": {
     "ops": 12,
     "fall": 7.85,
-    "every": 2.65,
-    "target": 23,
+    "every": 2.85,
+    "target": 22,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.1383,
+     "p": 0.2225,
      "ci": [
-      0.12,
-      0.159
+      0.1999,
+      0.2469
      ],
-     "acc": 0.9088,
-     "msMedian": 30447,
-     "p3": 0.4925
+     "acc": 0.9114,
+     "msMedian": 37002,
+     "p3": 0.6658
     },
     "median": {
-     "p": 0.7758,
+     "p": 0.8617,
      "ci": [
-      0.7514,
-      0.7985
+      0.841,
+      0.88
      ],
      "acc": 0.9475,
-     "msMedian": 61307,
-     "p3": 0.995
+     "msMedian": 63043,
+     "p3": 0.9967
     },
     "skilled": {
-     "p": 0.9783,
+     "p": 0.9842,
      "ci": [
-      0.9684,
-      0.9852
+      0.9754,
+      0.9898
      ],
-     "acc": 0.9713,
-     "msMedian": 60886,
+     "acc": 0.971,
+     "msMedian": 62368,
      "p3": 1
     }
    }
@@ -1012,46 +1027,46 @@
    "L": 20,
    "kind": "peak",
    "legacy": false,
-   "pStar": 0.7224,
+   "pStar": 0.79,
    "D": 0.8094,
-   "bL": -0.932,
+   "bL": -1.19,
    "knobs": {
     "ops": 12,
     "fall": 7.55,
-    "every": 2.55,
+    "every": 2.65,
     "target": 24,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.0917,
+     "p": 0.1133,
      "ci": [
-      0.0766,
-      0.1093
+      0.0966,
+      0.1325
      ],
      "acc": 0.9105,
-     "msMedian": 27673,
-     "p3": 0.3808
+     "msMedian": 29753,
+     "p3": 0.4767
     },
     "median": {
-     "p": 0.7175,
+     "p": 0.7667,
      "ci": [
-      0.6914,
-      0.7422
+      0.7419,
+      0.7897
      ],
-     "acc": 0.9457,
-     "msMedian": 61677,
-     "p3": 0.9858
+     "acc": 0.9464,
+     "msMedian": 64135,
+     "p3": 0.9917
     },
     "skilled": {
-     "p": 0.9625,
+     "p": 0.9675,
      "ci": [
-      0.9502,
-      0.9719
+      0.9559,
+      0.9761
      ],
-     "acc": 0.9684,
-     "msMedian": 61252,
+     "acc": 0.9696,
+     "msMedian": 63491,
      "p3": 1
     }
    }
@@ -1060,7 +1075,7 @@
    "L": 21,
    "kind": "breather",
    "legacy": false,
-   "pStar": 0.7788,
+   "pStar": 0.84,
    "D": 0.8305,
    "bL": -3.982,
    "knobs": {
@@ -1108,46 +1123,46 @@
    "L": 22,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7753,
+   "pStar": 0.83,
    "D": 0.851,
-   "bL": -1.305,
+   "bL": -1.545,
    "knobs": {
     "ops": 13,
     "fall": 7.9,
-    "every": 2.7,
+    "every": 2.8,
     "target": 24,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.1358,
+     "p": 0.1767,
      "ci": [
-      0.1176,
-      0.1564
+      0.1561,
+      0.1993
      ],
-     "acc": 0.9071,
-     "msMedian": 32195,
-     "p3": 0.455
+     "acc": 0.9088,
+     "msMedian": 35502,
+     "p3": 0.545
     },
     "median": {
-     "p": 0.7867,
+     "p": 0.8242,
      "ci": [
-      0.7626,
-      0.8089
+      0.8016,
+      0.8447
      ],
-     "acc": 0.9446,
-     "msMedian": 65195,
-     "p3": 0.9933
+     "acc": 0.943,
+     "msMedian": 67501,
+     "p3": 0.9967
     },
     "skilled": {
-     "p": 0.9792,
+     "p": 0.9833,
      "ci": [
-      0.9694,
-      0.9858
+      0.9744,
+      0.9892
      ],
-     "acc": 0.9676,
-     "msMedian": 64740,
+     "acc": 0.9677,
+     "msMedian": 67038,
      "p3": 1
     }
    }
@@ -1156,46 +1171,46 @@
    "L": 23,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7719,
+   "pStar": 0.82,
    "D": 0.871,
-   "bL": -1.222,
+   "bL": -1.483,
    "knobs": {
     "ops": 13,
     "fall": 7.9,
-    "every": 2.7,
+    "every": 2.8,
     "target": 25,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.1392,
+     "p": 0.1825,
      "ci": [
-      0.1207,
-      0.1599
+      0.1617,
+      0.2054
      ],
-     "acc": 0.9074,
-     "msMedian": 32161,
-     "p3": 0.4692
+     "acc": 0.9059,
+     "msMedian": 35144,
+     "p3": 0.5358
     },
     "median": {
-     "p": 0.7725,
+     "p": 0.815,
      "ci": [
-      0.7479,
-      0.7953
+      0.792,
+      0.836
      ],
-     "acc": 0.9418,
-     "msMedian": 67697,
-     "p3": 0.9908
+     "acc": 0.9424,
+     "msMedian": 70236,
+     "p3": 0.9967
     },
     "skilled": {
-     "p": 0.9708,
+     "p": 0.9783,
      "ci": [
-      0.9597,
-      0.979
+      0.9684,
+      0.9852
      ],
-     "acc": 0.9676,
-     "msMedian": 67416,
+     "acc": 0.9674,
+     "msMedian": 69756,
      "p3": 1
     }
    }
@@ -1204,46 +1219,46 @@
    "L": 24,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7686,
+   "pStar": 0.81,
    "D": 0.8906,
-   "bL": -1.18,
+   "bL": -1.35,
    "knobs": {
     "ops": 13,
     "fall": 7.85,
-    "every": 2.7,
+    "every": 2.75,
     "target": 25,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.1433,
+     "p": 0.1575,
      "ci": [
-      0.1246,
-      0.1643
+      0.138,
+      0.1792
      ],
-     "acc": 0.9084,
-     "msMedian": 32825,
-     "p3": 0.4425
+     "acc": 0.9085,
+     "msMedian": 34420,
+     "p3": 0.4975
     },
     "median": {
-     "p": 0.765,
+     "p": 0.7942,
      "ci": [
-      0.7402,
-      0.7881
+      0.7704,
+      0.8161
      ],
-     "acc": 0.9434,
-     "msMedian": 68008,
-     "p3": 0.9917
+     "acc": 0.9436,
+     "msMedian": 69230,
+     "p3": 0.9975
     },
     "skilled": {
-     "p": 0.9842,
+     "p": 0.9817,
      "ci": [
-      0.9754,
-      0.9898
+      0.9724,
+      0.9879
      ],
      "acc": 0.9683,
-     "msMedian": 67437,
+     "msMedian": 68595,
      "p3": 1
     }
    }
@@ -1252,46 +1267,46 @@
    "L": 25,
    "kind": "peak",
    "legacy": false,
-   "pStar": 0.7053,
+   "pStar": 0.74,
    "D": 0.9097,
-   "bL": -0.777,
+   "bL": -1.125,
    "knobs": {
     "ops": 13,
     "fall": 7.55,
-    "every": 2.55,
+    "every": 2.65,
     "target": 25,
     "lives": 3,
     "storm": 0
    },
    "profiles": {
     "weak": {
-     "p": 0.0717,
+     "p": 0.1042,
      "ci": [
-      0.0584,
-      0.0877
+      0.0881,
+      0.1227
      ],
-     "acc": 0.9077,
-     "msMedian": 26361,
-     "p3": 0.33
+     "acc": 0.9079,
+     "msMedian": 28664,
+     "p3": 0.4067
     },
     "median": {
-     "p": 0.685,
+     "p": 0.755,
      "ci": [
-      0.6582,
-      0.7107
+      0.7299,
+      0.7785
      ],
      "acc": 0.9439,
-     "msMedian": 63957,
-     "p3": 0.9858
+     "msMedian": 66659,
+     "p3": 0.9933
     },
     "skilled": {
-     "p": 0.9517,
+     "p": 0.9558,
      "ci": [
-      0.938,
-      0.9624
+      0.9427,
+      0.9661
      ],
-     "acc": 0.9645,
-     "msMedian": 63983,
+     "acc": 0.9643,
+     "msMedian": 66354,
      "p3": 1
     }
    }
@@ -1300,7 +1315,7 @@
    "L": 26,
    "kind": "breather",
    "legacy": false,
-   "pStar": 0.7622,
+   "pStar": 0.79,
    "D": 0.9285,
    "bL": -4.595,
    "knobs": {
@@ -1348,7 +1363,7 @@
    "L": 27,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.759,
+   "pStar": 0.78,
    "D": 0.9469,
    "bL": -1.085,
    "knobs": {
@@ -1396,7 +1411,7 @@
    "L": 28,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.756,
+   "pStar": 0.77,
    "D": 0.9649,
    "bL": -1.076,
    "knobs": {
@@ -1444,7 +1459,7 @@
    "L": 29,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.753,
+   "pStar": 0.76,
    "D": 0.9826,
    "bL": -1.059,
    "knobs": {

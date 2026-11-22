@@ -8,7 +8,7 @@
  "config": {
   "E1": "A",
   "breatherEasyOk": true,
-  "bEasyOkBelow": 10,
+  "bEasyOkBelow": 15,
   "E3": false,
   "E5": true,
   "tableVersion": 2,
@@ -26,25 +26,21 @@
  "gates": [
   {
    "id": "B",
-   "name": "every level: |p_median − p*| ≤ 0.05 (breathers: only too hard fails) (L1–9: only p_median < p* − 0.05 fails)",
+   "name": "every level: |p_median − p*| ≤ 0.05 (breathers: only too hard fails) (L1–14: only p_median < p* − 0.05 fails)",
    "pass": null,
    "fails": [
-    "L10 median 0.9492 vs p* 0.765",
-    "L12 median 0.97 vs p* 0.815",
-    "L13 median 0.9817 vs p* 0.811",
-    "L14 median 0.9775 vs p* 0.806",
-    "L15 median 0.9317 vs p* 0.742",
-    "L17 median 0.9808 vs p* 0.794",
-    "L18 median 0.9633 vs p* 0.790",
-    "L19 median 0.9675 vs p* 0.786",
-    "L20 median 0.9067 vs p* 0.722",
-    "L22 median 0.9642 vs p* 0.775",
-    "L23 median 0.9658 vs p* 0.772",
-    "L24 median 0.9508 vs p* 0.769",
-    "L25 median 0.9042 vs p* 0.705",
-    "L27 median 0.9375 vs p* 0.759",
-    "L28 median 0.9433 vs p* 0.756",
-    "L29 median 0.9475 vs p* 0.753",
+    "L15 median 0.9317 vs p* 0.840",
+    "L17 median 0.9808 vs p* 0.880",
+    "L18 median 0.9633 vs p* 0.870",
+    "L19 median 0.9542 vs p* 0.860",
+    "L20 median 0.9067 vs p* 0.790",
+    "L22 median 0.9642 vs p* 0.830",
+    "L23 median 0.9658 vs p* 0.820",
+    "L24 median 0.9508 vs p* 0.810",
+    "L25 median 0.9042 vs p* 0.740",
+    "L27 median 0.9375 vs p* 0.780",
+    "L28 median 0.9433 vs p* 0.770",
+    "L29 median 0.9475 vs p* 0.760",
     "L30 median 0.9083 vs p* 0.690",
     "L32 median 0.93 vs p* 0.744",
     "L33 median 0.935 vs p* 0.741",
@@ -71,7 +67,7 @@
   },
   {
    "id": "G1",
-   "name": "weak ≥ 85% on L1–5",
+   "name": "weak floor: ≥ 90% on L1–5, ≥ 82% on L6–10",
    "pass": true,
    "fails": [],
    "note": "",
@@ -118,6 +114,14 @@
    "status": "PASS"
   },
   {
+   "id": "G9",
+   "name": "weak ≥ 70% at the first peak (L15)",
+   "pass": true,
+   "fails": [],
+   "note": "",
+   "status": "PASS"
+  },
+  {
    "id": "G7",
    "name": "Playwright parity, 3 seeds at L1/L15/L30",
    "pass": null,
@@ -139,7 +143,7 @@
    "L": 1,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.92,
+   "pStar": 0.97,
    "D": 0,
    "bL": -5.144,
    "knobs": {
@@ -185,7 +189,7 @@
    "L": 2,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8884,
+   "pStar": 0.965,
    "D": 0.1857,
    "bL": -4.999,
    "knobs": {
@@ -231,7 +235,7 @@
    "L": 3,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8754,
+   "pStar": 0.96,
    "D": 0.2626,
    "bL": -5.711,
    "knobs": {
@@ -277,7 +281,7 @@
    "L": 4,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8653,
+   "pStar": 0.955,
    "D": 0.3216,
    "bL": -4.028,
    "knobs": {
@@ -323,44 +327,44 @@
    "L": 5,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8569,
+   "pStar": 0.95,
    "D": 0.3714,
-   "bL": -3.504,
+   "bL": -3.631,
    "knobs": {
-    "id": "p32",
-    "phrase": 32,
+    "id": "p36",
+    "phrase": 36,
     "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.8975,
+     "p": 0.9025,
      "ci": [
-      0.8791,
-      0.9134
+      0.8844,
+      0.918
      ],
-     "acc": 0.9301,
-     "msMedian": 24496,
-     "p3": 0.9983
+     "acc": 0.9271,
+     "msMedian": 25010,
+     "p3": 1
     },
     "median": {
-     "p": 0.9708,
+     "p": 0.9742,
      "ci": [
-      0.9597,
-      0.979
+      0.9636,
+      0.9817
      ],
-     "acc": 0.9815,
-     "msMedian": 19852,
+     "acc": 0.9825,
+     "msMedian": 19931,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9983,
+     "p": 0.9992,
      "ci": [
-      0.9939,
-      0.9995
+      0.9953,
+      0.9999
      ],
-     "acc": 0.9988,
-     "msMedian": 17921,
+     "acc": 0.9994,
+     "msMedian": 18088,
      "p3": 1
     }
    }
@@ -369,7 +373,7 @@
    "L": 6,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8494,
+   "pStar": 0.945,
    "D": 0.4152,
    "bL": -4.24,
    "knobs": {
@@ -415,7 +419,7 @@
    "L": 7,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8427,
+   "pStar": 0.94,
    "D": 0.4549,
    "bL": -4.185,
    "knobs": {
@@ -461,7 +465,7 @@
    "L": 8,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8365,
+   "pStar": 0.935,
    "D": 0.4913,
    "bL": -4.076,
    "knobs": {
@@ -507,7 +511,7 @@
    "L": 9,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8307,
+   "pStar": 0.93,
    "D": 0.5252,
    "bL": -4.076,
    "knobs": {
@@ -551,82 +555,82 @@
   },
   {
    "L": 10,
-   "kind": "peak",
+   "kind": "step",
    "legacy": false,
-   "pStar": 0.7653,
+   "pStar": 0.925,
    "D": 0.5571,
-   "bL": -2.928,
+   "bL": -3.631,
    "knobs": {
-    "id": "p6",
-    "phrase": 6,
+    "id": "p11",
+    "phrase": 11,
     "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.7942,
+     "p": 0.8667,
      "ci": [
-      0.7704,
-      0.8161
+      0.8463,
+      0.8847
      ],
-     "acc": 0.8622,
-     "msMedian": 26854,
-     "p3": 0.995
+     "acc": 0.9107,
+     "msMedian": 25326,
+     "p3": 0.9983
     },
     "median": {
-     "p": 0.9492,
+     "p": 0.9742,
      "ci": [
-      0.9352,
-      0.9602
+      0.9636,
+      0.9817
      ],
-     "acc": 0.9696,
-     "msMedian": 19117,
+     "acc": 0.9835,
+     "msMedian": 18731,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9917,
+     "p": 0.995,
      "ci": [
-      0.9847,
-      0.9955
+      0.9891,
+      0.9977
      ],
-     "acc": 0.9944,
-     "msMedian": 16762,
+     "acc": 0.9974,
+     "msMedian": 16847,
      "p3": 1
     }
    }
   },
   {
    "L": 11,
-   "kind": "breather",
+   "kind": "step",
    "legacy": false,
-   "pStar": 0.8202,
+   "pStar": 0.92,
    "D": 0.5872,
-   "bL": -4.185,
+   "bL": -4.24,
    "knobs": {
-    "id": "p36",
-    "phrase": 36,
+    "id": "p32",
+    "phrase": 32,
     "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.89,
+     "p": 0.8917,
      "ci": [
-      0.871,
-      0.9065
+      0.8728,
+      0.908
      ],
-     "acc": 0.9188,
-     "msMedian": 24716,
+     "acc": 0.922,
+     "msMedian": 24377,
      "p3": 1
     },
     "median": {
-     "p": 0.985,
+     "p": 0.9858,
      "ci": [
-      0.9764,
-      0.9905
+      0.9774,
+      0.9911
      ],
-     "acc": 0.9899,
-     "msMedian": 19819,
+     "acc": 0.9914,
+     "msMedian": 19757,
      "p3": 1
     },
     "skilled": {
@@ -635,8 +639,8 @@
       0.9939,
       0.9995
      ],
-     "acc": 0.999,
-     "msMedian": 17994,
+     "acc": 0.9988,
+     "msMedian": 17981,
      "p3": 1
     }
    }
@@ -645,7 +649,7 @@
    "L": 12,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8153,
+   "pStar": 0.915,
    "D": 0.6159,
    "bL": -3.476,
    "knobs": {
@@ -691,7 +695,7 @@
    "L": 13,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8106,
+   "pStar": 0.91,
    "D": 0.6433,
    "bL": -3.982,
    "knobs": {
@@ -737,44 +741,44 @@
    "L": 14,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.8062,
+   "pStar": 0.905,
    "D": 0.6695,
-   "bL": -3.771,
+   "bL": -3.449,
    "knobs": {
-    "id": "p11",
-    "phrase": 11,
-    "letters": 6,
+    "id": "p44",
+    "phrase": 44,
+    "letters": 9,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.8533,
+     "p": 0.8442,
      "ci": [
-      0.8322,
-      0.8722
+      0.8226,
+      0.8636
      ],
-     "acc": 0.8956,
-     "msMedian": 25630,
-     "p3": 0.9967
+     "acc": 0.917,
+     "msMedian": 30428,
+     "p3": 0.995
     },
     "median": {
-     "p": 0.9775,
+     "p": 0.9692,
      "ci": [
-      0.9675,
-      0.9845
+      0.9578,
+      0.9775
      ],
-     "acc": 0.9849,
-     "msMedian": 18604,
+     "acc": 0.9877,
+     "msMedian": 23755,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9933,
+     "p": 0.9942,
      "ci": [
-      0.9869,
-      0.9966
+      0.988,
+      0.9972
      ],
-     "acc": 0.9958,
-     "msMedian": 16802,
+     "acc": 0.9973,
+     "msMedian": 21837,
      "p3": 1
     }
    }
@@ -783,7 +787,7 @@
    "L": 15,
    "kind": "peak",
    "legacy": false,
-   "pStar": 0.7419,
+   "pStar": 0.84,
    "D": 0.6948,
    "bL": -2.613,
    "knobs": {
@@ -829,7 +833,7 @@
    "L": 16,
    "kind": "breather",
    "legacy": false,
-   "pStar": 0.7977,
+   "pStar": 0.89,
    "D": 0.7192,
    "bL": -3.771,
    "knobs": {
@@ -875,7 +879,7 @@
    "L": 17,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7937,
+   "pStar": 0.88,
    "D": 0.7428,
    "bL": -3.933,
    "knobs": {
@@ -921,7 +925,7 @@
    "L": 18,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7898,
+   "pStar": 0.87,
    "D": 0.7656,
    "bL": -3.268,
    "knobs": {
@@ -967,44 +971,44 @@
    "L": 19,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7861,
+   "pStar": 0.86,
    "D": 0.7878,
-   "bL": -3.393,
+   "bL": -3.037,
    "knobs": {
-    "id": "p44",
-    "phrase": 44,
-    "letters": 9,
+    "id": "p6",
+    "phrase": 6,
+    "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.8442,
+     "p": 0.7875,
      "ci": [
-      0.8226,
-      0.8636
+      0.7635,
+      0.8097
      ],
-     "acc": 0.9141,
-     "msMedian": 30554,
-     "p3": 0.9983
+     "acc": 0.8585,
+     "msMedian": 26562,
+     "p3": 0.9933
     },
     "median": {
-     "p": 0.9675,
+     "p": 0.9542,
      "ci": [
-      0.9559,
-      0.9761
+      0.9408,
+      0.9646
      ],
-     "acc": 0.9869,
-     "msMedian": 23810,
+     "acc": 0.9724,
+     "msMedian": 19080,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9925,
+     "p": 0.9917,
      "ci": [
-      0.9858,
-      0.996
+      0.9847,
+      0.9955
      ],
-     "acc": 0.997,
-     "msMedian": 21896,
+     "acc": 0.9947,
+     "msMedian": 16868,
      "p3": 1
     }
    }
@@ -1013,7 +1017,7 @@
    "L": 20,
    "kind": "peak",
    "legacy": false,
-   "pStar": 0.7224,
+   "pStar": 0.79,
    "D": 0.8094,
    "bL": -2.274,
    "knobs": {
@@ -1059,7 +1063,7 @@
    "L": 21,
    "kind": "breather",
    "legacy": false,
-   "pStar": 0.7788,
+   "pStar": 0.84,
    "D": 0.8305,
    "bL": -3.199,
    "knobs": {
@@ -1105,7 +1109,7 @@
    "L": 22,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7753,
+   "pStar": 0.83,
    "D": 0.851,
    "bL": -3.293,
    "knobs": {
@@ -1151,7 +1155,7 @@
    "L": 23,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7719,
+   "pStar": 0.82,
    "D": 0.871,
    "bL": -3.341,
    "knobs": {
@@ -1197,7 +1201,7 @@
    "L": 24,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.7686,
+   "pStar": 0.81,
    "D": 0.8906,
    "bL": -2.961,
    "knobs": {
@@ -1243,7 +1247,7 @@
    "L": 25,
    "kind": "peak",
    "legacy": false,
-   "pStar": 0.7053,
+   "pStar": 0.74,
    "D": 0.9097,
    "bL": -2.245,
    "knobs": {
@@ -1289,7 +1293,7 @@
    "L": 26,
    "kind": "breather",
    "legacy": false,
-   "pStar": 0.7622,
+   "pStar": 0.79,
    "D": 0.9285,
    "bL": -3.095,
    "knobs": {
@@ -1335,7 +1339,7 @@
    "L": 27,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.759,
+   "pStar": 0.78,
    "D": 0.9469,
    "bL": -2.708,
    "knobs": {
@@ -1381,7 +1385,7 @@
    "L": 28,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.756,
+   "pStar": 0.77,
    "D": 0.9649,
    "bL": -2.812,
    "knobs": {
@@ -1427,7 +1431,7 @@
    "L": 29,
    "kind": "step",
    "legacy": false,
-   "pStar": 0.753,
+   "pStar": 0.76,
    "D": 0.9826,
    "bL": -2.893,
    "knobs": {

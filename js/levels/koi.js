@@ -2,8 +2,8 @@
 // Table v2 (E3 lifted, Duy 2026-11-21): L1..30 written to the shared sawtooth. legacyLevels = the old
 // js/koi.js params(d) curve (table v1), kept for parity tests and progress migration.
 // Template: steps add a koi or speed/turn the fish up, a peak adds grey fish or a koi, a breather plays
-// 12 koi (L31+: also −0.1 speed); grey fish change on peaks and breathers (L19 is the
-// one old exception). Same level numbers, so stars and koi_lv2 keep their keys: no mapper needed (identity), only the version marker moves.
+// 12 koi (L31+: also −0.1 speed); grey fish change only on peaks and breathers.
+// Same level numbers, so stars and koi_lv2 keep their keys: no mapper needed (identity), only the version marker moves.
 (function (root) {
   'use strict';
   const BBD = root.BBD;
@@ -17,16 +17,19 @@
     });
   }
   // L1..30 as written rows: [koi, decoys, spdMul, turnMul, cd]. Pass rates vs p* (calibrate koi --n 2000):
-  // docs/difficulty/calibration-koi.json. L1–9 are steps (Duy 2026-11-21 (1)=A): L1–4 add a koi, L5–8 speed
-  // the fish up (≤ ×1.25 with a full pond), L9 turns them more. No grey fish before the first peak (L10),
-  // so weak stays ≥ 85% on L1–5 (G1). L11–30 = the rows the engine plus `overrides` produced before
-  // 2026-11-21, unchanged, now written out so the engine continues from L30 for L31+ (as mem and rain do).
+  // docs/difficulty/calibration-koi.json. Retuned 2026-11-22 for Duy's B (early ramp, first peak L15,
+  // docs/difficulty/RESEARCH-EARLY-LEVELS.md). L1–14 are steps; besides the cooldown (cd) that grows a little every level, one knob moves per level: a koi is added on a level
+  // that holds the pace (L3, L5, L9, L12), the next level speeds the fish up 0.05 or turns them more (L7, L13).
+  // 10 koi at L1 (big fish: the pond shrinks fish only above 11), 14 by L12. L15, the first peak, brings the
+  // first grey fish (2) on a shorter pond (12 koi) at the L14 pace: mild, shorter rather than denser.
+  // Breathers (L16, L21) slow the fish and stop the extra turning. L20 adds a grey fish and turning; L25–30 are
+  // the rows from before 2026-11-22, unchanged, so the engine still continues from L30 for L31+.
   const ROWS = [
-    [12, 0, 1, 1, 1.45], [13, 0, 1, 1, 1.6], [14, 0, 1, 1, 1.75], [15, 0, 1, 1, 1.9], [15, 0, 1.05, 1, 2.05],
-    [15, 0, 1.15, 1, 2.2], [15, 0, 1.2, 1, 2.35], [15, 0, 1.25, 1, 2.5], [15, 0, 1.25, 1.1, 2.65], [15, 2, 1.25, 1.1, 2.8],
-    [12, 4, 1, 1, 2.9], [12, 4, 1.05, 1, 2.95], [13, 4, 1.05, 1, 3], [13, 4, 1.1, 1, 3], [15, 4, 1.1, 1, 3],
-    [12, 4, 1.15, 1, 3.05], [12, 4, 1.2, 1, 3.05], [13, 4, 1.2, 1, 3.05], [13, 5, 1.2, 1, 3.1], [14, 5, 1.2, 1, 3.1],
-    [12, 5, 1.25, 1, 3.1], [12, 5, 1.3, 1, 3.15], [12, 5, 1.3, 1.1, 3.15], [12, 5, 1.35, 1.1, 3.15], [13, 5, 1.35, 1.1, 3.15],
+    [10, 0, 1, 1, 1.45], [10, 0, 1.05, 1, 1.6], [11, 0, 1.05, 1, 1.75], [11, 0, 1.1, 1, 1.9], [12, 0, 1.1, 1, 2.05],
+    [12, 0, 1.15, 1, 2.2], [12, 0, 1.15, 1.1, 2.35], [12, 0, 1.2, 1.1, 2.5], [13, 0, 1.2, 1.1, 2.65], [13, 0, 1.25, 1.1, 2.8],
+    [13, 0, 1.3, 1.1, 2.9], [14, 0, 1.3, 1.1, 2.95], [14, 0, 1.3, 1.15, 3], [14, 0, 1.35, 1.15, 3], [12, 2, 1.35, 1.15, 3],
+    [12, 2, 1.1, 1, 3.05], [12, 2, 1.2, 1, 3.05], [13, 2, 1.2, 1, 3.05], [13, 2, 1.25, 1, 3.1], [13, 3, 1.25, 1.1, 3.1],
+    [12, 4, 1.15, 1, 3.1], [12, 4, 1.2, 1, 3.15], [13, 4, 1.2, 1, 3.15], [13, 4, 1.25, 1, 3.15], [13, 5, 1.35, 1.1, 3.15],  // L21 breather adds the 4th grey fish so L24→L25 is no cliff (review)
     [12, 5, 1.3, 1.1, 3.15], [12, 5, 1.35, 1.1, 3.2], [12, 5, 1.35, 1.2, 3.2], [12, 5, 1.4, 1.2, 3.2], [13, 5, 1.4, 1.3, 3.2],
   ];
   const levels = ROWS.map(([koi, decoys, spdMul, turnMul, cd]) => ({ koi, decoys, cd, spdMul, turnMul }));

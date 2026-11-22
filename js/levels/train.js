@@ -1,6 +1,6 @@
 // Đường Ray Tư Duy — difficulty table. Load after js/difficulty.js. Spec: MERGED-SPEC §4.2 "train".
-// Version 2 (2026-11-21, E3 lifted): L1..30 are written out in `levels` on the shared sawtooth (L1–9 steps,
-// then peak at 5k and breather at 5k+1 from L10; Duy 2026-11-21 (1): no peak at L5). `legacyLevels` = the v1 game (js/train-map.js stationsFor + js/train.js nextSpawnDelay,
+// Version 2 (2026-11-21, E3 lifted): L1..30 are written out in `levels` on the shared sawtooth (L1–14 steps,
+// then peak at 5k and breather at 5k+1 from L15; Duy 2026-11-22 (B): first peak L15, easier opening). `legacyLevels` = the v1 game (js/train-map.js stationsFor + js/train.js nextSpawnDelay,
 // same float expression), kept as reference data for tests and E3_FREEZE_LEGACY = true.
 // base = m; the real mean gap is ≈ 1.14·base because of the burst/rest mix (MERGED-SPEC A-2).
 (function (root) {
@@ -16,38 +16,40 @@
   }
 
   // v2 rows. Calibrated with scripts/sim/adapters/train.mjs at N = 1200 (docs/difficulty/calibration-train.json).
-  //  · stations: 5,5,6,6,5,6 then +1 per level from L7 to 15 at L15. Only one breather adds a station (L11,
-  //    11 ga), and it pays for it with a much wider train gap (base 3.12 vs 2.63 at the L10 peak).
-  //    L1–6 stay small because gate G1 asks weak ≥ 85% on L1–5 with the median ≤ p* + 0.05: the weak/median
-  //    gap is narrowest on 5–6 stations (7–10 stations widen it by 5–10 points in the simulator).
-  //    Every L1–5 row sits at both edges at once (weak 0.85–0.87, median 0.90–0.92 vs cap 0.907–0.925).
-  //    L5 (a step since 2026-11-21, p* 0.857, median cap 0.907) has no passing base on 6 stations: the
-  //    full scan 3.28–3.45 gives weak 0.84–0.85 only with median ≥ 0.915, and speedF 0.30–0.45 is worse.
-  //    On 5 stations base 3.27 gives weak 0.86, median 0.90. So L5 drops to 5 stations and pays with denser
-  //    trains (3.27 vs 3.43 at L4): the only station drop in the table, and it never drops on both knobs.
-  //    L3 and L4 on 5 stations have no passing base either (scanned 3.15–3.33), so they stay on 6.
-  //  · speedF 0.28 (v1: 0.45) on every level. In the simulator slower trains narrow the weak/median gap at the
-  //    same median pass rate (more time per train, so the slow-RT tail costs less): at 0.45, G1 fails on
-  //    L2–4 and G4 (weak ≥ 60% on breathers) on L16/21/26; at 0.28 both pass. Cost: a train needs ≈ 26 s
-  //    to cross a 15-station map (max ≈ 41 s, v1 ≈ 17/26 s), so the wait after the 90 s timer is longer.
+  // Retuned 2026-11-22 for Duy's B (docs/difficulty/research-early.html): he played L1–10 and found them too hard.
+  //  · L1–14 (steps, p* 0.97 → 0.90). Gates: weak ≥ 0.90 on L1–5, ≥ 0.82 on L6–10, median ≥ p* − 0.05.
+  //    In the simulator the weak bot tops out near 0.93–0.95 (5% lapse per train), so the opening sits on the
+  //    plateau: base 4.60 → 4.30 (the old L1–5 were 3.27–3.49, L6–9 2.81–2.93; mean gap ≈ 1.185·base).
+  //    The tension comes from new stations, not from losing. One knob per level: a level that adds a station
+  //    keeps the base of the level before it, and base drops 0.10 only on levels that add no station
+  //    (L2, L5, L8). L4 (7 ga, 7 columns) and L11 (12 ga, 8 columns) hold base: smaller cells are the new thing.
+  //    From L9 to L14 the map grows one station per level at base 4.30; L14 brings the 15th station.
+  //    No station drops any more (the old L5 drop to 5 ga is gone).
+  //  · L15 = first peak, mild: same 15 stations as L14, only the gap tightens (4.30 → 4.10): weak 0.75 (G9
+  //    asks ≥ 0.70), median 0.85 vs p* 0.84. 4.00 gave weak 0.72, too close to the floor.
+  //  · L16–22 retuned to the new p* (0.89 → 0.83, higher than the old √ curve). L23–30 and the generated L31+
+  //    are unchanged: their p* barely moved (L30 = 0.75 in both curves) and every gate still passes there.
+  //  · speedF 0.28 (v1: 0.45) on every level. In the simulator a faster train is easier (it clears its switches
+  //    sooner); that is unverified for people, so speed stays put and the opening is eased with base only.
+  //    Cost: a train needs ≈ 26 s to cross a 15-station map (max ≈ 41 s, v1 ≈ 17/26 s).
   //  · burstP 0 (v1: 0.15): "dồn dập" bursts hit weak players hardest (−9 weak points at the same median).
   //    Bursts are the reserve knob for L31+.
-  //  · L2 keeps L1's 5 stations, so it sends trains a little closer (3.37 vs 3.41; 3.46 made L2 easier than L1
-  //    and the result screen said "tàu ra thưa hơn", review 2026-11-22). Rule, tested: on the same station count a
-  //    non-breather never raises base over the level before it, nor over the step before it.
-  //  · base: the difficulty knob. Peak = step − ~0.23, breather = step + ~0.12 (the breather cuts the chain:
-  //    sparser trains, fewer plans held at once). Steps on 15 stations barely move (3.60 → 3.51) because
-  //    p* itself only falls 79% → 75% between L17 and L29.
-  const STATIONS = L => (L <= 2 || L === 5 ? 5 : L <= 6 ? 6 : Math.min(L, 15));
+  //  · Rule, tested: on the same station count a non-breather never raises base over the level before it, nor
+  //    over the step before it (L2 once read "tàu ra thưa hơn" after L1, review 2026-11-22).
+  //  · base from L16: peak = step − ~0.30, breather = step + ~0.15 (sparser trains, fewer plans held at once).
+  const STATIONS = [
+    5, 5, 6, 7, 7,  8, 9, 9, 10, 11,  12, 13, 14, 15, 15,   // L1–15
+  ];
   const BASE = [
-    3.41, 3.37, 3.49, 3.43, 3.27,     // L1–5   (all steps since 2026-11-21; L5 on 5 stations, see above)
-    2.91, 2.93, 2.88, 2.81, 2.63,     // L6–10  (L10 = first peak)
-    3.12, 3.30, 3.26, 3.40, 3.49,     // L11–15
-    3.70, 3.60, 3.59, 3.58, 3.36,     // L16–20
-    3.67, 3.56, 3.55, 3.54, 3.31,     // L21–25
+    4.60, 4.50, 4.50, 4.50, 4.40,     // L1–5
+    4.40, 4.40, 4.30, 4.30, 4.30,     // L6–10
+    4.30, 4.30, 4.30, 4.30, 4.10,     // L11–15 (L15 = first peak)
+    4.40, 4.25, 4.20, 4.15, 3.70,     // L16–20 (L17–19 stay easier than the L15 peak, review 2026-11-22)
+    3.90, 3.75, 3.55, 3.54, 3.31,     // L21–25
     3.63, 3.53, 3.52, 3.51, 3.50,     // L26–30 (L30 row = step trend; the played peak is in `overrides`)
   ];
-  const levels = BASE.map((base, i) => ({ stations: STATIONS(i + 1), base, speedF: 0.28, burstP: 0 }));
+  const stationsAt = L => (L <= STATIONS.length ? STATIONS[L - 1] : 15);
+  const levels = BASE.map((base, i) => ({ stations: stationsAt(i + 1), base, speedF: 0.28, burstP: 0 }));
 
   if (BBD && BBD.register) BBD.register('train', {
     version: 2,          // v1 = legacy 11 levels + generated 12..30. Level numbers keep their meaning, so the
@@ -81,7 +83,7 @@
     // L30 is a peak: played at 3.27, while its `levels` row keeps the step trend 3.50 so the formula for L31+
     // continues from the trend, not from a peak (a peak anchor would make L32 harder than L30).
     overrides: { 30: { base: 3.27 } },
-    // Full N (1200), 2026-11-21: every gate green on L1–30 and on generated L31–40; G7 SKIP. No gate waivers.
+    // Full N (1200), 2026-11-22 (easy opening, Duy B): every gate green on L1–31 and on generated L32–41; G7 SKIP. No gate waivers.
     meta: { table: 'js/levels/train.js', game: 'js/train.js + js/train-map.js',
       touch: 'tap target = nearest switch within max(32, TR+16) px, clipped by the nearest switch ≥ √2 cells away: ≥ 54 px at 320 px; drawn disc ≥ 44 px (A-5, js/train.js DISC_MIN_R)' },
   });

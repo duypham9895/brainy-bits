@@ -40,20 +40,21 @@ describe('koi: table v2, one template for every level', () => {
     assert.equal(B.maxLevel('koi'), 31);
     for (let L = 1; L <= 41; L++) {
       const r = B.level('koi', L);
-      assert.ok(r.koi >= 12 && r.koi <= 15, `L${L} koi ${r.koi}`);
+      // Duy 2026-11-22 (B): the opening starts at 10 koi (L1–2) and reaches 12 at L5; from L5 on the pond keeps ≥ 12.
+      assert.ok(r.koi >= (L < 5 ? 10 : 12) && r.koi <= 15, `L${L} koi ${r.koi}`);
       if (r.kind === 'breather') assert.equal(r.koi, 12, `L${L} breather plays 12 fish`);
       assert.ok(r.spdMul <= 1.4 && r.turnMul <= 1.5 && r.decoys <= 6, `L${L} ${JSON.stringify(r)}`);
       if (r.spdMul > 1.25) assert.ok(r.koi <= 14, `L${L}: fast fish never come with a full pond`);
-      if (L <= 5) assert.equal(r.decoys, 0, `L${L}: no grey fish on L1–5 (G1)`);
+      if (L < 15) assert.equal(r.decoys, 0, `L${L}: no grey fish before the first peak (L15)`);
       if (L === 1) continue;
       const p = B.level('koi', L - 1);
       // Authored steps change something the player sees (count, grey fish, speed, turning); a +0.05 s wait alone
       // is not felt. Generated L31+ steps may repeat the row before: the curve is nearly flat there (p* −0.3/level).
       if (L <= 30 && r.kind !== 'breather') assert.ok(['koi', 'decoys', 'spdMul', 'turnMul'].some(k => r[k] !== p[k]), `koi L${L}: no visible change from L${L - 1}`);
       // Grey fish never drop, and only change on peaks and breathers (steps add koi, speed or turning).
-      // L19 is the one old exception (+1 grey fish on a step, row kept as it was before 2026-11-21).
+      // The old L19 exception (+1 grey fish on a step) went with the 2026-11-22 retune: no step adds grey fish now.
       assert.ok(r.decoys >= p.decoys, `L${L} decoys ${p.decoys} → ${r.decoys}`);
-      if (r.kind === 'step' && L !== 19) assert.equal(r.decoys, p.decoys, `L${L}: a step does not add grey fish`);
+      if (r.kind === 'step') assert.equal(r.decoys, p.decoys, `L${L}: a step does not add grey fish`);
     }
   });
   // Review 2026-11-22 (#6): L35 was easier than L30 (turning back to ×1.2), L60/65/70 copied the step before while

@@ -60,7 +60,7 @@ that merges only when every check is green. If one game's new level cannot be ma
 ## 2. Departments, in this order (one section each in the run report)
 
 1. **PM**: state today's target for each game: new level number L = maxLevel + 1, its kind from
-   `BBD.kind(L)` (peak at 5k and breather at 5k+1 from L10 on, else step; L1-9 are all steps, no peak at L5),
+   `BBD.kind(L)` (peak at 5k and breather at 5k+1 from L15 on, else step; L1-14 are all steps; Duy 2026-11-22 B),
    the target pass rate `BBD.pStar(L)`.
    Stop rules: if `BBD.exhausted(game, L)` is true (every knob at its hardCap, or for koi (`strictPeaks`) a
    generated peak that is not harder than the peak before it), do NOT invent a harder
@@ -71,7 +71,10 @@ that merges only when every check is green. If one game's new level cannot be ma
    level: raise `maxLevel` by one and let the engine generate it from the formula and priority order; add a
    hand-written row at the end of `levels` only if the generated one fails a gate. A knob `start` only applies
    while `levels` has exactly `startAt` rows: after you append a row, the next generated level anchors on your
-   row, so check it with `BBD.level` and set a new `start`/`startAt` if your row is a peak. Change at most 1-2 knobs
+   row, so check it with `BBD.level` and set a new `start`/`startAt` if your row is a peak. A hand-written breather
+   row moves the anchor too: after appending any row, compare `BBD.level(game, L+1..L+10)` before and after; if the
+   next generated levels got easier (fewer drops, an extra life, slower trains) or `BBD.exhausted` moved earlier, do
+   not ship the row (review 2026-11-22). Change at most 1-2 knobs
    versus the previous level; breathers ease the main knob (and may add a life or cut the target, E4); peaks
    push one notch. Never edit an existing row in `levels`, never change `version`: stars and "levels passed"
    are keyed to shipped levels, and a retune needs a migration this run is not allowed to write. Respect every hardCap and the human limits cited in the rules file
@@ -86,10 +89,15 @@ that merges only when every check is green. If one game's new level cannot be ma
 4. **Data / calibration**: run `node scripts/sim/calibrate.mjs <game> --from <L-4> --to <L> --n 1200`
    (koi `--n 2000`) for every changed game. Rain: once `L` goes past 30, run with `--n 4000` instead of 1200
    (same `--from <L-4>` window) — a bigger N narrows gate G2's tolerance, so this is stricter, not looser.
-   **The new level L must keep every gate green**: B, G1-G6 and G8 pass (G7 stays SKIP) and the command exits 0.
+   **The new level L must keep every gate green**: the command exits 0 and no gate prints FAIL. G7 is always SKIP.
+   A gate whose levels are outside the `--from <L-4> --to <L>` window prints SKIP, and that is expected, not a
+   failure: G1 (L1-10), G9 (L15), G5 (L30), and G3/G4 when the window has no breather or not the peak before it
+   (for example on a peak day the window L31-35 holds breather L31 but not peak L30). Never widen or shift the window
+   to turn a SKIP into PASS. Rain waives G9 (Duy 2026-11-22, A): when L15 is in the window
+   the run prints `WAIVED: G9 (not passed)`; report it as WAIVED, never PASS.
    Word: gate B is waived (Duy 2026-11-21); the run prints `WAIVED: B (not passed)` and exits 0. Report it as
-   WAIVED, never as PASS; G1-G6 and G8 must still pass.
-   train, koi, mem and rain pass every gate (word: every gate but B, which is WAIVED) on every shipped level today (gate B is one-sided on L1-9 and on every
+   WAIVED, never as PASS; every other gate must not FAIL (SKIP outside the window is expected, see above).
+   train, koi and mem pass every gate (rain: every gate but G9, WAIVED; word: every gate but B, WAIVED) on every shipped level today (gate B is one-sided on L1-14 and on every
    breather, `B_EASY_OK_BEFORE_SAW` / `BREATHER_EASY_OK`, rules file §2-3), and CI blocks on all five, so any
    miss there fails the PR. For every game, judge the new level by its own lines: L must not appear in any
    gate's miss list. If a gate fails, adjust only the new level's knobs and rerun (max 5 attempts per game); if

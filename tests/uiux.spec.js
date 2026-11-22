@@ -275,7 +275,7 @@ test('Result cards place stars above the big hero number across Train, Koi, Rain
 
   await page.goto('/#koi');
   await page.click('#kStartBtn');
-  const koiN = await page.evaluate(() => window.__koi.fish.filter(x => !x.decoy).length);   // L1 = 12 in table v2 (was 6)
+  const koiN = await page.evaluate(() => window.__koi.fish.filter(x => !x.decoy).length);   // L1 = 10 since the 2026-11-22 easy opening (12 in table v2 before, 6 in v1)
   for (let i = 0; i < koiN; i++) {
     await page.evaluate(() => {
       const K = window.__koi; K.cooldown = 0;

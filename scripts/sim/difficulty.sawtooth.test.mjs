@@ -1,4 +1,4 @@
-// Duy's 2026-11-21 decisions on the engine: (1) the sawtooth starts at L10, (3) a table may waive gate B with a
+// Duy's 2026-11-21 decisions on the engine (first peak L10 then, L15 since 2026-11-22 B): (3) a table may waive gate B with a
 // reason, and a waived gate is never reported as passed. Registered from difficulty.test.mjs so `npm run test:sim` runs it.
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,23 +8,27 @@ import { fileURLToPath } from 'node:url';
 import { checkGates, applyWaivers, validateWaivers, gateStatus, calibrate, UsageError } from './calibrate.mjs';
 
 export function registerSawtooth() {
-describe('engine: sawtooth from L10 and gate waivers', () => {
-test('kind(L1..31): steps L1–9, first peak L10, first breather L11, then every 5', () => {
+describe('engine: sawtooth from L15 and gate waivers', () => {
+// Duy 2026-11-22 (B, all games): first peak moved from L10 to L15, the opening L1–14 is steps only.
+test('kind(L1..31): steps L1–14, first peak L15, first breather L16, then every 5', () => {
   const B = loadBBD({ games: [] });
-  const want = L => (L >= 10 && L % 5 === 0 ? 'peak' : L > 10 && L % 5 === 1 ? 'breather' : 'step');
+  const want = L => (L >= 15 && L % 5 === 0 ? 'peak' : L > 15 && L % 5 === 1 ? 'breather' : 'step');
   const got = Array.from({ length: 31 }, (_, i) => B.kind(i + 1));
   assert.deepEqual(got, Array.from({ length: 31 }, (_, i) => want(i + 1)));
-  assert.deepEqual(got.slice(0, 9), Array(9).fill('step'));
-  assert.deepEqual([10, 15, 20, 25, 30].map(B.kind), Array(5).fill('peak'));
-  assert.deepEqual([11, 16, 21, 26, 31].map(B.kind), Array(5).fill('breather'));
+  assert.deepEqual(got.slice(0, 14), Array(14).fill('step'));
+  assert.deepEqual([15, 20, 25, 30].map(B.kind), Array(4).fill('peak'));
+  assert.deepEqual([16, 21, 26, 31].map(B.kind), Array(4).fill('breather'));
 });
 
-test('p* falls strictly over L1–9 (no L5 dip), dips at L10, breathers sit between peak and L−4', () => {
+test('p* opens at 0.97, falls 0.005 a level to 0.90 at L15 (peak 0.84), meets the √ curve at L30', () => {
   const B = loadBBD({ games: [] });
-  for (let L = 2; L <= 9; L++) assert.ok(B.pStar(L) < B.pStar(L - 1), `p*(${L}) < p*(${L - 1})`);
-  assert.ok(Math.abs(B.pStar(5) - (0.92 - 0.17 * Math.sqrt(4 / 29))) < 1e-9);
-  assert.ok(B.pStar(10) < B.pStar(9) - 0.05);
-  for (let L = 11; L <= 46; L += 5) assert.ok(B.pStar(L) > B.pStar(L - 1) && B.pStar(L) < B.pStar(L - 4), `L${L}`);
+  const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
+  for (let L = 2; L <= 14; L++) assert.ok(B.pStar(L) < B.pStar(L - 1), `p*(${L}) < p*(${L - 1})`);
+  close(B.pStar(1), 0.97); close(B.pStar(5), 0.95); close(B.pStar(10), 0.925); close(B.pStar(14), 0.905);
+  close(B.pStar(15), 0.84); close(B.pStar(16), 0.89); close(B.pStar(30), 0.69);
+  for (let L = 2; L <= 14; L++) assert.ok(B.pStar(L - 1) - B.pStar(L) < 0.0051, `no cliff before L${L}`);
+  close(B.pStar(31), 0.92 - 0.17 * Math.sqrt(30 / 29));            // √ curve from L31, continuous at the L30 step value
+  for (let L = 16; L <= 46; L += 5) assert.ok(B.pStar(L) > B.pStar(L - 1) && B.pStar(L) < B.pStar(L - 4), `L${L}`);
 });
 
 test('SAW_FROM_PERIODS = 1 brings back the old L5 peak (the decision is one constant)', () => {
@@ -33,7 +37,7 @@ test('SAW_FROM_PERIODS = 1 brings back the old L5 peak (the decision is one cons
   assert.equal(B.kind(5), 'peak'); assert.equal(B.kind(6), 'breather'); assert.equal(B.kind(4), 'step');
 });
 
-test('generated levels follow the new kinds: L5/L6 plain steps, L10 peak, L11 breather lighter than it', () => {
+test('generated levels follow the kinds: L5–L14 plain steps, L15 peak, L16 breather lighter than it', () => {
   // A table with 4 authored rows, so L5–L16 come from the formula.
   const B = loadBBD({ games: [] });
   B.register('t', {
@@ -42,10 +46,10 @@ test('generated levels follow the new kinds: L5/L6 plain steps, L10 peak, L11 br
     peak: [{ knob: 'n', by: 1 }], relief: [{ knob: 'n', by: 2 }],
   });
   const n = L => B.level('t', L).n;
-  for (let L = 5; L <= 9; L++) { assert.equal(B.level('t', L).kind, 'step'); assert.ok(n(L) >= n(L - 1), `L${L}`); }
-  assert.equal(B.level('t', 10).kind, 'peak'); assert.equal(B.level('t', 11).kind, 'breather');
-  assert.ok(n(11) < n(10), 'L11 breather lighter than the L10 peak');
-  assert.ok(n(16) >= n(11), 'breathers stay monotone among themselves');
+  for (let L = 5; L <= 14; L++) { assert.equal(B.level('t', L).kind, 'step'); assert.ok(n(L) >= n(L - 1), `L${L}`); }
+  assert.equal(B.level('t', 15).kind, 'peak'); assert.equal(B.level('t', 16).kind, 'breather');
+  assert.ok(n(16) < n(15), 'L16 breather lighter than the L15 peak');
+  assert.ok(n(21) >= n(16), 'breathers stay monotone among themselves');
 });
 
 // ---------- gate waivers ----------
@@ -61,7 +65,7 @@ const fakeBBD = waivers => {
 
 test('waiver accepted: B is WAIVED (never PASS), its misses kept, verdict not failed by it', () => {
   const B = fakeBBD({ B: 'content game; bot not checked against people (G7 SKIP)' });
-  const gates = checkGates([row(12, 0.99), row(13, 0.99), row(14, 0.99)], B, 'fake', {}, 1200);
+  const gates = checkGates([row(22, 0.99), row(23, 0.99), row(24, 0.99)], B, 'fake', {}, 1200);
   const b = gates.find(g => g.id === 'B');
   assert.equal(b.status, 'WAIVED'); assert.equal(gateStatus(b), 'WAIVED');
   assert.equal(b.pass, null); assert.notEqual(b.pass, true);
@@ -78,20 +82,21 @@ test('a waived gate that would have passed still reports WAIVED, not PASS', () =
 });
 
 test('without a waiver B fails as before, and other gates are never touched by a B waiver', () => {
-  const plain = checkGates([row(1, 0.99, 0.5), row(12, 0.99)], fakeBBD(undefined), 'fake', {}, 1200);
+  const plain = checkGates([row(1, 0.99, 0.5), row(22, 0.99)], fakeBBD(undefined), 'fake', {}, 1200);
   assert.equal(plain.find(g => g.id === 'B').status, 'FAIL');
-  const waived = checkGates([row(1, 0.99, 0.5), row(12, 0.99)], fakeBBD({ B: 'reason' }), 'fake', {}, 1200);
+  const waived = checkGates([row(1, 0.99, 0.5), row(22, 0.99)], fakeBBD({ B: 'reason' }), 'fake', {}, 1200);
   assert.equal(waived.find(g => g.id === 'G1').status, 'FAIL');      // G1 still binding
   assert.ok(waived.some(g => g.pass === false));
 });
 
-// Duy 2026-11-22 (A): before the first peak (L1–9) B only fails a level that is too hard; from L10 it is two-sided.
-test('gate B is one-sided on L1–9 (easier than p* is not a miss), two-sided from L10, and the flag turns it off', () => {
+// Duy 2026-11-22 (A): before the first peak B only fails a level that is too hard; from the first peak (L15 since
+// decision B the same day) it is two-sided.
+test('gate B is one-sided on L1–14 (easier than p* is not a miss), two-sided from L15, and the flag turns it off', () => {
   const B = fakeBBD(undefined);
   const bOf = rows => checkGates(rows, B, 'fake', {}, 1200).find(g => g.id === 'B');
-  assert.equal(bOf([row(1, 0.99), row(9, 0.99)]).status, 'PASS');         // easy before L10: fine
-  assert.deepEqual(bOf([row(9, 0.80)]).fails.length, 1);                  // too hard before L10: miss
-  assert.deepEqual(bOf([row(10, 0.99), row(12, 0.99)]).fails.length, 2);  // easy from L10: miss
+  assert.equal(bOf([row(1, 0.99), row(14, 0.99)]).status, 'PASS');        // easy before L15: fine
+  assert.deepEqual(bOf([row(14, 0.80)]).fails.length, 1);                 // too hard before L15: miss
+  assert.deepEqual(bOf([row(15, 0.99), row(17, 0.99)]).fails.length, 2);  // easy from L15: miss
   B.CONFIG.B_EASY_OK_BEFORE_SAW = false;
   assert.equal(bOf([row(1, 0.99)]).status, 'FAIL');                       // false = the old two-sided band
 });
@@ -109,7 +114,35 @@ test('breathers: easy is not a B or G3 miss, too hard still is, G4 stays, and th
   assert.equal(g('B').status, 'FAIL'); assert.equal(g('G3').status, 'FAIL');                         // old rule
 });
 
-test('waiver rejected: any gate other than B, or no reason string, throws (table load and calibrate)', () => {
+// Duy 2026-11-22 (B): weak-bot floor 0.90 on L1–5 and 0.82 on L6–10 (G1); weak ≥ 0.70 at the first peak L15 (G9).
+test('G1 has two tiers (L1–5 ≥ 0.90, L6–10 ≥ 0.82) and G9 checks the weak bot at the first peak', () => {
+  const B = fakeBBD(undefined);
+  const g = (rows, id) => checkGates(rows, B, 'fake', {}, 1200).find(x => x.id === id);
+  assert.equal(g([row(1, 0.97, 0.90), row(6, 0.95, 0.82)], 'G1').status, 'PASS');
+  assert.deepEqual(g([row(1, 0.97, 0.89), row(6, 0.95, 0.81), row(11, 0.95, 0.10)], 'G1').fails.length, 2);   // L11 has no floor
+  assert.equal(g([row(20, 0.8)], 'G1').status, 'SKIP');
+  assert.equal(g([{ ...row(15, 0.84, 0.70), kind: 'peak' }], 'G9').status, 'PASS');
+  assert.equal(g([{ ...row(15, 0.84, 0.69), kind: 'peak' }], 'G9').status, 'FAIL');
+  assert.equal(g([row(14, 0.9)], 'G9').status, 'SKIP');
+});
+
+// Review 2026-11-22: G9 may be waived by rain only; a gate the run never reached stays SKIP even when waived;
+// G3/G4 with no breather (or no peak before it) in range are SKIP, and G1 names a tier it did not check.
+test('G9 waiver: rain only, SKIP beats WAIVED, G3/G4 skip without breathers, G1 notes an unchecked tier', () => {
+  assert.deepEqual(validateWaivers({ G9: 'r' }, 'rain'), { G9: 'r' });
+  assert.throws(() => validateWaivers({ G9: 'r' }, 'koi'), /cannot be waived by koi/);
+  const B = loadBBD({ games: [] });
+  assert.throws(() => B.register('koi2', { levels: [{}], knobs: [], gateWaivers: { G9: 'r' } }), /cannot be waived/);
+  B.register('rain', { levels: [{}, {}, {}], knobs: [], gateWaivers: { G9: 'gap' } });
+  const st = (rows, id) => checkGates(rows, B, 'rain', {}, 1200).find(g => g.id === id);
+  assert.equal(st([row(26, 0.8)], 'G9').status, 'SKIP');                                     // L15 not run: SKIP
+  assert.equal(st([{ ...row(15, 0.84, 0.3), kind: 'peak' }], 'G9').status, 'WAIVED');        // run and waived
+  assert.equal(st([row(12, 0.9)], 'G3').status, 'SKIP'); assert.equal(st([row(12, 0.9)], 'G4').status, 'SKIP');
+  assert.equal(st([{ ...row(31, 0.5), kind: 'breather' }], 'G3').status, 'SKIP');            // peak L30 not in range
+  assert.match(st([row(1, 0.97, 0.95)], 'G1').note, /tier L6–10 not checked/);
+});
+
+test('waiver rejected: a gate that is not waivable (anything but B, or G9 outside rain), or no reason string, throws', () => {
   for (const bad of [{ G1: 'r' }, { G3: 'r' }, { G7: 'r' }, { B: '' }, { B: '   ' }, { B: true }, { B: 1 }, ['B'], 'B']) {
     assert.throws(() => fakeBBD(bad), /gateWaivers|cannot be waived|reason/, JSON.stringify(bad));
     assert.throws(() => validateWaivers(bad, 'x'), /gateWaivers|cannot be waived|reason/, JSON.stringify(bad));
@@ -133,13 +166,13 @@ test('calibrate: --from > --to (also --from past maxLevel with --to left out) is
 });
 
 // Review 2026-11-22 (#9): a gate whose levels are not in the run reports SKIP, never PASS.
-test('calibrate: G1 skips without L1–5 and G5 skips without L30; a partial L1–5 range still judges G1', async () => {
+test('calibrate: G1 skips without L1–10 and G5 skips without L30; a partial L1–10 range still judges G1', async () => {
   const st = (r, id) => r.gates.find(g => g.id === id);
   const late = await calibrate('rain', { n: 5, from: 31, to: 32, write: false, quiet: true });
   for (const id of ['G1', 'G5']) assert.deepEqual([st(late, id).status, st(late, id).pass], ['SKIP', null], id);
   const early = await calibrate('mem', { n: 5, from: 4, to: 6, write: false, quiet: true });
   assert.notEqual(st(early, 'G1').status, 'SKIP');
-  assert.match(st(early, 'G1').note, /only L4–5/);
+  assert.match(st(early, 'G1').note, /only L4–6/);
   assert.equal(st(early, 'G5').status, 'SKIP');
 });
 });

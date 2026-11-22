@@ -46,9 +46,9 @@ test('grid shows 31 levels; hub and daily agree on 31', async ({ page }) => {
 });
 
 // Was "legacy L1..10 = old formula, legacy: true". v2 truth: L1..6 still play the old formula (authored rows,
-// 3 lives); L7..9 keep tiers 7..9 (decision 2, 2026-11-21) with faster rain, L10 is retuned (speed ramp over L7..10,
-// review 2026-11-22); the old rows survive as legacyLevels; every row matches the Node table.
-test('v2: L1..6 play the old formula with 3 lives, L7..10 keep their tier at faster rain, legacyLevels keep L1..10; L1..30 match the Node tables', async ({ page }) => {
+// 3 lives); L7..10 keep tiers 7..10 (decision 2, 2026-11-21) and, since the early ramp (Duy 2026-11-22, B), hold the
+// L6 chain and fall and one 3.8 s spawn gap; the old rows survive as legacyLevels; every row matches the Node table.
+test('v2: L1..6 play the old formula with 3 lives, L7..10 keep their tier at one held pace, legacyLevels keep L1..10; L1..30 match the Node tables', async ({ page }) => {
   await openRain(page);
   const r = await page.evaluate(() => Array.from({ length: 30 }, (_, i) => ({ ...window.__rainTest.spec(i + 1) })));
   const leg = await page.evaluate(() => window.BBD.spec('rain').legacy.map(x => ({ ...x })));
@@ -57,25 +57,25 @@ test('v2: L1..6 play the old formula with 3 lives, L7..10 keep their tier at fas
     const old = { fall: Math.max(8, 13 - 0.55 * (L - 1)), every: Math.max(2.7, 4.6 - 0.2 * (L - 1)), target: 10 + L };
     expect(leg[L - 1]).toEqual({ ...old, ops: L });
     if (L <= 6) expect(r[L - 1]).toMatchObject({ ...old, ops: L, lives: 3, legacy: false, authored: true });
-    else {                                          // L7..10: same tier and chain, faster rain (speed ramp)
-      expect(r[L - 1]).toMatchObject({ ops: L, target: old.target, lives: 3, legacy: false, authored: true });
-      expect(r[L - 1].every < old.every && r[L - 1].fall < old.fall).toBe(true);
+    else {                                          // L7..10: same tier, L6 chain and fall, every 3.8 s (early ramp B)
+      expect(r[L - 1]).toMatchObject({ ops: L, target: r[5].target, fall: r[5].fall, every: 3.8, lives: 3, legacy: false, authored: true });
     }
   }
   const B = loadBBD();
   for (let L = 1; L <= 30; L++) expect(r[L - 1]).toEqual({ ...B.level('rain', L) });
 });
 
-test('breather safety net: L11 has 10 drops and 4 lives in menu, HUD and play; 4th miss loses, 3 misses do not', async ({ page }) => {
-  await openRain(page, () => { localStorage.setItem('rain_lv', '12'); });
-  const b = page.locator('#rlvgrid .lv').nth(10);
+// First breather is L16 since the early ramp (Duy 2026-11-22, B: first peak L15); it was L11.
+test('breather safety net: L16 has 10 drops and 4 lives in menu, HUD and play; 4th miss loses, 3 misses do not', async ({ page }) => {
+  await openRain(page, () => { localStorage.setItem('rain_lv', '17'); });
+  const b = page.locator('#rlvgrid .lv').nth(15);
   await b.scrollIntoViewIfNeeded(); await b.click();
-  await expect(page.locator('#rLvTxt')).toHaveText('Thêm cộng, trừ có nhớ · giải 10 phép · 4 mạng');
-  await page.locator('#rlvgrid .lv').nth(11).click();
+  await expect(page.locator('#rLvTxt')).toHaveText('Thêm tìm số còn thiếu · giải 10 phép · 4 mạng');
+  await page.locator('#rlvgrid .lv').nth(16).click();
   await expect(page.locator('#rLvTxt')).toContainText('· 3 mạng');
-  await page.locator('#rlvgrid .lv').nth(10).click();
+  await page.locator('#rlvgrid .lv').nth(15).click();
   await page.click('#rStart');
-  expect(await dbg(page)).toMatchObject({ state: 'play', level: 11, target: 10, lives: 4 });
+  expect(await dbg(page)).toMatchObject({ state: 'play', level: 16, target: 10, lives: 4 });
   await expect(page.locator('#rLives')).toHaveAttribute('aria-label', 'Còn 4 mạng');
   await expect(page.locator('#rLives')).toHaveText('💧💧💧💧');
   await page.evaluate(() => { for (const a of [991, 992, 993]) window.__rainTest.spawnDrop(a, 0.99); });
@@ -93,16 +93,16 @@ test('breather safety net: L11 has 10 drops and 4 lives in menu, HUD and play; 4
   expect(fit).toBe(true);
 });
 
-test('breather stars: winning L11 with 2 misses still gives 1 star; L12 is back to 3 lives', async ({ page }) => {
-  await openRain(page, () => { localStorage.setItem('rain_lv', '12'); });
-  await startAt(page, 11);
+test('breather stars: winning L16 with 2 misses still gives 1 star; L17 is back to 3 lives', async ({ page }) => {
+  await openRain(page, () => { localStorage.setItem('rain_lv', '17'); });
+  await startAt(page, 16);
   await page.evaluate(() => { for (const a of [991, 992]) window.__rainTest.spawnDrop(a, 0.99); });
   await page.waitForFunction(() => window.__rainDebug().misses === 2);
   await winRound(page);
-  await expect(page.locator('#rrTitle')).toContainText('Qua Level 11');
+  await expect(page.locator('#rrTitle')).toContainText('Qua Level 16');
   await expect(page.locator('#rrStars')).toHaveAttribute('aria-label', '1 trên 3 sao');
   await page.click('#rrNext');
-  expect(await dbg(page)).toMatchObject({ state: 'play', level: 12, target: 20, lives: 3 });
+  expect(await dbg(page)).toMatchObject({ state: 'play', level: 17, target: 18, lives: 3 });
   await expect(page.locator('#rLives')).toHaveAttribute('aria-label', 'Còn 3 mạng');
 });
 
@@ -216,13 +216,13 @@ test('next-level flow: L10 leads to L11; L30 leads to L31; passing L31 records s
   await startAt(page, 10);
   await winRound(page);
   await expect(page.locator('#rrTitle')).toContainText('Qua Level 10');
-  await expect(page.locator('#rrDetail')).toHaveText('Level 11: thêm cộng, trừ có nhớ, 4 mạng.');
+  await expect(page.locator('#rrDetail')).toHaveText('Level 11: thêm cộng, trừ có nhớ.');
   await expect(page.locator('#rrNext')).toHaveText('Level 11 →');
   // the "next level" line names every change: tier, faster rain, chain, lives (review NIT 9)
-  const info = await page.evaluate(() => [6, 11, 12, 29].map(L => window.__rainTest.nextInfo(L)));
-  expect(info).toEqual(['bảng nhân 2–9, mưa nhanh hơn, giải 17 phép', 'mưa nhanh hơn, giải 20 phép, còn 3 mạng', 'giải 21 phép', 'mưa nhanh hơn']);
+  const info = await page.evaluate(() => [6, 11, 15, 16, 29].map(L => window.__rainTest.nextInfo(L)));
+  expect(info).toEqual(['bảng nhân 2–9', 'mưa nhanh hơn', 'thêm tìm số còn thiếu, giải 10 phép, 4 mạng', 'mưa nhanh hơn, giải 18 phép, còn 3 mạng', 'mưa nhanh hơn']);
   await page.click('#rrNext');
-  expect(await dbg(page)).toMatchObject({ state: 'play', level: 11, target: 10, lives: 4 });   // v2 breather
+  expect(await dbg(page)).toMatchObject({ state: 'play', level: 11, target: 16, lives: 3 });   // early ramp: L11 is a step
 
   await page.click('#rPause'); await page.click('#rQuit');
   await startAt(page, 30);
