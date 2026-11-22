@@ -19,6 +19,42 @@
   if(t)t.content=dark?'#0e1712':'#f6f0e4';
 })();
 </script>
+<script src="js/install-platform.js"></script>
+<script>
+// Install banner gate. Runs in <head> so the banner is in or out before the first paint (no layout
+// shift). One visit = one tab session. The rule itself is BBInstallPlatform.shouldShowBanner.
+(function(){
+  var d=document.documentElement;
+  // js/install.js wires the banner and the settings row. If it never ran (this file or it blocked,
+  // failed to load), drop the banner and keep the row hidden instead of leaving dead buttons.
+  addEventListener('load',function(){if(window.BBInstall)return;d.removeAttribute('data-bb-install-banner');
+    var r=document.getElementById('setInstallRow');if(r)r.hidden=true});
+  var P=window.BBInstallPlatform; if(!P) return;
+  var st={}, played=false, ls=null, ss=null;
+  // Each storage on its own: one can throw while the other works.
+  try{ls=window.localStorage}catch(e){}
+  try{ss=window.sessionStorage}catch(e){}
+  var platform=P.getInstallPlatform(navigator.userAgent, navigator.maxTouchPoints||0, P.isStandaloneNow(window));
+  try{st=JSON.parse(ls.getItem('bb_install'))||{}}catch(e){}
+  if(!st||typeof st!=='object'||Array.isArray(st))st={};
+  var dirty=false;
+  try{if(!ss.getItem('bb_install_visit')){ss.setItem('bb_install_visit','1');st.visits=(Math.floor(+st.visits)||0)+1;dirty=true}}catch(e){}
+  if(platform==='installed'&&st.installed!==true){st.installed=true;dirty=true}
+  try{if(dirty)ls.setItem('bb_install',JSON.stringify(st))}catch(e){}
+  try{var log=JSON.parse(ls.getItem('bb_log')||'[]');played=Array.isArray(log)&&log.length>0}catch(e){}
+  try{var stats=JSON.parse(ls.getItem('bb_stats')||'{}')||{};
+    played=played||Object.keys(stats).some(function(k){return stats[k]&&stats[k].best>0})}catch(e){}
+  var show=P.shouldShowBanner({platform:platform,visits:st.visits,played:played,dismissed:st.dismissed===true,installed:st.installed===true});
+  d.setAttribute('data-bb-platform',platform);
+  if(show)d.setAttribute('data-bb-install-banner','');
+  // Chrome fires this only when the app is not installed: a stored installed flag is stale.
+  // Desktop has no in-page install button, so Chrome keeps its own install UI there.
+  addEventListener('beforeinstallprompt',function(e){
+    if(platform==='installed')return;
+    if(platform!=='desktop'){e.preventDefault();window.BB_INSTALL_PROMPT=e}
+    try{var s=JSON.parse(ls.getItem('bb_install'))||{};if(s.installed===true){s.installed=false;ls.setItem('bb_install',JSON.stringify(s))}}catch(err){}});
+})();
+</script>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Brainy Bits">
 <meta property="og:locale" content="vi_VN">
@@ -70,6 +106,7 @@
 <link rel="stylesheet" href="css/mem.css">
 <link rel="stylesheet" href="css/rain.css">
 <link rel="stylesheet" href="css/word.css">
+<link rel="stylesheet" href="css/install.css">
 </head>
 <body>
 <div id="trainApp" style="display:none">
@@ -155,6 +192,14 @@
       <b id="hubDailyGame">&nbsp;</b>
       <span class="dgo" id="hubDailyState">Chơi</span>
     </button>
+    <section class="bbi-banner" id="installBanner" aria-label="Gợi ý cài ra màn hình chính">
+      <svg class="bbi-banner-ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M12 8.5v6M9 11.5h6"/></svg>
+      <div class="bbi-banner-txt">
+        <p id="installBannerText">Cài Brainy Bits ra màn hình chính để mở nhanh như app</p>
+        <button type="button" class="bbi-pill" id="installBannerCta" aria-haspopup="dialog" aria-controls="installDialog">Xem cách cài</button>
+      </div>
+      <button type="button" class="bbi-x" id="installBannerClose" aria-label="Ẩn gợi ý cài"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </section>
     <p class="sub hubsub">Chọn một trò để chơi</p>
     <div class="hubshelf" id="hubShelf">
       <button type="button" class="gamecard" id="openTrain">
@@ -206,6 +251,10 @@
     </div>
     <div class="setrow"><span>Âm thanh<small class="setsub">Tiếng chạm và hoàn thành</small></span><button type="button" class="switch" id="setSound" role="switch" aria-checked="true" aria-label="Âm thanh"><i></i></button></div>
     <div class="setrow" id="setHapticRow"><span>Rung khi chạm<small class="setsub">Phản hồi nhẹ trên điện thoại</small></span><button type="button" class="switch" id="setHaptic" role="switch" aria-checked="true" aria-label="Rung khi chạm"><i></i></button></div>
+    <div class="setrow bbi-setrow" id="setInstallRow" hidden>
+      <span><span class="bbi-settitle"><svg class="bbi-check" id="setInstallCheck" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" hidden><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span id="setInstallTitle">Cài ra màn hình chính</span></span><small class="setsub" id="setInstallSub">Chạm một lần là mở, khỏi gõ địa chỉ</small></span>
+      <button type="button" class="bbi-pill" id="setInstallBtn" aria-haspopup="dialog" aria-controls="installDialog">Xem cách cài</button>
+    </div>
     <div class="setzone">
       <button type="button" class="btn alt danger" id="setReset">Xoá tiến độ</button>
       <div class="confirm hidden" id="setConfirm">
@@ -257,6 +306,8 @@
     </div>
   </div>
 </dialog>
+
+<dialog class="bbi-dialog" id="installDialog" closedby="any" aria-labelledby="installTitle"></dialog>
 
 <!-- ================= GAME CÁ KOI ================= -->
 <div id="koiApp" style="display:none">
@@ -507,6 +558,9 @@
 <script src="js/mem.js"></script>
 <script src="js/rain.js"></script>
 <script src="js/word.js"></script>
+<script src="js/install-copy.js"></script>
+<script src="js/install-art.js"></script>
+<script src="js/install.js"></script>
 <script src="js/hub.js"></script>
 <script>
 // Offline cache: only on https or localhost, where service workers are allowed.

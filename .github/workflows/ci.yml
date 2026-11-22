@@ -17,6 +17,8 @@ jobs:
         run: npm run parity
       - name: Difficulty engine tests
         run: npm run test:sim
+      - name: Install platform detection tests
+        run: npm run test:install
       # Calibration gates (seeded, full N = 1200 per MERGED-SPEC §6; koi 2000), every gate on every level.
       # A game whose calibrate exits 0 is BLOCKING; word exits 0 with gate B WAIVED (Duy 2026-11-21, decision 3),
       # which is reported as WAIVED, never PASS. Green games run to max(40, maxLevel + 10), so the shipped levels,
