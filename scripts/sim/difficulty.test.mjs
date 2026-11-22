@@ -374,7 +374,7 @@ test('maxLevel follows E2 and content-only games refuse to invent levels', () =>
   const B = loadBBD();
   assert.equal(B.maxLevel('word'), 49);
   B.CONFIG.E2_WORD_LEVELS = 30; assert.equal(B.maxLevel('word'), 30);
-  const MAX = { train: 31, koi: 30, mem: 30, rain: 30 };
+  const MAX = { train: 31, koi: 31, mem: 30, rain: 30 };
   for (const g of KNOB_GAMES) assert.equal(B.maxLevel(g), MAX[g], g);
   assert.throws(() => B.level('word', 50), /content-only/);   // vm realm: match by message
   assert.throws(() => B.level('mem', 0), /integer ≥ 1/);
