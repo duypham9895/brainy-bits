@@ -137,7 +137,7 @@ test('hub reads legacy keys, seeds BB stats once and shows level/LV_MAX and star
     localStorage.setItem('bb_stats', JSON.stringify({ rain: { best: 2, stars: { 1: 3, 2: 2 } } }));
   });
   await page.goto('/');
-  await expect(page.locator('#hubTrain')).toHaveText('Đã qua 3/30 level');
+  await expect(page.locator('#hubTrain')).toHaveText('Đã qua 3/31 level');
   await expect(page.locator('#hubMem')).toHaveText('Đã qua 4/30 level');
   await expect(page.locator('#hubKoi')).toHaveText('Đã qua 10/30 level');
   await expect(page.locator('#hubRain')).toHaveText('Đã qua 2/30 level · ★ 5/90');

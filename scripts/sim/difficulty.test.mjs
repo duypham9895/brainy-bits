@@ -374,7 +374,8 @@ test('maxLevel follows E2 and content-only games refuse to invent levels', () =>
   const B = loadBBD();
   assert.equal(B.maxLevel('word'), 49);
   B.CONFIG.E2_WORD_LEVELS = 30; assert.equal(B.maxLevel('word'), 30);
-  for (const g of KNOB_GAMES) assert.equal(B.maxLevel(g), 30);
+  const MAX = { train: 31, koi: 30, mem: 30, rain: 30 };
+  for (const g of KNOB_GAMES) assert.equal(B.maxLevel(g), MAX[g], g);
   assert.throws(() => B.level('word', 50), /content-only/);   // vm realm: match by message
   assert.throws(() => B.level('mem', 0), /integer ≥ 1/);
   assert.throws(() => B.level('nope', 1), /unknown game/);
@@ -684,7 +685,7 @@ describe('train: table v2, one template for every level', () => {
   test('train v2: L1..30 authored, keyed by level number, on the sawtooth; touch targets ≥ 44 px', async () => {
     const B = loadBBD(), A = await import(new URL('./adapters/train.mjs', import.meta.url).href);
     assert.equal(B.version('train'), 2);
-    assert.equal(B.maxLevel('train'), 30);
+    assert.equal(B.maxLevel('train'), 31);
     assert.equal(B.authoredCount('train'), 30);
     assert.equal(B.level('train', 1).stations, 5);
     for (let L = 1; L <= 30; L++) {
@@ -754,10 +755,10 @@ describe('train: table v2, one template for every level', () => {
     assert.equal(n.ls.get('bb_tablev_train'), '3');
   });
 
-  // Zero failures and zero waivers at full N on the authored L1..30 and the generated L31..40 ("+10 levels" from
+  // Zero failures and zero waivers at full N on the authored L1..30 and the generated L31..41 ("+10 levels" from
   // the rule alone). One run so G2/G3 also see the L30 → L31 seam. G7 stays SKIP (pass: null).
-  test('train: every gate green at N=1200 on L1..40, no waivers', async () => {
-    const r = await calibrate('train', { n: 1200, to: 40, write: false, quiet: true });
+  test('train: every gate green at N=1200 on L1..41, no waivers', async () => {
+    const r = await calibrate('train', { n: 1200, to: 41, write: false, quiet: true });
     assert.deepEqual(failsByGate(r), {});
     assert.deepEqual(r.waived, []);
     assert.equal(r.ok, true);
