@@ -102,7 +102,7 @@ describe('word: 50 phrases ordered by measured difficulty, stars keyed by phrase
     const { W, POOL, simulate } = await import('./adapters/word.mjs');
     for (const p of W.PHRASES) p.words.forEach(w => assert.ok(POOL.get(w.length).index.has(w.map(W.noTone).join('')), w.join('')));
     // Measured over all 49 phrases, not four level slots: table v2 moved phrases between slots, and the slots
-    // 1 and 11 now hold phrases 18 and 36, which the filter drops on 6–9% of rows. All 49: ~2%.
+    // 1 and 5 now hold phrases 18 and 36, which the filter drops on 6–9% of rows. All 49: ~2%.
     let rows = 0, dropped = 0;
     for (const p of W.PHRASES) for (let i = 0; i < 40; i++) {
       const d = simulate({ phrase: p.i, letters: p.n, maxTries: 6 }, PROFILES.weak, rngFor('word-drop', p.i, i)).detail;
@@ -110,20 +110,22 @@ describe('word: 50 phrases ordered by measured difficulty, stars keyed by phrase
     }
     assert.ok(dropped / rows < 0.05, `answer dropped by the bases-only filter on ${dropped}/${rows} rows`);
   });
-  // Duy 2026-11-21 (3): word waives B (reported WAIVED, never PASS) and must pass G1–G6 and G8. Duy (1) moved the
-  // first peak to L10, so L5/L6 swapped phrases. Full-N run: docs/difficulty/calibration-word.json.
+  // Duy 2026-11-21 (3): word waives B (reported WAIVED, never PASS) and must pass G1–G6, G8 and G9. Duy (1) moved the
+  // first peak to L10, so L5/L6 swapped phrases; Duy B (2026-11-22) moved it to L15 and raised G1 to weak ≥ 90% on
+  // L1–5, so L5↔L11 and L10↔L14 swapped. L1–5 phrases sit at weak 0.91–0.94, too close to 0.90 for N=150 noise:
+  // the run uses the CI N (1200), the same seeds `node scripts/sim/calibrate.mjs word --n 1200` uses.
   test('word (table v2): zero failed gates, only B waived and never counted as PASS', async () => {
     const B = loadBBD();
     assert.deepEqual(Object.keys(B.spec('word').gateWaivers), ['B']);
     assert.match(B.spec('word').gateWaivers.B, /\S/);
-    const r = await calibrate('word', { n: 150, write: false, quiet: true });
+    const r = await calibrate('word', { n: 1200, write: false, quiet: true });
     assert.equal(r.levels.length, 50);
     assert.ok(r.levels.every(l => !l.legacy));
     assert.deepEqual(failsByGate(r), {});
     assert.deepEqual(r.waived, ['B']);
     const g = id => r.gates.find(x => x.id === id);
     assert.deepEqual([g('B').status, g('B').pass, g('B').waived], ['WAIVED', null, true]);
-    for (const id of ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G8']) assert.equal(g(id).status, 'PASS', id);
+    for (const id of ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G8', 'G9']) assert.equal(g(id).status, 'PASS', id);
     assert.equal(g('G7').status, 'SKIP');
     assert.equal(r.ok, true);
   });

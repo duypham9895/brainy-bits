@@ -21,7 +21,11 @@
   // 2026-11-21, Duy (1): no peak at L5, first peak L10, first breather L11. L5 and L6 swapped phrases (32 ↔ 40)
   // so the old L5→L6 peak-to-breather drop does not read as a rising step (G2). v2 never shipped, so no new
   // table version: stars are keyed by phrase id and the v1 → v2 migration is unchanged.
-  const PLAY = [18, 46, 48, 45, 32, 40, 20, 37, 41, 6, 36, 43, 42, 11, 19, 27, 17, 47, 44, 25, 39, 16, 31, 34, 26,
+  // 2026-11-22, Duy B: first peak moved to L15 and G1 became weak ≥ 90% on L1–5, ≥ 82% on L6–10. Two swaps, no
+  // phrase added or dropped: L5 ↔ L11 (32 ↔ 36; only 18, 46, 48, 45, 36 clear weak 90% at L5) and L10 ↔ L14
+  // (6 ↔ 11; the old L10 peak phrase now sits on the last step before the first peak). Stars follow the phrase id,
+  // so no table version bump; `best` stays a level number, so nobody loses an unlocked level.
+  const PLAY = [18, 46, 48, 45, 36, 40, 20, 37, 41, 11, 32, 43, 42, 6, 19, 27, 17, 47, 44, 25, 39, 16, 31, 34, 26,
     5, 2, 3, 21, 0, 24, 22, 35, 15, 33, 14, 13, 23, 7, 10, 38, 1, 4, 8, 29, 28, 30, 12, 9, 49];
   const row = src => ({ id: 'p' + src, phrase: src, letters: lettersOf(src), maxTries: 6 });
   if (BBD && BBD.register) BBD.register('word', {
