@@ -23,7 +23,7 @@
    box-shadow mỗi khung (bản cũ tốn ~66 ms CPU mỗi giây lúc chỉ đứng chờ gõ). */
 @media (prefers-reduced-motion: no-preference){
   .wcell.caret{position:relative}
-  .wcell.caret::after{content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;
+  .wcell.caret::after{content:"";position:absolute;inset:-2px;border-radius:inherit;pointer-events:none;
     box-shadow:0 0 0 2px rgba(255,207,138,.6),inset 0 0 12px rgba(255,207,138,.2);
     opacity:0;animation:wCaret 1.6s ease-in-out infinite;will-change:opacity}
   @keyframes wCaret{0%,100%{opacity:0}50%{opacity:1}}
@@ -117,7 +117,7 @@
   .wkrow:nth-child(5) button{max-width:none}
 }
 @media (prefers-reduced-motion: reduce){
-  .wcell.flip,.wcell.caret{animation:none}
+  .wcell.flip,.wcell.caret,.wcell.caret::after{animation:none}
   #wKeys button:active{transform:none}
 }
 /* vùng chỉ cho trình đọc màn hình */

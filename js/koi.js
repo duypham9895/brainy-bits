@@ -123,7 +123,7 @@ function buildStatic(){
     g.beginPath(); g.arc(rnd()*W, rnd()*H, 2 + rnd()*10, 0, Math.PI*2); g.fill();
   }
   // lá sen ở góc
-  const pads = [[-10, 30, 70],[W+10, H*0.45, 64],[20, H-150, 54],[W-30, 40, 42]];
+  const pads = [[-10, 30, 70],[W+10, H*0.45, 64],[20, H-150-SB, 54],[W-30, 40, 42]];
   pads.forEach(([x,y,r], i) => {
     r *= Math.min(1.2, W/390);
     g.fillStyle = 'rgba(0,0,0,.25)';

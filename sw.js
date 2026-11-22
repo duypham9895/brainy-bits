@@ -1,7 +1,7 @@
 // Brainy Bits offline cache. Same-origin requests go to the network first, so stale files are
 // never served while online. Bump VERSION when the precache list changes; activate deletes old caches. Pattern after mdn/pwa-examples (CC0-1.0), own code.
 const VERSION = 'bb-v7';
-const FONT_CACHE = 'bb-fonts-v1';
+const FONT_CACHE = 'bb-fonts-v2';   // v2: the stylesheet is now a CORS request; v1 held opaque copies
 const PRECACHE = [
   './', 'index.html', 'manifest.webmanifest', 'favicon.ico',
   'css/app.css', 'css/train.css', 'css/koi.css', 'css/mem.css', 'css/rain.css', 'css/word.css', 'css/install.css',
@@ -27,11 +27,12 @@ self.addEventListener('install', e => {
 async function fillGaps(keys) {
   const c = await caches.open(VERSION);
   const old = keys.filter(k => k !== VERSION && k !== FONT_CACHE);
+  const appOld = old.filter(k => !k.startsWith('bb-fonts')).reverse();   // newest cache first
   for (const u of PRECACHE) {
     if (await c.match(u)) continue;
-    for (const k of old) {
+    for (const k of appOld) {
       const hit = await (await caches.open(k)).match(u);
-      if (hit) { await c.put(u, hit); break; }
+      if (hit) { await c.put(u, hit).catch(() => {}); break; }
     }
   }
   return old;
@@ -44,10 +45,6 @@ self.addEventListener('activate', e => {
     .then(() => self.clients.claim()));
 });
 
-// On a network that connects but barely answers ("Lie-Fi"), waiting for fetch() hung the app for
-// 8+ s. After SLOW_MS the cached copy is served; the fetch keeps going and refreshes the cache.
-const SLOW_MS = 4000;
-
 // Same-origin files: network first so a new deploy (or a local edit during preview) shows up on
 // the next load without anyone bumping VERSION; the cache is only the offline fallback.
 // cache: 'no-cache' makes every online fetch revalidate with the server (ETag -> 304 when unchanged),
@@ -55,28 +52,17 @@ const SLOW_MS = 4000;
 // Fetching by req.url (not the Request) avoids WebKit rejecting a mode:'navigate' request in init.
 async function sameOrigin(req) {
   const c = await caches.open(VERSION);
-  const cached = () => c.match(req, { ignoreSearch: req.mode === 'navigate' });
-  const net = (async () => {
+  try {
     const res = await fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' });
-    if (res.ok && res.type === 'basic') await c.put(req, res.clone());
+    // A full disk must not turn a good network answer into a failed load.
+    if (res.ok && res.type === 'basic') c.put(req, res.clone()).catch(() => {});
     if (res.type !== 'basic') return res;
     const h = new Headers(res.headers); h.set('Cache-Control', 'no-cache');
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
-  })();
-  let timer;
-  const slow = new Promise(resolve => { timer = setTimeout(resolve, SLOW_MS, 'slow'); });
-  try {
-    const first = await Promise.race([net, slow]);
-    if (first !== 'slow') return first;
-    const hit = await cached();
-    return hit || await net;                 // nothing cached yet: keep waiting for the network
   } catch (err) {
-    const hit = await cached();
+    const hit = await c.match(req, { ignoreSearch: req.mode === 'navigate' });
     if (hit) return hit;
     throw err;
-  } finally {
-    clearTimeout(timer);
-    net.catch(() => {});                     // a late failure after the cache answered is not an error
   }
 }
 
@@ -84,9 +70,9 @@ async function networkFirst(req, cacheName) {
   const c = await caches.open(cacheName);
   try {
     const res = await fetch(req);
-    // The <link> now has crossorigin, so the CSS is a CORS response. Opaque ones (from pages
-    // cached before that change) are still kept: browsers pad each to megabytes in storage quotas.
-    if (res.ok || res.type === 'opaque') c.put(req, res.clone());
+    // The <link> has crossorigin, so the CSS is a CORS response (opaque ones are padded to
+    // megabytes in storage quotas, and a CORS request cannot use them offline).
+    if (res.ok) c.put(req, res.clone()).catch(() => {});
     return res;
   } catch (err) {
     const hit = await c.match(req);

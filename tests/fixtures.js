@@ -3,8 +3,8 @@
 // each AudioContext hands out a zero-gain node as its destination.
 import { test as base, expect } from '@playwright/test';
 
-function muteAudio() {
-  for (const C of [window.AudioContext, window.webkitAudioContext]) {
+export function muteAudio() {
+  for (const C of new Set([window.AudioContext, window.webkitAudioContext])) {
     if (!C) continue;
     const real = Object.getOwnPropertyDescriptor(C.prototype, 'destination')
       || Object.getOwnPropertyDescriptor(BaseAudioContext.prototype, 'destination');
