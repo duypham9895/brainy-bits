@@ -372,11 +372,12 @@ test('anchor: knob start applies only while levels has startAt rows; start witho
 
 test('maxLevel follows E2 and content-only games refuse to invent levels', () => {
   const B = loadBBD();
-  assert.equal(B.maxLevel('word'), 49);
+  assert.equal(B.maxLevel('word'), 50);
   B.CONFIG.E2_WORD_LEVELS = 30; assert.equal(B.maxLevel('word'), 30);
+  B.CONFIG.E2_WORD_LEVELS = 40; assert.equal(B.maxLevel('word'), 40);
   const MAX = { train: 31, koi: 31, mem: 31, rain: 31 };
   for (const g of KNOB_GAMES) assert.equal(B.maxLevel(g), MAX[g], g);
-  assert.throws(() => B.level('word', 50), /content-only/);   // vm realm: match by message
+  assert.throws(() => B.level('word', 51), /content-only/);   // vm realm: match by message
   assert.throws(() => B.level('mem', 0), /integer ≥ 1/);
   assert.throws(() => B.level('nope', 1), /unknown game/);
 });

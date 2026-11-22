@@ -18,12 +18,12 @@ test('BB.LV_MAX.word equals the real phrase count and games can register their o
     const bad = [BB.setLvMax('word', 0), BB.setLvMax('word', 'x'), BB.setLvMax('nope', 5)];
     return { before, real, set, bad, sameRef: same === BB.LV_MAX, word: BB.LV_MAX.word };
   });
-  expect(r.real).toBe(49);
+  expect(r.real).toBe(50);
   expect(r.before).toBe(r.real);
-  expect(r.set).toBe(49);
-  expect(r.bad).toEqual([49, 49, undefined]);       // invalid values never change the table
+  expect(r.set).toBe(50);
+  expect(r.bad).toEqual([50, 50, undefined]);       // invalid values never change the table
   expect(r.sameRef).toBe(true);
-  expect(r.word).toBe(49);
+  expect(r.word).toBe(50);
 });
 
 test('daily challenge for Word is not capped at 12 for a player past level 12 (finding 1)', async ({ page }) => {

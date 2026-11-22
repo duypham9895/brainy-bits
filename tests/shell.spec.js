@@ -141,7 +141,7 @@ test('hub reads legacy keys, seeds BB stats once and shows level/LV_MAX and star
   await expect(page.locator('#hubMem')).toHaveText('Đã qua 4/31 level');
   await expect(page.locator('#hubKoi')).toHaveText('Đã qua 10/31 level');
   await expect(page.locator('#hubRain')).toHaveText('Đã qua 2/31 level · ★ 5/93');
-  await expect(page.locator('#hubWord')).toHaveText('49 level, chưa chơi');
+  await expect(page.locator('#hubWord')).toHaveText('50 level, chưa chơi');
   await expect(page.locator('#hubStars')).toHaveText('5');
   const s = await page.evaluate(() => BB.gameStats('mem').best);
   expect(s).toBe(4);
@@ -297,14 +297,14 @@ test('re-seeds a word best clamped to 12 by an older build (review #1)', async (
     localStorage.setItem('bb_seeded_v1', '1');         // the old build already seeded (and clamped)
   });
   await page.goto('/');
-  await expect(page.locator('#hubWord')).toHaveText('Đã qua 24/49 level');
+  await expect(page.locator('#hubWord')).toHaveText('Đã qua 24/50 level');
   expect(await page.evaluate(() => [BB.gameStats('word').best, localStorage.getItem('bb_seeded_v2')])).toEqual([24, '1']);
   // Seeding only raises: a stored best above legacy stays. The hub counts phrases actually passed (word registers
   // BB.setProgress since table v2 reordered them), so a bare best of 30 with no stars still shows the 24 from word_lv.
   await page.evaluate(() => { localStorage.setItem('bb_stats', JSON.stringify({ word: { best: 30, stars: {} } })); localStorage.removeItem('bb_seeded_v2'); });
   await page.reload();
   expect(await page.evaluate(() => BB.gameStats('word').best)).toBe(30);
-  await expect(page.locator('#hubWord')).toHaveText('Đã qua 24/49 level');
+  await expect(page.locator('#hubWord')).toHaveText('Đã qua 24/50 level');
 });
 
 for (const [btn, menu] of [['openTrain', 'menu'], ['openKoi', 'kmenu'], ['openMem', 'mmenu'], ['openRain', 'rmenu'], ['openWord', 'wmenu']]) {

@@ -10,11 +10,11 @@ const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
 export function registerWord({ loadCore, J, failsByGate }) {
 // ---------- word (owner: word levels branch). js/word.js reads BBD.level('word', L).phrase. ----------
-describe('word: 49 phrases reordered by measured difficulty, stars keyed by phrase id (table v2)', () => {
+describe('word: 50 phrases ordered by measured difficulty, stars keyed by phrase id (table v2)', () => {
   test('word legacyLevels (v1) = old word.js order (sort by letter count, then source index)', async () => {
     const B = loadBBD();
     const { W, legacyOrder } = await import('./adapters/word.mjs');
-    const old = legacyOrder();                                // the sort word.js used before BBD, on the live PHRASES
+    const old = legacyOrder().filter(i => i < 49);            // the 49 v1 phrases before 50+ were added
     assert.equal(old.length, 49);
     const leg = B.spec('word').legacy;
     assert.equal(leg.length, 49);
@@ -26,20 +26,20 @@ describe('word: 49 phrases reordered by measured difficulty, stars keyed by phra
       assert.equal(r.id, `p${old[L - 1]}`, `L${L} id`);
     }
   });
-  test('word levels (v2): same 49 phrases, new order, id = "p" + phrase, letters true, 6 tries', async () => {
+  test('word levels (v2): 50 phrases, v2 order + L50 appended, id = "p" + phrase, letters true, 6 tries', async () => {
     const B = loadBBD();
     const { W } = await import('./adapters/word.mjs');
     assert.equal(B.version('word'), 2);
-    assert.equal(B.maxLevel('word'), 49); assert.equal(B.authoredCount('word'), 49);
-    const rows = Array.from({ length: 49 }, (_, k) => B.level('word', k + 1));
-    assert.deepEqual(rows.map(r => r.phrase).sort((a, b) => a - b), range(0, 48));   // no phrase added or dropped
+    assert.equal(B.maxLevel('word'), 50); assert.equal(B.authoredCount('word'), 50);
+    const rows = Array.from({ length: 50 }, (_, k) => B.level('word', k + 1));
+    assert.deepEqual(rows.map(r => r.phrase).sort((a, b) => a - b), range(0, 49));
     for (const r of rows) {
       assert.equal(r.authored, true); assert.equal(r.legacy, false);
       assert.equal(r.id, `p${r.phrase}`); assert.equal(B.levelId('word', r.L), r.id);
       assert.equal(r.letters, W.PHRASES.find(x => x.i === r.phrase).n, `L${r.L} letters`);
       assert.equal(r.maxTries, 6);
     }
-    assert.notDeepEqual(rows.map(r => r.phrase), B.spec('word').legacy.map(r => r.phrase));
+    assert.notDeepEqual(rows.slice(0, 49).map(r => r.phrase), B.spec('word').legacy.map(r => r.phrase));
     B.CONFIG.E3_FREEZE_LEGACY = true;                         // rollback switch: legacy order, stars still keyed by phrase
     assert.equal(B.level('word', 30).phrase, 30); assert.equal(B.levelId('word', 30), 'p30');
   });
@@ -54,7 +54,7 @@ describe('word: 49 phrases reordered by measured difficulty, stars keyed by phra
     assert.equal(ls.get('bb_tablev_word'), '2');
     assert.equal(ls.get('word_lv'), '31');                    // legacy key untouched
     assert.deepEqual(J(BB.gameStats('mem')), { best: 4, stars: { 4: 2 } });   // other games untouched
-    const newL = ph => Array.from({ length: 49 }, (_, k) => k + 1).find(L => BBD.level('word', L).phrase === ph);
+    const newL = ph => Array.from({ length: 50 }, (_, k) => k + 1).find(L => BBD.level('word', L).phrase === ph);
     assert.equal(BB.starsAt('word', newL(30)), 1); assert.equal(BB.starsAt('word', newL(0)), 3);
     const total = s => Object.values(s.stars).reduce((a, b) => a + b, 0);
     assert.equal(total(BB.gameStats('word')), 9);             // hub star total unchanged
@@ -96,7 +96,7 @@ describe('word: 49 phrases reordered by measured difficulty, stars keyed by phra
     const run = (L, pn, i) => simulate(B.level('word', L), PROFILES[pn], rngFor('word-test', L, pn, i));
     assert.deepEqual(run(10, 'median', 3), run(10, 'median', 3));
     const rate = (L, pn) => { let k = 0; for (let i = 0; i < 300; i++) k += run(L, pn, i).pass; return k / 300; };
-    for (const L of [1, 30, 49]) assert.ok(rate(L, 'weak') <= rate(L, 'median') && rate(L, 'median') <= rate(L, 'skilled') + 0.02, `L${L}`);
+    for (const L of [1, 30, 50]) assert.ok(rate(L, 'weak') <= rate(L, 'median') && rate(L, 'median') <= rate(L, 'skilled') + 0.02, `L${L}`);
   });
   test('word recognition counts candidates left: every answer is in the pool, the filter rarely drops it', async () => {
     const { W, POOL, simulate } = await import('./adapters/word.mjs');
@@ -117,7 +117,7 @@ describe('word: 49 phrases reordered by measured difficulty, stars keyed by phra
     assert.deepEqual(Object.keys(B.spec('word').gateWaivers), ['B']);
     assert.match(B.spec('word').gateWaivers.B, /\S/);
     const r = await calibrate('word', { n: 150, write: false, quiet: true });
-    assert.equal(r.levels.length, 49);
+    assert.equal(r.levels.length, 50);
     assert.ok(r.levels.every(l => !l.legacy));
     assert.deepEqual(failsByGate(r), {});
     assert.deepEqual(r.waived, ['B']);
