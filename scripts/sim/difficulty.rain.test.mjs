@@ -1,0 +1,222 @@
+// Rain block of scripts/sim/difficulty.test.mjs, split out to keep that file under 800 lines (review 2026-11-21).
+// Registered from difficulty.test.mjs, which hands over its shared helpers, so `npm run test:sim` still runs it.
+import { describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { loadBBD } from './load-bbd.mjs';
+import { calibrate } from './calibrate.mjs';
+import { mulberry32 } from './human.mjs';
+
+const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+
+export function registerRain({ loadCore, J, failsByGate }) {
+// ---------- rain (owner: rain). js/rain.js reads BBD.level('rain', L) and BBRain.makeEq (js/levels/rain.js). ----------
+describe('rain: game reads BBD, legacy unchanged, gates', () => {
+  // Verbatim copies of js/rain.js spec(L) and makeEq(L) before the BBD integration (main @ a124c2d),
+  // with Math.random replaced by an injected rng so both sides can be fed the same stream.
+  const oldSpec = L => ({ fall: Math.max(8, 13 - 0.55 * (L - 1)), every: Math.max(2.7, 4.6 - 0.2 * (L - 1)), target: 10 + L });
+  const oldMakeEq = (L, rnd) => {
+    const ri = (a, b) => a + (rnd() * (b - a + 1) | 0);
+    const add = m => { const a = ri(1, m - 1), b = ri(1, m - a); return [`${a} + ${b}`, a + b]; };
+    const sub = m => { const a = ri(2, m), b = ri(1, a); return [`${a} − ${b}`, a - b]; };
+    const mul = (x0, x1, y1) => { const a = ri(x0, x1), b = ri(1, y1); return rnd() < 0.5 ? [`${a} × ${b}`, a * b] : [`${b} × ${a}`, a * b]; };
+    const div = (x1, c0, c1) => { const b = ri(2, x1), c = ri(c0, c1); return [`${b * c} ÷ ${b}`, c]; };
+    const pick = arr => arr[rnd() * arr.length | 0]();
+    switch (L) {
+      case 1: return add(10);
+      case 2: return pick([() => add(10), () => sub(10)]);
+      case 3: return pick([() => add(20), () => sub(20)]);
+      case 4: return pick([() => add(50), () => sub(50)]);
+      case 5: return pick([() => add(100), () => sub(100)]);
+      case 6: return mul(2, 5, 10);
+      case 7: return mul(2, 9, 9);
+      case 8: return pick([() => mul(2, 9, 9), () => div(9, 1, 9)]);
+      case 9: return pick([() => add(100), () => sub(100), () => mul(2, 9, 9), () => div(9, 1, 9)]);
+      default: return pick([() => add(200), () => sub(200), () => mul(2, 12, 12), () => div(12, 2, 12)]);
+    }
+  };
+  // Answer check for every equation shape the generator writes.
+  const solve = eq => {
+    const m = /^\? ([+×]) (\d+) = (\d+)$/.exec(eq);
+    if (m) return m[1] === '+' ? +m[3] - +m[2] : +m[3] / +m[2];
+    return Function(`return ${eq.replace(/×/g, '*').replace(/−/g, '-').replace(/÷/g, '/')}`)();
+  };
+
+  // Table version 2 (E3 lifted 2026-11-21): the old rows stay as `legacyLevels` reference data; the game plays `levels`.
+  test('legacy rows = the old spec (===); v2 plays them unchanged on L1..6, L7..10 keep tier and chain at faster rain (decision 2)', () => {
+    const B = loadBBD(), leg = B.spec('rain').legacy;
+    assert.equal(B.version('rain'), 2);
+    assert.equal(leg.length, 10);
+    for (let L = 1; L <= 10; L++) {
+      const r = leg[L - 1], o = oldSpec(L);
+      assert.equal(r.ops, L, `L${L} ops`);
+      assert.equal(r.fall, o.fall, `L${L} fall`); assert.equal(r.every, o.every, `L${L} every`); assert.equal(r.target, o.target, `L${L} target`);
+    }
+    for (let L = 1; L <= 30; L++) {
+      const r = B.level('rain', L);
+      assert.equal(r.legacy, false, `L${L}`); assert.equal(r.authored, true, `L${L}`);
+      if (L <= 6) for (const k of ['ops', 'fall', 'every', 'target']) assert.equal(r[k], leg[L - 1][k], `L${L} ${k}`);
+      // L7..10: content and chain stay (decision 2), the rain is pulled toward B with speed only (review 2026-11-22)
+      else if (L <= 10) {
+        for (const k of ['ops', 'target']) assert.equal(r[k], leg[L - 1][k], `L${L} ${k}`);
+        assert.ok(r.fall < leg[L - 1].fall && r.every < leg[L - 1].every, `L${L}: faster rain than the old row`);
+      }
+    }
+    assert.equal(B.authoredCount('rain'), 30);
+  });
+
+  test('shared generator, tiers 1..10 = old makeEq: same rng → same equations and same rng use', async () => {
+    const { makeEq } = await import('./adapters/rain.mjs');
+    for (let L = 1; L <= 10; L++) for (let seed = 1; seed <= 40; seed++) {
+      const a = mulberry32(seed), b = mulberry32(seed);
+      for (let i = 0; i < 25; i++) assert.deepEqual([...makeEq(L, a)].slice(0, 2), oldMakeEq(L, b), `L${L} seed ${seed} draw ${i}`);   // spread: vm-realm array
+      assert.equal(a(), b(), `L${L} seed ${seed}: rng streams drifted`);
+    }
+  });
+
+  test('every tier: answers are correct, whole, 0..999 (3-digit numpad); new tiers show their new operation', async () => {
+    const { makeEq } = await import('./adapters/rain.mjs');
+    const rnd = mulberry32(7);
+    for (let tier = 1; tier <= 14; tier++) {
+      const ops = new Set();
+      for (let i = 0; i < 3000; i++) {
+        const [eq, ans, meta] = makeEq(tier, rnd);
+        assert.ok(Number.isInteger(ans) && ans >= 0 && ans <= 999, `tier ${tier}: ${eq} = ${ans}`);
+        assert.equal(solve(eq), ans, `tier ${tier}: ${eq}`);
+        ops.add(meta.op);
+      }
+      const want = { 11: 'add', 12: 'miss+', 13: 'two+', 14: 'mul21' }[tier];
+      if (want) assert.ok(ops.has(want), `tier ${tier} never drew ${want}`);
+    }
+  });
+
+  // Was "L11..30 … steps never get easier" with tiers 1..10 on L1..10. Decision 2 (Duy 2026-11-21): tiers 7..9
+  // are back at L7..9 (level L = tier L up to L10); rain speeds up step by step over L7..10 (review 2026-11-22); inside a
+  // block the steps never get easier; breathers open the next tier with the E4 safety net as knobs:
+  // a 10-drop chain, 4 lives instead of 3, slower rain than the peak before.
+  test('L1..30 (v2): tiers per block, breathers = 10 drops + 4 lives + slower rain, steps never get easier, caps hold', () => {
+    const B = loadBBD();
+    assert.equal(B.maxLevel('rain'), 30);
+    const ops = Array.from({ length: 30 }, (_, i) => B.level('rain', i + 1).ops);
+    assert.deepEqual(ops, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14]);
+    for (let L = 7; L <= 30; L++) {
+      const r = B.level('rain', L), p = B.level('rain', L - 1);
+      if (r.kind === 'breather') {
+        assert.equal(r.target, 10, `L${L} breather chain`);
+        assert.equal(r.lives, 4, `L${L} breather extra life`);
+        assert.ok(r.ops > p.ops, `L${L} breather opens a new tier`);
+        assert.ok(r.every > p.every && r.fall > p.fall, `L${L} breather rains slower than peak L${L - 1}`);
+      } else if (p.kind !== 'breather' && r.ops === p.ops) {
+        assert.ok(r.every <= p.every && r.fall <= p.fall && r.target >= p.target, `L${L} easier than L${L - 1}`);
+        assert.ok(r.every < p.every || r.fall < p.fall || r.target > p.target, `L${L} identical to L${L - 1}`);
+      }
+      if (r.kind !== 'breather') assert.equal(r.lives, 3, `L${L} lives`);
+      assert.ok(r.every >= 2.2 && r.fall >= 6.8 && r.target <= 25, `L${L} past a hardCap`);
+    }
+    for (let L = 1; L <= 9; L++) assert.equal(B.level('rain', L).lives, 3, `L${L} old rows keep 3 lives`);
+    // L7..10: the rain speeds up level by level (no 87 → 13% weak cliff in one step at L10)
+    for (let L = 7; L <= 10; L++) {
+      const r = B.level('rain', L), p = B.level('rain', L - 1);
+      assert.ok(r.every <= p.every && r.fall < p.fall, `L${L} rain not faster than L${L - 1}`);
+    }
+    // L31+ (engine continuation, not shipped): breathers keep the safety net, every knob stays inside its cap
+    for (let L = 31; L <= 60; L++) {
+      const r = B.level('rain', L);
+      if (r.kind === 'breather') assert.deepEqual([r.target, r.lives], [10, 4], `L${L}`);
+      else assert.equal(r.lives, 3, `L${L}`);
+      assert.ok(r.every >= 2.2 && r.fall >= 6.8 && r.target <= 25 && r.ops <= 14, `L${L} past a hardCap`);
+    }
+  });
+
+  // The adapter loses at `lives` misses like js/rain.js (misses >= lives), 3 when a row has none.
+  test('adapter: the lives knob decides when a round is lost; no lives field = 3', async () => {
+    const A = await import('./adapters/rain.mjs');
+    const { PROFILES, rngFor } = await import('./human.mjs');
+    const spec = { ops: 14, every: 2.3, fall: 6.9, target: 25 };
+    const run = lives => Array.from({ length: 300 }, (_, i) => A.simulate({ ...spec, lives }, PROFILES.weak, rngFor('rain-lives', i)));
+    const none = run(undefined), three = run(3), five = run(5), one = run(1);
+    assert.deepEqual(none.map(r => r.pass), three.map(r => r.pass));
+    for (const [rs, n] of [[one, 1], [three, 3], [five, 5]]) rs.forEach(r => {
+      assert.ok(r.detail.misses <= n, `lives ${n}: ${r.detail.misses} misses`);
+      if (!r.pass) assert.ok(r.detail.misses === n || r.detail.solved < spec.target, `lives ${n}`);
+    });
+    const rate = rs => rs.filter(r => r.pass).length;
+    assert.ok(rate(one) <= rate(three) && rate(three) < rate(five), `${rate(one)} ${rate(three)} ${rate(five)}`);
+  });
+
+  // Real v1 keys as the shipped game left them: rain_lv (next level to play) + bb_stats stars by level number.
+  test('rain progress: v1 keys → v2 keep levels passed, stars and rain_lv; once per version; corrupt data does not crash', () => {
+    const v1 = { rain_lv: '11', bb_stats: JSON.stringify({ rain: { best: 10, stars: { 1: 3, 5: 3, 10: 2 } }, koi: { best: 2, stars: { 1: 1 } } }),
+      bb_log: JSON.stringify([{ g: 'rain', lv: 10, won: true, stars: 2, score: 20, d: '2026-11-20', ms: 61000 }]) };
+    const { BB, ls } = loadCore({ init: v1 });
+    const r = BB.migrateProgress('rain');
+    assert.deepEqual([r.ran, r.reason, r.from, r.to], [true, 'migrated', 1, 2]);
+    assert.deepEqual(J(BB.gameStats('rain')), { best: 10, stars: { 1: 3, 5: 3, 10: 2 } });   // same level numbers in v2
+    assert.equal(BB.starsAt('rain', 10), 2);
+    assert.equal(ls.get('bb_tablev_rain'), '2');
+    assert.equal(ls.get('rain_lv'), '11');                                    // game key untouched: L11 stays open
+    assert.deepEqual(JSON.parse(ls.get('bb_stats')).koi, { best: 2, stars: { 1: 1 } });
+    assert.equal(ls.get('bb_log'), v1.bb_log);
+    const snap = ls.get('bb_stats');
+    assert.equal(BB.migrateProgress('rain').reason, 'current');
+    assert.equal(ls.get('bb_stats'), snap);
+    // a player who finished all 30 before this table: still 30
+    const all = loadCore({ init: { rain_lv: '31', bb_stats: JSON.stringify({ rain: { best: 30, stars: { 30: 1 } } }) } });
+    all.BB.migrateProgress('rain');
+    assert.deepEqual(J(all.BB.gameStats('rain')), { best: 30, stars: { 30: 1 } });
+    // rain_lv only (played before bb_stats existed): nothing to move, marker written, rain_lv untouched
+    const only = loadCore({ init: { rain_lv: '6' } });
+    assert.equal(only.BB.migrateProgress('rain').reason, 'migrated');
+    assert.deepEqual([only.ls.get('rain_lv'), only.ls.get('bb_tablev_rain')], ['6', '2']);
+    // junk stars and a corrupt marker: cleaned, best kept, no throw
+    const c = loadCore({ init: { bb_stats: JSON.stringify({ rain: { best: '7', stars: { 2: '3', 3: 0, 4: 'x', 6: 9 } } }), bb_tablev_rain: '-1' } });
+    assert.equal(c.BB.migrateProgress('rain').reason, 'migrated');
+    assert.deepEqual(J(c.BB.gameStats('rain')), { best: 7, stars: { 2: 3, 6: 3 } });
+    for (const bad of ['{bad', '[]', '5', JSON.stringify({ rain: 'x' })]) assert.equal(loadCore({ init: { bb_stats: bad } }).BB.migrateProgress('rain').ran, true, bad);
+    // a newer marker (an older build opened after a newer one) leaves data alone
+    const n = loadCore({ init: { bb_stats: JSON.stringify({ rain: { best: 3, stars: { 1: 3 } } }), bb_tablev_rain: '3' } });
+    assert.equal(n.BB.migrateProgress('rain').reason, 'newer');
+    assert.equal(n.ls.get('bb_tablev_rain'), '3');
+  });
+
+  // Full N (≈5 s). Duy 2026-11-22 cleared the two rain blocks: (A) B is one-sided on L1–9 (every miss there was
+  // easy side) and (A) breathers may be as easy as needed, B only fails them when too hard, G3 keeps "easier than
+  // the peak" only, G4 (weak ≥ 60%) stays. Every gate passes with zero waivers.
+  test('rain v2: zero failed gates, zero waivers at N=1200', async () => {
+    const r = await calibrate('rain', { n: 1200, write: false, quiet: true });
+    assert.deepEqual(failsByGate(r), {});
+    assert.equal(r.gates.find(g => g.id === 'G7').pass, null);
+    assert.deepEqual(r.waived, []);                                         // rain declares no waiver
+    assert.equal(r.config.tableVersion, 2);
+  });
+
+  // Review MUST 1 (2026-11-21): "thêm 10 màn" must work from the rule. L31+ come from the engine: steps follow p*
+  // (every −0.005 s and fall −0.0105 s per level, 0.01 s grid), peaks add every −0.08 s and fall −0.30 s,
+  // breathers keep the E4 net. Only the breather gap (Duy's open decision) and seed noise may fail.
+  // Checked to L45: from L50 the p* floor (0.65, E1 = A) flattens peak targets and peaks fall ~5 points below p*.
+  test('L31..45 from the engine: peaks harder than the step before, steps inside B, breathers keep the net', async () => {
+    const B = loadBBD();
+    for (let L = 31; L <= 45; L++) {
+      const r = B.level('rain', L), p = B.level('rain', L - 1);
+      assert.equal(r.authored, undefined, `L${L} generated`);
+      if (r.kind === 'peak') assert.ok(r.every < p.every && r.fall < p.fall, `L${L} peak harder than step L${L - 1}`);
+      if (r.kind === 'peak') {
+        const q = B.level('rain', L - 5);
+        assert.ok(r.every <= q.every && r.fall <= q.fall && (r.every < q.every || r.fall < q.fall), `L${L} peak harder than peak L${L - 5}`);
+      }
+      if (r.kind === 'step' && p.kind === 'step') {
+        assert.ok(r.every <= p.every && r.fall <= p.fall, `L${L} easier than L${L - 1}`);
+        assert.ok(r.every < p.every || r.fall < p.fall, `L${L} identical to L${L - 1}`);
+      }
+    }
+    // N=4000: at N=1200 G2 L37→L38 flips on seed (the same spec measures 69.6% on the L37 seeds and 75.1% on the
+    // L38 seeds). A bigger N narrows the G2 tolerance, so this is stricter. CI runs the same N.
+    const r = await calibrate('rain', { n: 4000, from: 31, to: 45, write: false, quiet: true });
+    assert.deepEqual(failsByGate(r), {});
+    for (const id of ['G4', 'G6', 'G8']) assert.equal(r.gates.find(g => g.id === id).pass, true, id);
+    // L1–5 and L30 are not in this run: G1 and G5 report SKIP (pass: null), never PASS (review 2026-11-22).
+    for (const id of ['G1', 'G5']) assert.deepEqual([r.gates.find(g => g.id === id).status, r.gates.find(g => g.id === id).pass], ['SKIP', null], id);
+    r.levels.filter(l => l.kind !== 'breather').forEach(l =>
+      assert.ok(Math.abs(l.profiles.median.p - l.pStar) <= 0.05, `L${l.L} median ${l.profiles.median.p} vs p* ${l.pStar}`));
+  });
+});
+}

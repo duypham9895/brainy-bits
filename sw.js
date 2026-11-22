@@ -1,6 +1,6 @@
 // Brainy Bits offline cache. Same-origin requests go to the network first, so stale files are
 // never served while online. Bump VERSION when the precache list changes; activate deletes old caches. Pattern after mdn/pwa-examples (CC0-1.0), own code.
-const VERSION = 'bb-v6';
+const VERSION = 'bb-v7';
 const FONT_CACHE = 'bb-fonts-v1';
 const PRECACHE = [
   './', 'index.html', 'manifest.webmanifest', 'favicon.ico',

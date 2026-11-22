@@ -14,16 +14,24 @@
 const CONFIG = {
   E1: 'A',                 // L30 peak median pass: 'A' ≈ 0.69 (default) | 'B' ≈ 0.58. Presets in E1_PRESETS.
   E2_WORD_LEVELS: 49,      // Đoán Cụm Từ: keep all 49 (default) or cut to 30.
-  E3_FREEZE_LEGACY: true,  // true = existing levels keep their exact values; bot only measures them.
+  // E3 lifted by Duy 2026-11-21: a table plays its `levels` rows (L1..n, retuned to the template) and keeps
+  // `legacyLevels` as reference data for parity tests and progress migration. true = play legacy rows again,
+  // but it is NOT a valid rollback: knob max/start/relief were retuned for the 30 `levels` rows, so after the
+  // 10–13 legacy rows the generated levels get easier (train L12–30, koi L11, mem L14, rain L11). Roll back by
+  // reverting the commit instead. Kept only so parity tests can replay the v1 rows.
+  E3_FREEZE_LEGACY: false,
   E4: { maxStars: 1, unlocksNext: true, slowTempo: 0.85 },  // win on "lighter": star cap, unlock L+1, slow tempo (null = off)
   E5_KNOBS_ONLY: true,     // true = knobs only; knobs flagged rule:true (new mechanics) stay off.
 
   // Curve constants (MERGED-SPEC §4.1). Not owner decisions; change only with a calibration run.
   REF_L: 30,               // D(REF_L) = 1
-  PERIOD: 5,               // peak at 5k, breather at 5k+1
+  PERIOD: 5,               // peak at 5k, breather at 5k+1, both only from 2·PERIOD on (first peak L10, first breather L11)
+  BREATHER_EASY_OK: true,  // Duy 2026-11-22 (rain, A): a breather may be as easy as needed. B fails it only when too hard; G3 drops 'easier than L−4'. G4 stays.
+  B_EASY_OK_BEFORE_SAW: true, // Duy 2026-11-22 (Gen Z players): on L1..sawStart-1 gate B fails only when median < p* − BAND (too hard). false = two-sided.
+  SAW_FROM_PERIODS: 2,     // Duy 2026-11-21 (1)=A: no peak at L5; L1–9 rise as steps so G1 (weak ≥ 0.85, L1–5) holds. 1 = old L5 peak.
   P_TOP: 0.92,             // p*(1), R:dda
   PEAK_DIP: 0.06,          // peak levels: p* − 0.06 (A)
-  BREATHER_OFFSET: 0,      // A-1 fix: breathers get no p* bonus
+  BREATHER_OFFSET: 0,      // A-1 fix: breathers get no p* bonus (applies from the first breather, L11)
   LIGHTER: { maxRelief: 0.15, failsInRow: 2, pBelow: 0.5, suggestPrevAfter: 3 },  // §4.5, R:dda, Hunicke
   ELO: { uSlope: 0.05, key: 'bbd_theta' },                                         // Pelánek U(n)=1/(1+0.05n)
 };
@@ -35,12 +43,15 @@ const E1_PRESETS = {
 const e1 = () => E1_PRESETS[CONFIG.E1] || E1_PRESETS.A;
 
 // ---------- curve ----------
-const RESERVED = new Set(['L', 'kind', 'legacy', 'D', 'pStar', 'exhausted', 'assist']);
+const RESERVED = new Set(['L', 'kind', 'legacy', 'authored', 'id', 'D', 'pStar', 'exhausted', 'assist']);
 function D(L) { return Math.sqrt(Math.max(0, L - 1) / (CONFIG.REF_L - 1)); }          // A, R:dda (abagames, MIT)
+// Sawtooth: peak at L % PERIOD === 0, breather right after it, but only from L = SAW_FROM_PERIODS·PERIOD on.
+// Default (PERIOD 5, from 2): L1–9 steps, L10 peak, L11 breather, L15 peak, L16 breather, …
+function sawStart() { return CONFIG.PERIOD * CONFIG.SAW_FROM_PERIODS; }
 function kind(L) {
-  const P = CONFIG.PERIOD;
-  if (L >= P && L % P === 0) return 'peak';
-  if (L > P && L % P === 1) return 'breather';
+  const P = CONFIG.PERIOD, S = sawStart();
+  if (L >= S && L % P === 0) return 'peak';
+  if (L > S && L % P === 1) return 'breather';
   return 'step';
 }
 function pStar(L) {
@@ -55,12 +66,28 @@ function pStar(L) {
 // ---------- registry ----------
 const specs = new Map();
 const isInt = n => Number.isInteger(n) && n >= 1;
+// Gates a table may waive, each with a written reason (Duy 2026-11-21 (3): word waives B). Every other gate stays binding.
+const WAIVABLE_GATES = Object.freeze(['B']);
+function checkWaivers(g, w) {
+  if (w == null) return Object.freeze({});
+  if (typeof w !== 'object' || Array.isArray(w)) throw new Error(`BBD.register(${g}): gateWaivers must be an object { gateId: reason }`);
+  Object.keys(w).forEach(id => {
+    if (!WAIVABLE_GATES.includes(id)) throw new Error(`BBD.register(${g}): gate "${id}" cannot be waived (only ${WAIVABLE_GATES.join(', ')})`);
+    if (typeof w[id] !== 'string' || !w[id].trim()) throw new Error(`BBD.register(${g}): waiver for gate ${id} needs a reason string`);
+  });
+  return Object.freeze({ ...w });
+}
 
 function register(gameKey, spec) {
   if (typeof gameKey !== 'string' || !gameKey) throw new TypeError('BBD.register: gameKey must be a string');
   if (!spec || typeof spec !== 'object') throw new TypeError(`BBD.register(${gameKey}): spec missing`);
   const legacy = (spec.legacyLevels || []).map(r => Object.freeze({ ...r }));
-  const knobs = (spec.knobs || []).map(k => normKnob(gameKey, k, legacy));
+  const authored = (spec.levels || []).map(r => ({ ...r }));
+  const version = spec.version === undefined ? 1 : spec.version;
+  if (!isInt(version)) throw new Error(`BBD.register(${gameKey}): version must be an integer ≥ 1`);
+  if (spec.migrate != null && typeof spec.migrate !== 'function') throw new Error(`BBD.register(${gameKey}): migrate must be a function`);
+  const knobs = (spec.knobs || []).map(k => normKnob(gameKey, k, authored.length ? authored : legacy));
+  checkLevels(gameKey, authored, knobs);
   const names = new Set(knobs.map(k => k.name));
   const priority = (spec.priority || knobs.map(k => k.name)).slice();
   priority.forEach(n => { if (!names.has(n)) throw new Error(`BBD.register(${gameKey}): priority names unknown knob "${n}"`); });
@@ -69,12 +96,14 @@ function register(gameKey, spec) {
     return Object.freeze({ knob: r.knob, by: r.by });
   });
   const s = Object.freeze({
-    key: gameKey, legacy: Object.freeze(legacy), knobs: Object.freeze(knobs), priority: Object.freeze(priority),
+    key: gameKey, version, migrate: spec.migrate || null,
+    legacy: Object.freeze(legacy), levels: Object.freeze(authored.map(r => Object.freeze(r))), knobs: Object.freeze(knobs), priority: Object.freeze(priority),
     relief: Object.freeze(fx(spec.relief)), peak: Object.freeze(fx(spec.peak)),
     lighterKnobs: Object.freeze((spec.lighterKnobs || priority).slice()),
     derive: typeof spec.derive === 'function' ? spec.derive : null,
-    maxLevel: spec.maxLevel, overrides: Object.freeze({ ...(spec.overrides || {}) }),
+    maxLevel: spec.maxLevel, strictPeaks: !!spec.strictPeaks, overrides: Object.freeze({ ...(spec.overrides || {}) }),
     meta: Object.freeze({ ...(spec.meta || {}) }),
+    gateWaivers: checkWaivers(gameKey, spec.gateWaivers),
   });
   specs.set(gameKey, s);
   return s;
@@ -86,14 +115,34 @@ function normKnob(g, k, legacy) {
   const last = legacy.length ? legacy[legacy.length - 1][k.name] : undefined;
   const min = typeof k.min === 'number' ? k.min : last;
   if (typeof min !== 'number') throw new Error(`BBD.register(${g}): knob "${k.name}" needs min (or a legacy value)`);
+  // `start` is written for one table length: the row count it steps back from. Appending rows moves the anchor,
+  // so `start` stops applying there instead of pulling L(n+1) back to an old value (review 2026-11-22).
+  if (typeof k.start === 'number' && !isInt(k.startAt)) throw new Error(`BBD.register(${g}): knob "${k.name}" has start but no startAt (the levels count it was written for)`);
   const dir = Math.sign(k.hardCap - min) || Math.sign((k.max ?? k.hardCap) - min) || (k.dir || 1);
   const step = k.int ? Math.max(1, k.step || 1) : (k.step || 0);
   return Object.freeze({
     name: k.name, min, max: typeof k.max === 'number' ? k.max : null, hardCap: k.hardCap,
     start: typeof k.start === 'number' ? k.start : null,
+    startAt: k.startAt === undefined ? null : k.startAt,
     off: typeof k.off === 'number' ? k.off : min, curve: k.curve || 'sqrt', unlockAt: k.unlockAt || 0,
     step, notch: k.notch || step, int: !!k.int, dir, rule: !!k.rule, reserve: !!k.reserve, changeOn: k.changeOn || 'any',
     source: k.source || '',
+  });
+}
+// `levels` rows are authored L1..n: every live knob must be there (rule knobs default to off), and an `id`,
+// when given, is a stable star key: a non-numeric string, unique, so it never collides with level-number keys.
+function checkLevels(g, rows, knobs) {
+  const ids = new Set();
+  rows.forEach((r, i) => {
+    knobs.forEach(k => {
+      if (typeof r[k.name] === 'number') return;
+      if (k.rule) { r[k.name] = k.off; return; }
+      throw new Error(`BBD.register(${g}): levels[${i}] (L${i + 1}) misses knob "${k.name}"`);
+    });
+    if (r.id === undefined) return;
+    if (typeof r.id !== 'string' || !r.id || /^\d+$/.test(r.id)) throw new Error(`BBD.register(${g}): L${i + 1} id must be a non-numeric string`);
+    if (ids.has(r.id)) throw new Error(`BBD.register(${g}): duplicate level id "${r.id}"`);
+    ids.add(r.id);
   });
 }
 function get(gameKey) {
@@ -117,15 +166,19 @@ function curveOf(name, u) {
   if (name === 'quad') return u * u;
   return Math.sqrt(u);                                   // 'sqrt' (default): steep early, flat late
 }
-const legacyN = s => (CONFIG.E3_FREEZE_LEGACY ? s.legacy.length : 0);
+// Rows played as written before the formula takes over: `levels` (E3 lifted), else `legacyLevels`.
+// A table without `levels` keeps playing its legacy rows, gated like any other level, until its owner retunes it.
+const seedOf = s => (CONFIG.E3_FREEZE_LEGACY || !s.levels.length ? s.legacy : s.levels);
+const legacyN = s => seedOf(s).length;
 
 // Where a knob starts moving: [anchorL, anchorV]. Reserve knobs wait for the previous knob in
 // `priority` to reach its hardCap, then start at the next breather (spec §4.6 step 3).
 function anchor(s, k) {
-  const n = legacyN(s);
-  const fromLegacy = n && typeof s.legacy[n - 1][k.name] === 'number';
-  let aL = fromLegacy ? n : 1, aV = fromLegacy ? s.legacy[n - 1][k.name] : k.min;
-  if (typeof k.start === 'number' && fromLegacy) aV = k.start;   // first generated level jumps here (harder side only)
+  const seed = seedOf(s), n = seed.length;
+  const fromLegacy = n && typeof seed[n - 1][k.name] === 'number';
+  let aL = fromLegacy ? n : 1, aV = fromLegacy ? seed[n - 1][k.name] : k.min;
+  // First generated level jumps to `start`, but only while the table still ends where `start` was written for.
+  if (k.start !== null && fromLegacy && n === k.startAt) aV = k.start;
   if (k.unlockAt && k.unlockAt - 1 > aL) { aL = k.unlockAt - 1; aV = k.off; }
   if (k.reserve) {
     const i = s.priority.indexOf(k.name);
@@ -142,8 +195,8 @@ function anchor(s, k) {
 // Knob value from the formula alone (no peak/breather shaping).
 function raw(s, k, L) {
   if (k.rule && CONFIG.E5_KNOBS_ONLY) return k.off;
-  const n = legacyN(s);
-  if (L <= n && typeof s.legacy[L - 1][k.name] === 'number') return s.legacy[L - 1][k.name];
+  const seed = seedOf(s), n = seed.length;
+  if (L <= n && typeof seed[L - 1][k.name] === 'number') return seed[L - 1][k.name];
   const [aL, aV] = anchor(s, k);
   if (L <= aL) return aV;
   let Le = L;
@@ -168,8 +221,13 @@ function raw(s, k, L) {
 
 // ---------- level ----------
 function compute(s, L) {
-  const n = legacyN(s);
-  if (L <= n) return { ...s.legacy[L - 1], L, kind: kind(L), legacy: true };
+  const seed = seedOf(s), n = seed.length;
+  if (L <= n && seed === s.legacy) return { ...s.legacy[L - 1], L, kind: kind(L), legacy: true };   // bit-exact
+  if (L <= n) {
+    const row = { ...seed[L - 1], ...(s.overrides[L] || {}) };
+    const derived = s.derive ? s.derive({ ...row }, L) : null;
+    return { ...row, ...(derived || {}), L, kind: kind(L), legacy: false, authored: true };
+  }
   if (!s.knobs.length) throw new RangeError(`BBD.level(${s.key}, ${L}): content-only game ends at L${n}; add content rows first`);
   const row = {};
   s.knobs.forEach(k => { row[k.name] = raw(s, k, L); });
@@ -181,9 +239,11 @@ function compute(s, L) {
   if (kd === 'breather') s.relief.forEach(r => {
     const k = s.knobs.find(x => x.name === r.knob);
     const relieved = quant(k, row[k.name] - k.dir * (r.by ?? k.step));
-    // Breathers stay monotone among themselves: never easier than the previous generated breather.
-    // Whether a breather sits between its peak and L−4 is a pass-rate question: gate G3 in the simulator.
-    const prevB = L - CONFIG.PERIOD > n ? levelRow(s, L - CONFIG.PERIOD)[k.name] : undefined;
+    // Breathers stay monotone among themselves: never easier than the previous breather, authored or generated
+    // (so L31 is never easier than a written L26). Whether a breather sits between its peak and L−4 is a
+    // pass-rate question: gate G3 in the simulator.
+    const prevL = L - CONFIG.PERIOD;
+    const prevB = prevL >= 1 && kind(prevL) === 'breather' ? levelRow(s, prevL)[k.name] : undefined;
     row[k.name] = typeof prevB === 'number' ? harder(k, relieved, prevB) : relieved;
   });
   Object.assign(row, s.overrides[L] || {});              // authored exceptions, e.g. a hand-set L30
@@ -191,7 +251,7 @@ function compute(s, L) {
   return { ...row, ...(derived || {}), L, kind: kd, legacy: false };
 }
 const cache = new Map();                                  // key: game|L|configStamp
-const stamp = () => JSON.stringify([CONFIG.E1, CONFIG.E3_FREEZE_LEGACY, CONFIG.E5_KNOBS_ONLY, CONFIG.REF_L, CONFIG.PERIOD]);
+const stamp = () => JSON.stringify([CONFIG.E1, CONFIG.E3_FREEZE_LEGACY, CONFIG.E5_KNOBS_ONLY, CONFIG.REF_L, CONFIG.PERIOD, CONFIG.SAW_FROM_PERIODS]);
 function levelRow(s, L) {
   const key = `${s.key}|${L}|${stamp()}`;
   let r = cache.get(key);
@@ -204,15 +264,46 @@ function level(gameKey, L) {
 }
 function maxLevel(gameKey) {
   const s = get(gameKey);
-  if (typeof s.maxLevel === 'function') return s.maxLevel(CONFIG);
+  if (typeof s.maxLevel === 'function') return s.maxLevel(CONFIG, legacyN(s));
   if (typeof s.maxLevel === 'number') return s.maxLevel;
-  return s.knobs.length ? Math.max(CONFIG.REF_L, s.legacy.length) : s.legacy.length;
+  return s.knobs.length ? Math.max(CONFIG.REF_L, legacyN(s)) : legacyN(s);
 }
+// Stable star key for level L: the row's `id` when the table gives one (word: phrase id), else L itself,
+// so data saved before ids existed (stars[L]) keeps reading the same way.
+function levelId(gameKey, L) {
+  const r = level(gameKey, L);
+  return r.id !== undefined ? r.id : L;
+}
+const version = gameKey => get(gameKey).version;
+// Number of levels read from a written table (levels or legacyLevels) before the formula takes over.
+const authoredCount = gameKey => legacyN(get(gameKey));
 // True when every non-rule knob sits at its hardCap: the "+10 levels" rule must STOP and ask Duy.
+// A table with `strictPeaks: true` is also exhausted from the first generated peak that is not strictly harder
+// than both the level before it and the previous peak (no knob easier, at least one harder): a flat peak.
+const liveKnobs = s => s.knobs.filter(k => !(k.rule && CONFIG.E5_KNOBS_ONLY));
+function strictlyHarder(s, a, b) {
+  let more = false;
+  for (const k of liveKnobs(s)) {
+    const d = k.dir * (a[k.name] - b[k.name]);
+    if (d < -1e-9) return false;
+    if (d > 1e-9) more = true;
+  }
+  return more;
+}
+function firstFlatPeak(s, L) {
+  for (let P = legacyN(s) + 1; P <= L; P++) {
+    if (kind(P) !== 'peak') continue;
+    const row = levelRow(s, P), prevPeak = P - CONFIG.PERIOD;
+    if (!strictlyHarder(s, row, levelRow(s, P - 1))) return P;
+    if (prevPeak >= 1 && kind(prevPeak) === 'peak' && !strictlyHarder(s, row, levelRow(s, prevPeak))) return P;
+  }
+  return 0;
+}
 function exhausted(gameKey, L) {
   const s = get(gameKey);
-  const live = s.knobs.filter(k => !(k.rule && CONFIG.E5_KNOBS_ONLY));
-  return live.length > 0 && live.every(k => atCap(k, raw(s, k, L)));
+  const live = liveKnobs(s);
+  if (live.length > 0 && live.every(k => atCap(k, raw(s, k, L)))) return true;
+  return s.strictPeaks && isInt(L) && firstFlatPeak(s, L) > 0;
 }
 
 // ---------- lighter variant (E4, §4.5): one notch easier on the first knob that can move ≤ 15% ----------
@@ -274,8 +365,84 @@ const elo = {
   suggestPrev: failsInRow => failsInRow >= CONFIG.LIGHTER.suggestPrevAfter,
 };
 
+// ---------- progress migration when a table changes version (storage injected, pure otherwise) ----------
+// bb_stats[g] = { best, stars } is written by BB.record in js/core.js. When a game ships a new table
+// (spec.version + 1) it calls BB.migrateProgress(g) once at load; that runs progress.run() below.
+// Contract: idempotent (marker bb_tablev_<g>), never lowers `best` (levels passed), never throws on corrupt data.
+const isObj = x => Object.prototype.toString.call(x) === '[object Object]';
+const LEVEL_KEY = /^[1-9]\d*$/;
+const progress = {
+  STATS_KEY: 'bb_stats',
+  markerKey: g => `bb_tablev_${g}`,
+  // Sanitised copy of one game's stats: best = whole number ≥ 0, stars = { key: 1..3 } (0, junk and NaN dropped).
+  clean(entry) {
+    const e = isObj(entry) ? entry : {};
+    const b = Math.floor(Number(e.best));
+    const stars = {};
+    if (isObj(e.stars)) Object.keys(e.stars).forEach(k => {
+      const v = Math.floor(Number(e.stars[k]));
+      if (Number.isFinite(v) && v > 0) stars[k] = Math.min(3, v);
+    });
+    return { best: Number.isFinite(b) && b > 0 ? b : 0, stars };
+  },
+  // Move level-number keys ("7") to new keys with mapL(7); other keys (stable ids) pass through untouched,
+  // so running the same remap twice changes nothing. Two keys landing on one keep the higher star count.
+  remapLevels(stars, mapL) {
+    const out = {};
+    const put = (k, v) => { out[k] = Math.max(out[k] || 0, v); };
+    Object.keys(stars || {}).forEach(k => {
+      const v = stars[k];
+      if (!LEVEL_KEY.test(k)) { put(k, v); return; }
+      const nk = mapL(Number(k));
+      put(nk === undefined || nk === null || nk === '' ? k : String(nk), v);   // no mapping: keep, never drop a star
+    });
+    return out;
+  },
+  // Stored table version: integer ≥ 1, or null when the marker is missing or corrupt.
+  readVersion(storage, g) {
+    let raw = null;
+    try { raw = storage.getItem(progress.markerKey(g)); } catch (e) { return null; }
+    return typeof raw === 'string' && LEVEL_KEY.test(raw) ? Number(raw) : null;
+  },
+  // Pure step: old entry → new entry. A missing mapper keeps the data as is (same level numbers, new content).
+  apply(entry, from, to, mapper, g) {
+    const before = progress.clean(entry);
+    const mapped = mapper ? mapper({ game: g, from, to, best: before.best, stars: { ...before.stars }, remapLevels: progress.remapLevels }) : before;
+    const after = progress.clean(mapped);
+    after.best = Math.max(before.best, after.best);                  // levels passed never go down
+    return { before, after };
+  },
+  // Read bb_stats + marker, migrate one game, write both. Returns what happened; never throws.
+  //   opts.version: target version (default BBD.version(g)); opts.mapper: default spec.migrate, else identity.
+  // No marker = data from version 1 (every table before versions existed). A corrupt marker is treated the same:
+  // the mapper only moves stars and `best` can only rise, so re-running from 1 cannot cost a level.
+  run(storage, g, opts = {}) {
+    let s = null;
+    try { s = get(g); } catch (e) { /* game not registered: opts must carry the version */ }
+    const to = opts.version !== undefined ? opts.version : s ? s.version : undefined;
+    if (!isInt(to)) return { ran: false, reason: 'no-version', game: g };
+    const mapper = opts.mapper || (s && s.migrate) || null;
+    const stored = progress.readVersion(storage, g);
+    const from = stored || 1;
+    const mark = () => { try { storage.setItem(progress.markerKey(g), String(to)); return true; } catch (e) { return false; } };
+    if (from > to) return { ran: false, reason: 'newer', game: g, from, to };   // older build after a newer one: leave data alone
+    if (from === to) { if (stored !== to) mark(); return { ran: false, reason: 'current', game: g, from, to }; }
+    let all = {};
+    try { const v = JSON.parse(storage.getItem(progress.STATS_KEY)); if (isObj(v)) all = v; } catch (e) { /* corrupt → start clean */ }
+    let res;
+    try { res = progress.apply(all[g], from, to, mapper, g); }
+    catch (e) { return { ran: false, reason: 'mapper-error', game: g, from, to, error: String(e && e.message || e) }; }
+    all[g] = { ...(isObj(all[g]) ? all[g] : {}), best: res.after.best, stars: res.after.stars };
+    try { storage.setItem(progress.STATS_KEY, JSON.stringify(all)); }
+    catch (e) { return { ran: false, reason: 'storage-error', game: g, from, to }; }
+    mark();
+    return { ran: true, reason: 'migrated', game: g, from, to, before: res.before, after: res.after };
+  },
+};
+
 return Object.freeze({
-  CONFIG, E1_PRESETS, e1, D, kind, pStar, register, level, maxLevel, exhausted, lighter, elo,
+  CONFIG, E1_PRESETS, e1, D, kind, pStar, register, WAIVABLE_GATES, level, maxLevel, exhausted, lighter, elo,
+  levelId, version, authoredCount, progress, strictlyHarder: (g, a, b) => strictlyHarder(get(g), a, b),
   games: () => [...specs.keys()],
   spec: gameKey => get(gameKey),
   clearCache: () => cache.clear(),

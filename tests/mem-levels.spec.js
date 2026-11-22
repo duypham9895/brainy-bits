@@ -44,38 +44,60 @@ async function pickLevel(page, L) {
   await page.click('#mStart');
 }
 
-test('engine wired: BBD drives the game, LV_MAX = 30 everywhere, in-page fallback matches BBD on L1..13 (HEAD parity: difficulty.test.mjs)', async ({ page }) => {
+test('engine wired: game plays table v2 from BBD, LV_MAX = 30, in-page fallback = table v1 (legacyLevels)', async ({ page }) => {
   await open(page);
   const r = await page.evaluate(() => {
-    const m = window.__mem, out = [];
-    for (let L = 1; L <= 13; L++) out.push([m.spec(L), m.legacySpec(L)]);
-    return { uses: m.usesBBD, max: m.LV_MAX, bbMax: BB.LV_MAX.mem, bbd: BBD.maxLevel('mem'), pairs: out };
+    const m = window.__mem, now = [], v1 = [];
+    for (let L = 1; L <= 30; L++) { const b = BBD.level('mem', L); now.push([m.spec(L), { t: b.t, size: b.size, show: b.show, disp: b.disp }]); }
+    for (let L = 1; L <= 13; L++) { const o = BBD.spec('mem').legacy[L - 1]; v1.push([m.legacySpec(L), { t: o.t, size: o.size, show: o.show, disp: o.disp }]); }
+    return { uses: m.usesBBD, max: m.LV_MAX, bbMax: BB.LV_MAX.mem, bbd: BBD.maxLevel('mem'), ver: BBD.version('mem'), now, v1 };
   });
   expect(r.uses).toBe(true);
-  expect([r.max, r.bbMax, r.bbd]).toEqual([30, 30, 30]);
-  for (const [now, old] of r.pairs) expect(now).toEqual(old);
+  expect([r.max, r.bbMax, r.bbd, r.ver]).toEqual([30, 30, 30, 2]);
+  for (const [game, bbd] of r.now) expect(game).toEqual(bbd);
+  for (const [fallback, v1] of r.v1) expect(fallback).toEqual(v1);
+});
+
+test('menu copy states a rule that holds for table v2 (no "mỗi level thêm 1 ô")', async ({ page }) => {
+  await open(page);
+  const how = page.locator('#mmenu .how');
+  await expect(how).toContainText('Level sau thường nhiều ô hơn hoặc ô nằm xa nhau hơn.');
+  await expect(how).not.toContainText('mỗi level thêm 1 ô');
+  await expect(page.locator('#mLvTxt')).toHaveText('Lưới 4×4 · 3 ô sáng · nhìn 1,9 giây · ô rải xa');
 });
 
 test('level grid shows 30 levels; L30 is startable and plays with its BBD parameters', async ({ page }) => {
   await open(page, { mem_lv: '30' });
   await expect(page.locator('#mlvgrid .lv')).toHaveCount(30);
   await page.locator('#mlvgrid .lv').nth(29).click();
-  await expect(page.locator('#mLvTxt')).toHaveText('Lưới 6×6 · 15 ô sáng · nhìn 4,2 giây · ô rải xa');
+  await expect(page.locator('#mLvTxt')).toHaveText('Lưới 6×6 · 7 ô sáng · nhìn 3,1 giây');
   await page.click('#mStart');
   await untilPhase(page, 'input');
   const s = await page.evaluate(() => ({ level: window.__mem.level, n: document.querySelectorAll('#mGrid .mtile').length,
     lit: window.__mem.targets.length, w: document.querySelector('#mGrid .mtile').getBoundingClientRect().width }));
-  expect(s).toMatchObject({ level: 30, n: 36, lit: 15 });
+  expect(s).toMatchObject({ level: 30, n: 36, lit: 7 });
   expect(s.w).toBeGreaterThanOrEqual(44);
 });
 
-test('legacy progress: mem_lv = 14 (finished all 13 old levels) unlocks L14, not the finished state', async ({ page }) => {
+test('v1 progress survives the v2 table: mem_lv = 14 + old stars → 13 levels passed, L14 next, stars in place, migrated once', async ({ page }) => {
   await open(page, { mem_lv: '14', bb_stats: JSON.stringify({ mem: { best: 13, stars: { 13: 2, 5: 3 } } }) });
   await expect(page.locator('#mlvgrid .lv.done')).toHaveCount(13);
   await expect(page.locator('#mBestTxt')).toHaveText('Đã qua tới Level 13');
-  await expect(page.locator('#mStart')).toHaveText('Chơi Level 14 · 15 ô');
+  await expect(page.locator('#mStart')).toHaveText('Chơi Level 14 · 4 ô');
   await expect(page.locator('#mlvgrid .lv').nth(12)).toHaveAttribute('data-st', '★★');
-  expect(await page.evaluate(() => [window.memBest(), BB.gameStats('mem').stars[5]])).toEqual([13, 3]);
+  await expect(page.locator('#mlvgrid .lv').nth(4)).toHaveAttribute('data-st', '★★★');
+  expect(await page.evaluate(() => [window.memBest(), BB.gameStats('mem').stars[5], localStorage.getItem('bb_tablev_mem'), localStorage.getItem('mem_lv')]))
+    .toEqual([13, 3, '2', '14']);
+  await page.reload();                                         // second load: marker current, nothing moves
+  expect(await page.evaluate(() => [BB.migrateProgress('mem').reason, JSON.parse(localStorage.getItem('bb_stats')).mem]))
+    .toEqual(['current', { best: 13, stars: { 13: 2, 5: 3 } }]);
+});
+
+test('corrupt bb_stats and a junk version marker do not break the menu', async ({ page }) => {
+  await open(page, { mem_lv: '4', bb_stats: '{bad', bb_tablev_mem: 'zz' });
+  await expect(page.locator('#mlvgrid .lv')).toHaveCount(30);
+  await expect(page.locator('#mlvgrid .lv.done')).toHaveCount(3);
+  expect(await page.evaluate(() => localStorage.getItem('bb_tablev_mem'))).toBe('2');
 });
 
 test('next-level flow: pass L13 → L14 → result names what changes next', async ({ page }) => {
@@ -87,7 +109,7 @@ test('next-level flow: pass L13 → L14 → result names what changes next', asy
   await page.click('#mrNext');
   expect(await page.evaluate(() => window.__mem.level)).toBe(14);
   await winRound(page); await winRound(page);
-  await expect(page.locator('#mrDetail')).toContainText('Level 15 vẫn 15 ô, chỉ được nhìn 4,4 giây.');
+  await expect(page.locator('#mrDetail')).toContainText('Level 15 có 5 ô sáng.');
   expect(await page.evaluate(() => localStorage.getItem('mem_lv'))).toBe('15');
 });
 

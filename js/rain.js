@@ -3,17 +3,17 @@
 const $ = id => document.getElementById(id);
 const BB = window.BB;
 const cv = $('rcv'), ctx = cv.getContext('2d');
-const LIVES = 3;
+const LIVES = 3;                // số mạng mặc định (bảng cũ, dòng không có knob lives)
 const AUTO_WAIT = 0.6;         // giây chờ khi đáp án đã gõ còn là đầu của một đáp án dài hơn
 let W = 0, H = 0, dpr = 1, landscape = null, cvLand = null;
 let state = 'menu';            // menu | play | paused | result
 let level = 1, chosen = 1, passed = false;
 let drops = [], fx = [], parts = [], solved = 0, target = 10, misses = 0, spawnT = 0, input = '', pendT = 0;
-let combo = 0, playMs = 0, lastT = 0;
+let combo = 0, playMs = 0, lastT = 0, lives = LIVES;
 const cam = BB.trauma(7);
 
 // Thông số level đọc từ engine chung: BBD.level('rain', L) (js/difficulty.js + js/levels/rain.js).
-// L1..10 giữ đúng công thức cũ (E3); phép tính sinh bằng BBRain.makeEq, chung với bộ mô phỏng.
+// Bảng phiên bản 2 (E3 đã gỡ 2026-11-21); phép tính sinh bằng BBRain.makeEq, chung với bộ mô phỏng.
 // table(): BBD có bảng rain thì trả BBD. Nếu levels/rain.js chạy trước difficulty.js, hoặc một bản
 // difficulty.js nạp sau đã thay window.BBD và mất bảng, thì đăng ký lại (BBRain.register không trùng).
 function table(){
@@ -26,7 +26,7 @@ function table(){
 // cũ, phép tính vẫn từ BBRain. Thiếu cả BBRain (levels/rain.js không tải được) thì chưa chơi được.
 let loadDone = false;
 const ready = () => !!window.BBRain && (loadDone || !!table());
-const legacySpec = L => ({ ops: L, fall: Math.max(8, 13 - 0.55*(L - 1)), every: Math.max(2.7, 4.6 - 0.2*(L - 1)), target: 10 + L, legacy: true });
+const legacySpec = L => ({ ops: L, fall: Math.max(8, 13 - 0.55*(L - 1)), every: Math.max(2.7, 4.6 - 0.2*(L - 1)), target: 10 + L, lives: LIVES, legacy: true });
 // Số level: theo BBD.maxLevel, báo cho core để hub và thử thách ngày cùng một con số.
 let maxSynced = 0, pendingStart = null;
 function lvMax(){
@@ -54,10 +54,18 @@ function loadStep(i, done){
   el.addEventListener('load', next); el.addEventListener('error', next);
   setTimeout(next, 4000);
 }
+// Đổi bảng level (version mới) thì dời tiến độ đã lưu sang bảng mới, một lần, trước khi đọc gameStats.
+// Rain giữ nguyên số màn nên không cần mapper: chỉ ghi cờ bb_tablev_rain. Không bao giờ hạ số màn đã qua.
+let migrated = false;
+function migrate(){
+  if (migrated || !table() || typeof BB.migrateProgress !== 'function') return;
+  migrated = true;
+  BB.migrateProgress('rain');
+}
 function ensureLevels(){
-  if (table() && window.BBRain) { loadDone = true; lvMax(); return; }
+  if (table() && window.BBRain) { loadDone = true; migrate(); lvMax(); return; }
   loadStep(0, () => {
-    loadDone = true; lvMax();
+    loadDone = true; migrate(); lvMax();
     if (!(window.APP && window.APP.active === 'rain')) return;
     if (pendingStart != null && ready()) { const L = pendingStart; pendingStart = null; startLevel(L); }
     else if (state === 'menu') toMenu();
@@ -74,17 +82,20 @@ const spec = L => { const D = table(); return D ? D.level('rain', L) : legacySpe
 // Mỗi tầng phép tính có một tên; L1..10 là đúng tên cũ.
 const levelName = L => window.BBRain.TIER_NAME[spec(L).ops];
 const makeEq = L => window.BBRain.makeEq(spec(L).ops, Math.random);
-// Dòng "level kế tiếp" ở màn kết quả: tên tầng khi đổi phép tính, không thì nói cái gì khó lên.
+// Số giọt được để rơi trước khi thua. Bảng v2: màn thở (11, 16, 21, 26) cho 4, còn lại 3 (lưới đỡ E4).
+const livesOf = L => { const n = spec(L).lives; return Number.isInteger(n) && n > 0 ? n : LIVES; };
+// Dòng "level kế tiếp" ở màn kết quả: tên tầng khi đổi phép tính, rồi cái gì đổi (mưa, số phép, số mạng).
 function nextInfo(L){
-  const a = spec(L), b = spec(L + 1);
-  if (b.ops !== a.ops || L + 1 <= 10) return levelName(L + 1).toLowerCase();
-  const out = [];
+  const a = spec(L), b = spec(L + 1), out = [];
+  if (b.ops !== a.ops) out.push(levelName(L + 1).toLowerCase());
   if (b.every < a.every || b.fall < a.fall) out.push('mưa nhanh hơn');
   if (b.target > a.target) out.push(`giải ${b.target} phép`);
+  const la = livesOf(L), lb = livesOf(L + 1);
+  if (lb !== la) out.push(lb < la ? `còn ${lb} mạng` : `${lb} mạng`);
   return out.length ? out.join(', ') : `giải ${b.target} phép`;
 }
-// Sao: không để giọt nào rơi = 3, rơi 1 giọt = 2, rơi 2 giọt = 1, thua = 0.
-const starsFor = (win, m) => win ? Math.max(1, LIVES - m) : 0;
+// Sao: không để giọt nào rơi = 3, rơi 1 giọt = 2, rơi từ 2 giọt = 1, thua = 0. Màn có thêm mạng vẫn chấm như vậy.
+const starsFor = (win, m) => win ? Math.max(1, 3 - m) : 0;
 
 const waterY = () => H - 26 - misses*8;
 const DROP_FONT = '800 16px "Baloo 2", system-ui, sans-serif';
@@ -203,7 +214,7 @@ function update(dt){
       cam.add(0.6);
       BB.sfx('wrong'); BB.haptic('error');
       hud(true);
-      if (misses >= LIVES) { finish(false); return; }
+      if (misses >= lives) { finish(false); return; }
       recheck = true;
     }
   }
@@ -319,11 +330,11 @@ function resize(){
 window.addEventListener('resize', resize);
 
 function hud(lost){
-  const left = Math.max(0, LIVES - misses);
+  const left = Math.max(0, lives - misses);
   $('rLevel').textContent = `Level ${level}`;
   $('rScore').textContent = `✓ ${solved}/${target}`;
   const lv = $('rLives');
-  lv.textContent = '💧'.repeat(left) + '·'.repeat(Math.min(LIVES, misses));
+  lv.textContent = '💧'.repeat(left) + '·'.repeat(Math.min(lives, misses));
   lv.setAttribute('aria-label', `Còn ${left} mạng`);
   if (lost) {
     if (BB.motion.reduced) { lv.classList.remove('bb-flash'); void lv.offsetWidth; lv.classList.add('bb-flash'); }
@@ -345,7 +356,7 @@ function startLevel(L){
   level = Math.max(1, Math.min(lvMax(), L|0 || 1));
   drops = []; fx = []; parts = []; solved = 0; misses = 0; combo = 0; playMs = 0;
   input = ''; pendT = 0; renderInput(); cam.reset();
-  target = spec(level).target; spawnT = 0.6;
+  target = spec(level).target; lives = livesOf(level); spawnT = 0.6;
   showOnly(null);
   resize(); hud();
   state = 'play';
@@ -372,7 +383,8 @@ function ensureResultExtras(){
   st.innerHTML = '<span>★</span><span>★</span><span>★</span>';
   const rule = document.createElement('p');
   rule.id = 'rrRule'; rule.className = 'muted rrule';
-  rule.textContent = 'Không để rơi giọt nào: 3 sao. Rơi 1 giọt: 2 sao. Rơi 2 giọt: 1 sao.';
+  // Màn thở có 4 mạng: rơi 3 giọt vẫn qua, nên "từ 2 giọt" chứ không phải "2 giọt".
+  rule.textContent = 'Không để rơi giọt nào: 3 sao. Rơi 1 giọt: 2 sao. Rơi từ 2 giọt mà vẫn qua: 1 sao.';
   big.after(st, rule);
 }
 
@@ -406,7 +418,7 @@ function finish(win){
   $('rrDetail').textContent = last
     ? (stars < 3 ? 'Bạn đã qua level khó nhất. Chơi lại để lấy đủ 3 sao nhé.' : 'Bạn đã qua level khó nhất với đủ 3 sao.')
     : win ? `Level ${level+1}: ${nextInfo(level)}.`
-    : `Để rơi xuống nước ${misses} giọt. Giải đủ ${target} phép trước khi mất hết 3 giọt nước nhé.`;
+    : `Để rơi xuống nước ${misses} giọt. Giải đủ ${target} phép trước khi hết ${lives} mạng nhé.`;
   $('rrNext').textContent = win && !last ? `Level ${level+1} →` : `Chơi lại Level ${level}`;
   showOnly('rresult');
   showStars(stars, win);
@@ -425,11 +437,13 @@ function finish(win){
 // ---------- menu ----------
 function renderLevels(){
   const done = getLv() - 1, grid = $('rlvgrid'), stars = BB.gameStats('rain').stars;
+  // Sao theo khoá ổn định của level (BB.levelKey), như bốn game kia: hôm nay là số level, mai có thể là id.
+  const starsAt = L => stars[BB.levelKey ? BB.levelKey('rain', L) : L] || 0;
   grid.innerHTML = '';
   if (!ready()) { if (loadDone) $('rLvTxt').textContent = 'Chưa tải được level. Kiểm tra mạng rồi mở lại.'; return; }
   for (let L=1; L<=lvMax(); L++){
     const el = document.createElement('button');
-    const st = stars[L] || 0, isDone = L <= done;
+    const st = starsAt(L), isDone = L <= done;
     el.className = 'lv' + (isDone ? ' done' : '') + (L === chosen ? ' on' : '');
     el.innerHTML = `${L}<small>${spec(L).target} phép</small>` +
       (st ? `<span class="lvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span>` : '');
@@ -438,7 +452,7 @@ function renderLevels(){
     el.onclick = () => { chosen = L; renderLevels(); BB.sfx('tap'); grid.children[L-1].focus({ preventScroll: true }); };
     grid.appendChild(el);
   }
-  $('rLvTxt').textContent = `${levelName(chosen)} · giải ${spec(chosen).target} phép`;
+  $('rLvTxt').textContent = `${levelName(chosen)} · giải ${spec(chosen).target} phép · ${livesOf(chosen)} mạng`;
   $('rStart').textContent = `Chơi Level ${chosen}`;
 }
 
@@ -451,7 +465,7 @@ function toMenu(){
   const done = getLv() - 1;
   $('rBestTxt').textContent = done >= lvMax() ? `Đã qua cả ${lvMax()} level` : done ? `Đã qua tới Level ${done}` : '';
   showOnly('rmenu');
-  resize(); level = chosen; misses = 0; solved = 0; target = ready() ? spec(chosen).target : 0; hud();
+  resize(); level = chosen; misses = 0; solved = 0; target = ready() ? spec(chosen).target : 0; lives = ready() ? livesOf(chosen) : LIVES; hud();
   if (window.APP && window.APP.active === 'rain') startLoop();
 }
 
@@ -515,9 +529,9 @@ window.rainEnter = () => {
 window.rainBest = () => getLv() - 1;
 // Cửa cho test, chỉ gắn khi trình duyệt do máy điều khiển (Playwright) hoặc URL có ?test.
 if (navigator.webdriver || /[?&]test\b/.test(location.search)) {
-window.__rainDebug = () => ({ state, level, misses, solved, target, input, combo, pendT, W, H,
+window.__rainDebug = () => ({ state, level, misses, lives, solved, target, input, combo, pendT, W, H,
   drops: drops.map(d => ({ ans: d.ans, eq: d.eq, x: d.x, y: dropY(d), p: d.p, w: d.w })) });
-window.__rainTest = { makeEq: L => makeEq(L).slice(0, 2), spec, nextInfo, starsFor, lvMax,
+window.__rainTest = { makeEq: L => makeEq(L).slice(0, 2), spec, nextInfo, starsFor, livesOf, lvMax,
   get LVINFO(){ return Array.from({ length: lvMax() + 1 }, (_, L) => (L ? { name: levelName(L) } : null)); },
   spawnDrop: (ans, p = 0.5, eq = `? = ${ans}`, w = 78) => {
   drops.push({ x: W/2, p, fall: spec(level).fall, eq, ans, w }); }, starTimers: () => starTimers.length };

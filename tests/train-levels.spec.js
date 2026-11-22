@@ -1,5 +1,5 @@
 // Đường Ray Tư Duy: 30 levels from the shared difficulty table (js/difficulty.js + js/levels/train.js).
-// Legacy L1..11 must play exactly as before (E3) and old progress keys must still count.
+// Table v2 (2026-11-21, E3 lifted): L1..30 are authored on the shared sawtooth; old progress keys must still count.
 import { test, expect } from '@playwright/test';
 
 async function openTrain(page, init) {
@@ -22,18 +22,56 @@ test('the level grid shows 30 levels and the hub/daily cap agrees', async ({ pag
   expect(errors).toEqual([]);
 });
 
-test('legacy L1..11 in the browser equal the old formulas exactly', async ({ page }) => {
+test('the game plays table v2 for L1..30; v1 rows stay in the table as reference', async ({ page }) => {
   await openTrain(page);
-  const rows = await page.evaluate(() => {
+  const r = await page.evaluate(() => {
     const out = [];
-    for (let L = 1; L <= 11; L++) {
-      const s = __rtd.specFor(L);
-      out.push([s.stations === Math.min(4 + L, 15), s.base === Math.max(1.8, 2.6 - 0.075 * (L - 1)) * (0.75 / 0.45),
-        s.speedF === 0.45, s.burstP === 0.15]);
+    for (let L = 1; L <= 30; L++) {
+      const s = __rtd.specFor(L), w = BBD.level('train', L);
+      out.push([s.authored === true, s.stations === w.stations, s.base === w.base, s.speedF === 0.28, s.burstP === 0]);
     }
-    return out;
+    const leg = BBD.spec('train').legacy.map((s, i) => s.stations === Math.min(5 + i, 15)
+      && s.base === Math.max(1.8, 2.6 - 0.075 * i) * (0.75 / 0.45) && s.speedF === 0.45 && s.burstP === 0.15);
+    return { out, leg, v: BBD.version('train'), ga: [1, 7, 15, 30].map(L => __rtd.specFor(L).stations) };
   });
-  rows.forEach((r, i) => expect(r, `L${i + 1}`).toEqual([true, true, true, true]));
+  r.out.forEach((x, i) => expect(x, `L${i + 1}`).toEqual([true, true, true, true, true]));
+  expect(r.leg).toEqual(Array(11).fill(true));
+  expect(r.v).toBe(2);
+  expect(r.ga).toEqual([5, 7, 15, 15]);
+});
+
+test('menu copy matches the table: first and last station count, no "+1 ga mỗi level"', async ({ page }) => {
+  await openTrain(page);
+  const how = page.locator('#menu .how');
+  const rows = page.locator('#menu .how > div');
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toContainText('Chạm');
+  await expect(rows.nth(2)).toContainText('Level 1 có 5 ga, lên dần tới 15 ga.');
+  await expect(how).not.toContainText('mỗi level thêm 1 ga');
+  await expect(rows.filter({ hasText: '90 giây' })).toHaveCount(1);
+});
+
+test('first boot of v2 migrates once: marker written, old stars and keys kept', async ({ page }) => {
+  await openTrain(page, () => { try { if (!sessionStorage.getItem('seeded')) {
+    localStorage.clear();
+    localStorage.setItem('bb_stats', JSON.stringify({ train: { best: 14, stars: { 1: 3, 11: 1, 12: 2, 14: 1 } } }));
+    localStorage.setItem('rtd_best3', '14');
+    sessionStorage.setItem('seeded', '1'); } } catch (e) {} });
+  const s = await page.evaluate(() => ({ v: localStorage.getItem('bb_tablev_train'), st: BB.gameStats('train'),
+    rtd: localStorage.getItem('rtd_best3'), again: BB.migrateProgress('train').reason }));
+  expect(s).toEqual({ v: '2', st: { best: 14, stars: { 1: 3, 11: 1, 12: 2, 14: 1 } }, rtd: '14', again: 'current' });
+  await expect(page.locator('#lvgrid .lv').nth(11).locator('.lvst')).toHaveText('★★☆');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 15 · 15 ga');
+});
+
+test('corrupt progress does not crash the game on boot', async ({ page }) => {
+  const errors = await openTrain(page, () => { try { if (!sessionStorage.getItem('seeded')) {
+    localStorage.clear();
+    localStorage.setItem('bb_stats', '{bad'); localStorage.setItem('bb_tablev_train', 'zz'); localStorage.setItem('rtd_best3', '3');
+    sessionStorage.setItem('seeded', '1'); } } catch (e) {} });
+  await expect(page.locator('#lvgrid .lv')).toHaveCount(30);
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 4 · 6 ga');
+  expect(errors).toEqual([]);
 });
 
 test('level 30 can be picked and started, with its table parameters', async ({ page }) => {
@@ -57,7 +95,7 @@ test('next-level flow: L11 leads on to L12, a peak announces the breather', asyn
   await page.evaluate(() => __rtd.endWith(11, 20, 20));
   await expect(page.locator('#rTitle')).toHaveText('Qua Level 11! 🎉');
   await expect(page.locator('#rNext')).toHaveText('Level 12 →');
-  await expect(page.locator('#rDetail')).toHaveText('Level 12: tàu ra dày hơn.');
+  await expect(page.locator('#rDetail')).toHaveText('Level 12 có 12 ga.');
   await page.click('#rNext');
   expect(await page.evaluate(() => [__rtd.state, __rtd.level, __rtd.spec.base === BBD.level('train', 12).base])).toEqual(['countdown', 12, true]);
   await page.evaluate(() => __rtd.endWith(15, 19, 20));
@@ -84,7 +122,7 @@ test('old progress keys still count: rtd_best3 only, and bb_stats stars', async 
     localStorage.clear(); localStorage.setItem('rtd_best3', '11'); sessionStorage.setItem('seeded', '1'); } } catch (e) {} });
   await expect(page.locator('#lvgrid .lv.done')).toHaveCount(11);
   await expect(page.locator('#bestTxt')).toHaveText('Đã qua tới Level 11');
-  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 12 · 15 ga');   // a finished 11-level player moves on
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 12 · 12 ga');   // a finished 11-level player moves on
   await expect(page.locator('#lvgrid .lv').nth(11)).not.toHaveClass(/done/);
 });
 
@@ -96,7 +134,7 @@ test('stars saved under the old 11-level cap keep showing', async ({ page }) => 
   const tiles = page.locator('#lvgrid .lv');
   await expect(tiles.nth(8).locator('.lvst')).toHaveText('★★★');
   await expect(tiles.nth(2).locator('.lvst')).toHaveText('★★☆');
-  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 10 · 14 ga');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 10 · 10 ga');
 });
 
 test('without the table (script blocked) the game still boots on the old 11 levels', async ({ page }) => {

@@ -5,7 +5,8 @@
 //     an answer already falling → retry in 0.1 s; otherwise next spawn after every·(0.8 + U·0.4) s;
 //   · a drop keeps its progress p = t/fall and hits the water when −30 + p·(wy + 30) ≥ wy − 12,
 //     wy = H − 26 − 8·misses (the water rises after each miss, the drop's p does not change);
-//   · 3 misses lose, `target` solved drops win; stars = 3 − misses.
+//   · `lives` misses lose (level knob, 3 when a row has none: E4 safety net, table v2), `target` solved drops win;
+//     stars = 3 − misses, at least 1 on a win.
 // Human side (event-driven, MERGED-SPEC §4.3 "rain: event-driven như B"): the player works on the lowest
 // drop, one at a time. Solve time = perceive/decide (ex-Gaussian [EXG], scaled to small-addition RT [ADD])
 // + arithmetic extras by operation and operand size (ARITH in ../human.mjs) + typing per digit.
@@ -104,6 +105,7 @@ const hitP = misses => { const wy = CANVAS_H - 26 - misses * 8; return (wy + 18)
 
 export function simulate(levelSpec, profile, rng, opts = {}) {
   const { fall, every, target, ops } = levelSpec;
+  const lives = levelSpec.lives ?? LIVES;   // js/rain.js livesOf(): the row's lives, else 3
   const player = opts.player || samplePlayer(profile, rng, opts);
   const pm = playerMath(player, rng, opts.speedSd);
   let t = 0, spawnAt = SPAWN0, solved = 0, misses = 0, wrong = 0, attempts = 0;
@@ -143,12 +145,12 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
     } else if (next === tn) {
       drops.splice(drops.indexOf(hitDrop), 1); misses++;
       if (work && work.drop === hitDrop) work = null;    // the drop the player was solving is gone
-      if (misses >= LIVES) break;
+      if (misses >= lives) break;
     }
     if (spawnAt <= t && !canSpawn) spawnAt = t;            // rain.js keeps spawnT ≤ 0 until there is room
   }
-  const pass = solved >= target && misses < LIVES;
-  return { pass, accuracy: attempts ? (attempts - wrong) / attempts : 0, ms: Math.round(t * 1000), margin: LIVES - misses,
+  const pass = solved >= target && misses < lives;
+  return { pass, accuracy: attempts ? (attempts - wrong) / attempts : 0, ms: Math.round(t * 1000), margin: lives - misses,
     detail: { solved, misses } };
 }
 

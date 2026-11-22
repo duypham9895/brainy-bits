@@ -20,7 +20,7 @@ test('RTD-01 / SHELL-17: HUD and overlays use "Level" and real defaults', async 
   await expect(page.locator('#rNext')).not.toContainText('Màn');
   await expect(page.locator('#restartBtn')).toHaveText('Chơi lại level này');
   await page.locator('#lvgrid .lv').nth(6).click();
-  await expect(page.locator('#hLevel')).toHaveText('Level 7 · 11 ga');
+  await expect(page.locator('#hLevel')).toHaveText('Level 7 · 7 ga');
   expect(errors).toEqual([]);
 });
 
@@ -302,8 +302,8 @@ test('Neon #14: a returning player with only rtd_best3 sees levels up to best ma
   await expect(page.locator('#lvgrid .lv.done')).toHaveCount(5);
   await expect(tiles.nth(4)).toHaveClass(/done/);
   await expect(tiles.nth(5)).not.toHaveClass(/done/);
-  await expect(tiles.nth(4)).toHaveAttribute('aria-label', 'Level 5, 9 ga, đã qua');
-  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 6 · 10 ga');
+  await expect(tiles.nth(4)).toHaveAttribute('aria-label', 'Level 5, 5 ga, đã qua');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 6 · 6 ga');
   // winning Level 9 in this version marks Level 9 only; 6-8 were never played (RTD-09)
   await page.click('#startBtn');
   await page.evaluate(() => __rtd.endWith(9, 10, 10));

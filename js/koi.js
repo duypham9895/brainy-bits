@@ -5,9 +5,9 @@ const cv = $('kcv'), ctx = cv.getContext('2d');
 const bg = document.createElement('canvas');
 let W = 0, H = 0, dpr = 1;
 const BB = window.BB;
-// Tham số level lấy từ engine độ khó chung (js/difficulty.js + js/levels/koi.js): L1..10 giữ nguyên
-// giá trị cũ (E3), L11..30 do engine sinh và đã calibrate bằng bot. Trang chưa nạp BBD thì game
-// quay về đúng 10 level cũ, không bao giờ hỏng.
+// Tham số level lấy từ engine độ khó chung (js/difficulty.js + js/levels/koi.js, bảng v2): L1..30 viết tay
+// theo đường răng cưa chung, L31+ do engine sinh, cả 30 màn đã calibrate bằng bot. Trang chưa nạp BBD
+// thì game quay về 10 level cũ (bảng v1), không bao giờ hỏng.
 const BBD = window.BBD && window.BBD.games().includes('koi') ? window.BBD : null;
 const LV_MAX = BBD ? BB.setLvMax('koi', BBD.maxLevel('koi')) : BB.LV_MAX.koi;   // 30 | 10; qua level cuối là xong game
 let state = 'menu';            // menu | play | pondEnd | result | done | paused
@@ -30,6 +30,9 @@ function setBest(v){ if (v > BB.store.num('koi_best', 0, 0, LV_MAX)) BB.store.se
 
 // Một lần lúc tải: kẹp key cũ đã vượt trần (11, 12...) và đồng bộ hai chiều với bb_stats.
 (function migrate(){
+  // Bảng màn đổi phiên bản (v1 → v2): engine ghi cờ bb_tablev_koi, giữ nguyên best và sao theo số level.
+  // Chạy trước mọi lần đọc gameStats; chạy lại không đổi gì, dữ liệu hỏng không làm sập game.
+  BB.migrateProgress('koi');
   // Bản 10 level cũ từng ghi koi_lv2 = 12, 13... do lỗi (OPS-4). Từ khi có level 11+, mỗi lần qua level
   // đều ghi bb_stats.best, nên key vượt 11 mà không có best tương ứng là key lỗi: kẹp như bản cũ.
   const top = (BBD ? BBD.spec('koi').legacy.length : LV_MAX) + 1;   // 11
@@ -53,7 +56,7 @@ const wrapAng = a => { while (a > Math.PI) a -= Math.PI*2; while (a < -Math.PI) 
 // độ khó theo cấp. Công thức cũ chỉ còn dùng khi trang không có BBD (bằng BBD.level ở L1..10).
 function legacyParams(d){
   return {
-    koi: Math.min(5 + d, 15),            // cấp 1 = 6 con, cấp 10 = 15 con
+    koi: Math.min(5 + d, 15),            // bảng v1: cấp 1 = 6 con, cấp 10 = 15 con
     cd: Math.min(1.3 + 0.15*d, 3.2),     // thời gian chờ giữa 2 lần cho ăn
     decoys: d >= 3 ? Math.min(1 + ((d-3)/2|0), 4) : 0,
     spdMul: 1, turnMul: 1, legacy: true,
@@ -460,15 +463,31 @@ function paintStars(box, n, animate){
   });
 }
 
-const KLV_COUNT = LV_MAX;      // level 1..10 = 6..15 cá; level 11..30 có màn thở 12 cá, cá bơi nhanh dần
+const KLV_COUNT = LV_MAX;      // level thường thêm cá hoặc tăng tốc, màn khó thêm cá xám, màn thở bớt cá
+// Sao của cả game: đọc bb_stats một lần rồi tra theo khoá level (thay vì BB.starsAt parse lại mỗi ô).
+function koiStars(){ const s = BB.gameStats('koi').stars; return lv => s[BB.levelKey('koi', lv)] || 0; }
+// Hướng dẫn ở menu đọc từ bảng level, nên đổi bảng thì chữ vẫn đúng. Không có engine (bảng v1) thì giữ chữ trong HTML.
+function renderKHow(){
+  if (!BBD) return;
+  const rows = document.querySelectorAll('#kmenu .how > div > span:last-child');
+  if (rows.length < 3) return;
+  let grey = 0;
+  for (let lv = 1; lv <= LV_MAX && !grey; lv++) if (params(lv).decoys) grey = lv;
+  rows[1].innerHTML = 'Chờ <b>vòng hẹn giờ</b> ở dưới đầy lại mới chạm tiếp.' +
+    (grey ? ` Từ level ${grey} có <b>cá xám</b> bơi lẫn, đừng chạm vào.` : '');
+  let peak = 0;                                    // màn khó đầu tiên (L10 từ 2026-11-21, không còn ở L5)
+  for (let lv = 1; lv <= LV_MAX && !peak; lv++) if (BBD.level('koi', lv).kind === 'peak') peak = lv;
+  rows[2].innerHTML = `Nhầm <b>tối đa 1 lần</b> là qua hồ. Level 1 có ${params(1).koi} cá koi. Cá đông dần rồi bơi nhanh dần.` +
+    (peak ? ` Từ level ${peak}, cứ 5 level có một màn khó, ngay sau là một màn nhẹ.` : '');
+}
 let chosenK = 1, kPassed = false;
 function renderKLevels(){
   const b = getLv() - 1, grid = $('klvgrid');   // koi_lv2 lưu level kế tiếp chưa qua
-  const st = BB.gameStats('koi').stars;
   grid.innerHTML = '';
+  const starsOf = koiStars();
   for (let lv = 1; lv <= KLV_COUNT; lv++){
     const el = document.createElement('button');
-    const n = st[lv] || 0, done = lv <= b;
+    const n = starsOf(lv), done = lv <= b;
     el.className = 'lv' + (done ? ' done' : '') + (lv === chosenK ? ' on' : '');
     el.setAttribute('aria-pressed', lv === chosenK ? 'true' : 'false');
     el.setAttribute('aria-label', `Level ${lv}, ${params(lv).koi} cá${done ? ', đã qua' : ''}${n ? `, ${n} sao` : ''}`);
@@ -483,7 +502,7 @@ function renderKLevels(){
 
 // Level mới: nói cá bơi nhanh / đổi hướng thế nào, ngắn gọn. Level cũ (×1) không thêm chữ.
 const mulTxt = v => `×${String(+v.toFixed(2)).replace('.', ',')}`;
-// Level cũ giữ chữ cũ (1 chữ số). Level mới in đủ 2 chữ số để 2,95 / 3,05 không cùng hiện "3,0".
+// Bảng engine in đủ 2 chữ số để 2,05 / 2,95 không bị làm tròn. Bản dự phòng không có BBD giữ chữ cũ (1 chữ số).
 const cdTxt = p => (!p.legacy ? String(+p.cd.toFixed(2)) : p.cd.toFixed(1)).replace('.', ',');
 function moveTxt(p){
   const parts = [];
@@ -548,10 +567,10 @@ function statCell(id, val, label){
 function showDone(){
   state = 'done';
   clearTimers();
-  const st = BB.gameStats('koi').stars;
-  let total = 0; for (let lv = 1; lv <= LV_MAX; lv++) total += st[lv] || 0;
+  let total = 0, full = 0;
+  const starsOf = koiStars();
+  for (let lv = 1; lv <= LV_MAX; lv++) { const n = starsOf(lv); total += n; if (n === 3) full++; }
   $('kdone').querySelector('h2').textContent = `Xong cả ${LV_MAX} level! 🎉`;
-  const full = Object.keys(st).filter(k => k >= 1 && k <= LV_MAX && st[k] === 3).length;
   paintStars($('kdStars'), Math.round(total / LV_MAX), false);
   $('kdStars').setAttribute('aria-label', `${total} trên ${LV_MAX * 3} sao`);
   $('kdScore').textContent = `${total}/${LV_MAX * 3}`;
@@ -612,6 +631,7 @@ window.koiEnter = () => {
   if (state === 'paused') { show('kpaused', true); updateHud(); return; }  // còn hồ đang dở
   toMenu();
 };
+renderKHow();
 window.koiBest = () => ({ best: getBest(), lv: getLv() });
 // Cửa sổ chỉ cho Playwright: có khi trang đặt window.__BB_TEST__ trước lúc tải, bản thật không có.
 if (window.__BB_TEST__) window.__koi = {

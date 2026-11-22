@@ -1,14 +1,17 @@
 {
  "game": "word",
- "n": 400,
+ "n": 1200,
  "from": 1,
  "to": 49,
  "simVersion": 1,
- "generatedOn": "2026-11-21",
+ "generatedOn": "2026-11-22",
  "config": {
   "E1": "A",
-  "E3": true,
+  "breatherEasyOk": true,
+  "bEasyOkBelow": 10,
+  "E3": false,
   "E5": true,
+  "tableVersion": 2,
   "l30Peak": 0.69,
   "floor": 0.65,
   "skilledL30": 0.5
@@ -16,136 +19,163 @@
  "seed": "mulberry32(cyrb53(\"camp|game|L|profile|i\"))",
  "note": "bL = logit(1 − p_median) with θ_median = 0, a = 1; 2PL fit not run yet",
  "adapterOpts": {},
- "ok": false,
+ "ok": true,
+ "waived": [
+  "B"
+ ],
  "gates": [
   {
    "id": "B",
-   "name": "generated levels: |p_median − p*| ≤ 0.05 (legacy: measured only, E3)",
-   "pass": true,
-   "fails": [],
-   "note": ""
+   "name": "every level: |p_median − p*| ≤ 0.05 (breathers: only too hard fails) (L1–9: only p_median < p* − 0.05 fails)",
+   "pass": null,
+   "fails": [
+    "L10 median 0.9492 vs p* 0.765",
+    "L12 median 0.97 vs p* 0.815",
+    "L13 median 0.9817 vs p* 0.811",
+    "L14 median 0.9775 vs p* 0.806",
+    "L15 median 0.9317 vs p* 0.742",
+    "L17 median 0.9808 vs p* 0.794",
+    "L18 median 0.9633 vs p* 0.790",
+    "L19 median 0.9675 vs p* 0.786",
+    "L20 median 0.9067 vs p* 0.722",
+    "L22 median 0.9642 vs p* 0.775",
+    "L23 median 0.9658 vs p* 0.772",
+    "L24 median 0.9508 vs p* 0.769",
+    "L25 median 0.9042 vs p* 0.705",
+    "L27 median 0.9375 vs p* 0.759",
+    "L28 median 0.9433 vs p* 0.756",
+    "L29 median 0.9475 vs p* 0.753",
+    "L30 median 0.9083 vs p* 0.690",
+    "L32 median 0.93 vs p* 0.744",
+    "L33 median 0.935 vs p* 0.741",
+    "L34 median 0.9233 vs p* 0.739",
+    "L35 median 0.8733 vs p* 0.676",
+    "L37 median 0.9092 vs p* 0.731",
+    "L38 median 0.9033 vs p* 0.728",
+    "L39 median 0.9092 vs p* 0.725",
+    "L40 median 0.7975 vs p* 0.663",
+    "L42 median 0.9025 vs p* 0.718",
+    "L43 median 0.8967 vs p* 0.715",
+    "L44 median 0.9142 vs p* 0.713",
+    "L45 median 0.8 vs p* 0.651",
+    "L47 median 0.9183 vs p* 0.706",
+    "L48 median 0.895 vs p* 0.704",
+    "L49 median 0.8858 vs p* 0.701"
+   ],
+   "note": "WAIVED: Duy 2026-11-21 (3): content-only game, no knob; with 6 tries and the hint open at once the bot median sits 7–22 points above p* on every level, and those bot parameters are not yet checked against real players (G7 SKIP). Rules stay as they are; revisit when G7 data exists.",
+   "waived": true,
+   "waiver": "Duy 2026-11-21 (3): content-only game, no knob; with 6 tries and the hint open at once the bot median sits 7–22 points above p* on every level, and those bot parameters are not yet checked against real players (G7 SKIP). Rules stay as they are; revisit when G7 data exists.",
+   "measuredPass": false,
+   "status": "WAIVED"
   },
   {
    "id": "G1",
    "name": "weak ≥ 85% on L1–5",
-   "pass": false,
-   "fails": [
-    "L1 weak 0.6525",
-    "L2 weak 0.7025",
-    "L3 weak 0.7625",
-    "L4 weak 0.77",
-    "L5 weak 0.71"
-   ],
-   "note": ""
+   "pass": true,
+   "fails": [],
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G2",
    "name": "median pass rate does not rise between consecutive step levels (tolerance = 2·SE)",
-   "pass": false,
-   "fails": [
-    "L11→L12: 0.7675 → 0.9825",
-    "L16→L17: 0.9425 → 0.9775",
-    "L27→L28: 0.9225 → 0.9775",
-    "L29→L30: 0.83 → 0.935",
-    "L31→L32: 0.9475 → 0.9875",
-    "L33→L34: 0.82 → 0.96",
-    "L34→L35: 0.96 → 0.9875",
-    "L37→L38: 0.935 → 0.9725",
-    "L39→L40: 0.8925 → 0.9775"
-   ],
-   "note": ""
+   "pass": true,
+   "fails": [],
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G3",
-   "name": "breather easier than the peak before it and harder than L−4",
-   "pass": false,
-   "fails": [
-    "L11 0.7675 harder than peak L10 0.8925",
-    "L36 0.8975 harder than peak L35 0.9875",
-    "L41 0.98 easier than L37 0.935"
-   ],
-   "note": ""
+   "name": "breather easier than the peak before it",
+   "pass": true,
+   "fails": [],
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G4",
    "name": "weak ≥ 60% on every breather",
-   "pass": false,
-   "fails": [
-    "L11 weak 0.59"
-   ],
-   "note": ""
+   "pass": true,
+   "fails": [],
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G5",
    "name": "skilled ≥ 50% at L30 (E1 = A)",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   },
   {
    "id": "G6",
    "name": "knobs within hardCap; targets ≥ 44 px at 320 and 390 px",
    "pass": true,
    "fails": [],
-   "note": "adapter has no geometry(): px part not checked"
+   "note": "adapter has no geometry(): px part not checked",
+   "status": "PASS"
   },
   {
    "id": "G7",
    "name": "Playwright parity, 3 seeds at L1/L15/L30",
    "pass": null,
    "fails": [],
-   "note": "SKIPPED: needs the game to read BBD.level() (per-game integration step)"
+   "note": "SKIPPED: needs the game to read BBD.level() (per-game integration step)",
+   "status": "SKIP"
   },
   {
    "id": "G8",
    "name": "first-attempt and ≤3-attempt pass reported; ≤3 never below first attempt",
    "pass": true,
    "fails": [],
-   "note": ""
+   "note": "",
+   "status": "PASS"
   }
  ],
  "levels": [
   {
    "L": 1,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.92,
    "D": 0,
-   "bL": -2.197,
+   "bL": -5.144,
    "knobs": {
-    "phrase": 0,
-    "letters": 5,
+    "id": "p18",
+    "phrase": 18,
+    "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.6525,
+     "p": 0.9433,
      "ci": [
-      0.6046,
-      0.6975
+      0.9288,
+      0.9551
      ],
-     "acc": 0.733,
-     "msMedian": 28632,
-     "p3": 0.9825
+     "acc": 0.9613,
+     "msMedian": 20642,
+     "p3": 1
     },
     "median": {
-     "p": 0.9,
+     "p": 0.9942,
      "ci": [
-      0.8667,
-      0.9257
+      0.988,
+      0.9972
      ],
-     "acc": 0.9275,
-     "msMedian": 20754,
-     "p3": 0.9975
+     "acc": 0.9962,
+     "msMedian": 14845,
+     "p3": 1
     },
     "skilled": {
-     "p": 0.9675,
+     "p": 0.9983,
      "ci": [
-      0.9452,
-      0.9809
+      0.9939,
+      0.9995
      ],
-     "acc": 0.977,
-     "msMedian": 18391,
+     "acc": 0.9993,
+     "msMedian": 13666,
      "p3": 1
     }
    }
@@ -153,44 +183,45 @@
   {
    "L": 2,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8884,
    "D": 0.1857,
-   "bL": -2.512,
+   "bL": -4.999,
    "knobs": {
-    "phrase": 1,
-    "letters": 5,
+    "id": "p46",
+    "phrase": 46,
+    "letters": 9,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.7025,
+     "p": 0.9358,
      "ci": [
-      0.6559,
-      0.7452
+      0.9205,
+      0.9484
      ],
-     "acc": 0.765,
-     "msMedian": 27280,
-     "p3": 0.97
+     "acc": 0.9576,
+     "msMedian": 25275,
+     "p3": 1
     },
     "median": {
-     "p": 0.925,
+     "p": 0.9933,
      "ci": [
-      0.895,
-      0.947
+      0.9869,
+      0.9966
      ],
-     "acc": 0.9415,
-     "msMedian": 20312,
+     "acc": 0.9965,
+     "msMedian": 18188,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9675,
+     "p": 0.9983,
      "ci": [
-      0.9452,
-      0.9809
+      0.9939,
+      0.9995
      ],
-     "acc": 0.974,
-     "msMedian": 17840,
+     "acc": 0.9989,
+     "msMedian": 16679,
      "p3": 1
     }
    }
@@ -198,44 +229,45 @@
   {
    "L": 3,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8754,
    "D": 0.2626,
-   "bL": -2.893,
+   "bL": -5.711,
    "knobs": {
-    "phrase": 2,
-    "letters": 5,
+    "id": "p48",
+    "phrase": 48,
+    "letters": 11,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.7625,
+     "p": 0.9383,
      "ci": [
-      0.7184,
-      0.8016
+      0.9233,
+      0.9506
      ],
-     "acc": 0.8345,
-     "msMedian": 24721,
-     "p3": 0.9825
+     "acc": 0.9702,
+     "msMedian": 25581,
+     "p3": 1
     },
     "median": {
-     "p": 0.9475,
+     "p": 0.9967,
      "ci": [
-      0.9211,
-      0.9654
+      0.9915,
+      0.9987
      ],
-     "acc": 0.9725,
-     "msMedian": 18029,
+     "acc": 0.9993,
+     "msMedian": 19991,
      "p3": 1
     },
     "skilled": {
-     "p": 0.995,
+     "p": 0.9992,
      "ci": [
-      0.982,
-      0.9986
+      0.9953,
+      0.9999
      ],
-     "acc": 0.999,
-     "msMedian": 15311,
+     "acc": 0.9995,
+     "msMedian": 18854,
      "p3": 1
     }
    }
@@ -243,134 +275,137 @@
   {
    "L": 4,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8653,
    "D": 0.3216,
-   "bL": -2.944,
+   "bL": -4.028,
    "knobs": {
-    "phrase": 3,
-    "letters": 5,
+    "id": "p45",
+    "phrase": 45,
+    "letters": 9,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.77,
+     "p": 0.9133,
      "ci": [
-      0.7263,
-      0.8086
+      0.8961,
+      0.928
      ],
-     "acc": 0.8285,
-     "msMedian": 25758,
-     "p3": 0.9925
+     "acc": 0.9502,
+     "msMedian": 25981,
+     "p3": 0.9992
     },
     "median": {
-     "p": 0.95,
+     "p": 0.9825,
      "ci": [
-      0.924,
-      0.9674
+      0.9734,
+      0.9885
      ],
-     "acc": 0.96,
-     "msMedian": 18565,
+     "acc": 0.9912,
+     "msMedian": 19255,
      "p3": 1
     },
     "skilled": {
-     "p": 0.99,
+     "p": 0.9992,
      "ci": [
-      0.9746,
-      0.9961
+      0.9953,
+      0.9999
      ],
-     "acc": 0.9935,
-     "msMedian": 15795,
+     "acc": 0.9996,
+     "msMedian": 16798,
      "p3": 1
     }
    }
   },
   {
    "L": 5,
-   "kind": "peak",
-   "legacy": true,
-   "pStar": 0.7969,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.8569,
    "D": 0.3714,
-   "bL": -2.376,
+   "bL": -3.504,
    "knobs": {
-    "phrase": 4,
-    "letters": 5,
+    "id": "p32",
+    "phrase": 32,
+    "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.71,
+     "p": 0.8975,
      "ci": [
-      0.6637,
-      0.7523
+      0.8791,
+      0.9134
      ],
-     "acc": 0.7805,
-     "msMedian": 26873,
-     "p3": 0.9725
+     "acc": 0.9301,
+     "msMedian": 24496,
+     "p3": 0.9983
     },
     "median": {
-     "p": 0.915,
+     "p": 0.9708,
      "ci": [
-      0.8836,
-      0.9385
-     ],
-     "acc": 0.937,
-     "msMedian": 19693,
-     "p3": 0.9975
-    },
-    "skilled": {
-     "p": 0.965,
-     "ci": [
-      0.9421,
+      0.9597,
       0.979
      ],
-     "acc": 0.976,
-     "msMedian": 16041,
+     "acc": 0.9815,
+     "msMedian": 19852,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9983,
+     "ci": [
+      0.9939,
+      0.9995
+     ],
+     "acc": 0.9988,
+     "msMedian": 17921,
      "p3": 1
     }
    }
   },
   {
    "L": 6,
-   "kind": "breather",
-   "legacy": true,
+   "kind": "step",
+   "legacy": false,
    "pStar": 0.8494,
    "D": 0.4152,
-   "bL": -2.944,
+   "bL": -4.24,
    "knobs": {
-    "phrase": 5,
-    "letters": 5,
+    "id": "p40",
+    "phrase": 40,
+    "letters": 8,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.8075,
+     "p": 0.8917,
      "ci": [
-      0.766,
-      0.8431
+      0.8728,
+      0.908
      ],
-     "acc": 0.868,
-     "msMedian": 23868,
-     "p3": 1
+     "acc": 0.9269,
+     "msMedian": 26104,
+     "p3": 0.9992
     },
     "median": {
-     "p": 0.95,
+     "p": 0.9858,
      "ci": [
-      0.924,
-      0.9674
+      0.9774,
+      0.9911
      ],
-     "acc": 0.9755,
-     "msMedian": 17479,
+     "acc": 0.9919,
+     "msMedian": 21373,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9875,
+     "p": 0.9992,
      "ci": [
-      0.9711,
-      0.9946
+      0.9953,
+      0.9999
      ],
-     "acc": 0.992,
-     "msMedian": 14822,
+     "acc": 0.9995,
+     "msMedian": 19488,
      "p3": 1
     }
    }
@@ -378,44 +413,45 @@
   {
    "L": 7,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8427,
    "D": 0.4549,
-   "bL": -2.998,
+   "bL": -4.185,
    "knobs": {
-    "phrase": 6,
-    "letters": 6,
+    "id": "p20",
+    "phrase": 20,
+    "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.78,
+     "p": 0.8817,
      "ci": [
-      0.7368,
-      0.8178
+      0.8622,
+      0.8987
      ],
-     "acc": 0.8575,
-     "msMedian": 26981,
-     "p3": 0.9925
+     "acc": 0.9152,
+     "msMedian": 25282,
+     "p3": 0.9992
     },
     "median": {
-     "p": 0.9525,
+     "p": 0.985,
      "ci": [
-      0.927,
-      0.9694
+      0.9764,
+      0.9905
      ],
-     "acc": 0.9796,
-     "msMedian": 19441,
+     "acc": 0.9902,
+     "msMedian": 20013,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9875,
+     "p": 0.9983,
      "ci": [
-      0.9711,
-      0.9946
+      0.9939,
+      0.9995
      ],
-     "acc": 0.9954,
-     "msMedian": 16559,
+     "acc": 0.9992,
+     "msMedian": 18073,
      "p3": 1
     }
    }
@@ -423,44 +459,45 @@
   {
    "L": 8,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8365,
    "D": 0.4913,
-   "bL": -2.477,
+   "bL": -4.076,
    "knobs": {
-    "phrase": 7,
-    "letters": 6,
+    "id": "p37",
+    "phrase": 37,
+    "letters": 8,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.73,
+     "p": 0.8958,
      "ci": [
-      0.6845,
-      0.7712
+      0.8773,
+      0.9119
      ],
-     "acc": 0.7921,
-     "msMedian": 30076,
-     "p3": 0.9725
-    },
-    "median": {
-     "p": 0.9225,
-     "ci": [
-      0.8921,
-      0.9449
-     ],
-     "acc": 0.9517,
-     "msMedian": 23072,
+     "acc": 0.9377,
+     "msMedian": 27747,
      "p3": 0.9975
     },
-    "skilled": {
-     "p": 0.98,
+    "median": {
+     "p": 0.9833,
      "ci": [
-      0.961,
-      0.9898
+      0.9744,
+      0.9892
      ],
-     "acc": 0.9896,
-     "msMedian": 20606,
+     "acc": 0.9884,
+     "msMedian": 21786,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9967,
+     "ci": [
+      0.9915,
+      0.9987
+     ],
+     "acc": 0.9983,
+     "msMedian": 19755,
      "p3": 1
     }
    }
@@ -468,44 +505,45 @@
   {
    "L": 9,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8307,
    "D": 0.5252,
-   "bL": -2.477,
+   "bL": -4.076,
    "knobs": {
-    "phrase": 8,
-    "letters": 6,
+    "id": "p41",
+    "phrase": 41,
+    "letters": 9,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.7175,
+     "p": 0.8708,
      "ci": [
-      0.6715,
-      0.7594
+      0.8507,
+      0.8886
      ],
-     "acc": 0.765,
-     "msMedian": 30874,
-     "p3": 0.9725
+     "acc": 0.9192,
+     "msMedian": 27838,
+     "p3": 0.9992
     },
     "median": {
-     "p": 0.9225,
+     "p": 0.9833,
      "ci": [
-      0.8921,
-      0.9449
+      0.9744,
+      0.9892
      ],
-     "acc": 0.9375,
-     "msMedian": 22752,
+     "acc": 0.9909,
+     "msMedian": 18576,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9675,
+     "p": 0.9975,
      "ci": [
-      0.9452,
-      0.9809
+      0.9927,
+      0.9991
      ],
-     "acc": 0.9712,
-     "msMedian": 20686,
+     "acc": 0.9987,
+     "msMedian": 16577,
      "p3": 1
     }
    }
@@ -513,44 +551,45 @@
   {
    "L": 10,
    "kind": "peak",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7653,
    "D": 0.5571,
-   "bL": -2.117,
+   "bL": -2.928,
    "knobs": {
-    "phrase": 9,
+    "id": "p6",
+    "phrase": 6,
     "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.71,
+     "p": 0.7942,
      "ci": [
-      0.6637,
-      0.7523
+      0.7704,
+      0.8161
      ],
-     "acc": 0.7662,
-     "msMedian": 30713,
-     "p3": 0.97
+     "acc": 0.8622,
+     "msMedian": 26854,
+     "p3": 0.995
     },
     "median": {
-     "p": 0.8925,
+     "p": 0.9492,
      "ci": [
-      0.8583,
-      0.9192
+      0.9352,
+      0.9602
      ],
-     "acc": 0.9142,
-     "msMedian": 23472,
+     "acc": 0.9696,
+     "msMedian": 19117,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9575,
+     "p": 0.9917,
      "ci": [
-      0.933,
-      0.9733
+      0.9847,
+      0.9955
      ],
-     "acc": 0.9667,
-     "msMedian": 20935,
+     "acc": 0.9944,
+     "msMedian": 16762,
      "p3": 1
     }
    }
@@ -558,89 +597,91 @@
   {
    "L": 11,
    "kind": "breather",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8202,
    "D": 0.5872,
-   "bL": -1.194,
+   "bL": -4.185,
    "knobs": {
-    "phrase": 10,
-    "letters": 6,
+    "id": "p36",
+    "phrase": 36,
+    "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.59,
-     "ci": [
-      0.5412,
-      0.6371
-     ],
-     "acc": 0.6796,
-     "msMedian": 31643,
-     "p3": 0.965
-    },
-    "median": {
-     "p": 0.7675,
-     "ci": [
-      0.7237,
-      0.8062
-     ],
-     "acc": 0.8263,
-     "msMedian": 25656,
-     "p3": 0.99
-    },
-    "skilled": {
      "p": 0.89,
      "ci": [
-      0.8555,
-      0.917
+      0.871,
+      0.9065
      ],
-     "acc": 0.9096,
-     "msMedian": 21320,
-     "p3": 0.995
+     "acc": 0.9188,
+     "msMedian": 24716,
+     "p3": 1
+    },
+    "median": {
+     "p": 0.985,
+     "ci": [
+      0.9764,
+      0.9905
+     ],
+     "acc": 0.9899,
+     "msMedian": 19819,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9983,
+     "ci": [
+      0.9939,
+      0.9995
+     ],
+     "acc": 0.999,
+     "msMedian": 17994,
+     "p3": 1
     }
    }
   },
   {
    "L": 12,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8153,
    "D": 0.6159,
-   "bL": -4.028,
+   "bL": -3.476,
    "knobs": {
-    "phrase": 11,
-    "letters": 6,
+    "id": "p43",
+    "phrase": 43,
+    "letters": 9,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.85,
+     "p": 0.8517,
      "ci": [
-      0.8117,
-      0.8817
+      0.8304,
+      0.8707
      ],
-     "acc": 0.9,
-     "msMedian": 25171,
-     "p3": 1
+     "acc": 0.9162,
+     "msMedian": 29172,
+     "p3": 0.9983
     },
     "median": {
-     "p": 0.9825,
+     "p": 0.97,
      "ci": [
-      0.9643,
-      0.9915
+      0.9587,
+      0.9783
      ],
-     "acc": 0.9879,
-     "msMedian": 18692,
+     "acc": 0.9832,
+     "msMedian": 22828,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9875,
+     "p": 0.9975,
      "ci": [
-      0.9711,
-      0.9946
+      0.9927,
+      0.9991
      ],
-     "acc": 0.9904,
-     "msMedian": 16919,
+     "acc": 0.9991,
+     "msMedian": 18218,
      "p3": 1
     }
    }
@@ -648,44 +689,45 @@
   {
    "L": 13,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8106,
    "D": 0.6433,
-   "bL": -2.17,
+   "bL": -3.982,
    "knobs": {
-    "phrase": 12,
-    "letters": 6,
+    "id": "p42",
+    "phrase": 42,
+    "letters": 8,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.66,
+     "p": 0.8592,
      "ci": [
-      0.6123,
-      0.7047
+      0.8383,
+      0.8777
      ],
-     "acc": 0.7575,
-     "msMedian": 30701,
-     "p3": 0.97
+     "acc": 0.9135,
+     "msMedian": 27741,
+     "p3": 0.9975
     },
     "median": {
-     "p": 0.8975,
+     "p": 0.9817,
      "ci": [
-      0.8639,
-      0.9235
+      0.9724,
+      0.9879
      ],
-     "acc": 0.9258,
-     "msMedian": 23283,
+     "acc": 0.9906,
+     "msMedian": 21659,
      "p3": 1
     },
     "skilled": {
-     "p": 0.96,
+     "p": 0.9992,
      "ci": [
-      0.936,
-      0.9752
+      0.9953,
+      0.9999
      ],
-     "acc": 0.9633,
-     "msMedian": 20571,
+     "acc": 0.9993,
+     "msMedian": 19534,
      "p3": 1
     }
    }
@@ -693,44 +735,45 @@
   {
    "L": 14,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.8062,
    "D": 0.6695,
-   "bL": -2.283,
+   "bL": -3.771,
    "knobs": {
-    "phrase": 13,
+    "id": "p11",
+    "phrase": 11,
     "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.7,
+     "p": 0.8533,
      "ci": [
-      0.6534,
-      0.7428
+      0.8322,
+      0.8722
      ],
-     "acc": 0.7746,
-     "msMedian": 29011,
-     "p3": 0.975
+     "acc": 0.8956,
+     "msMedian": 25630,
+     "p3": 0.9967
     },
     "median": {
-     "p": 0.9075,
+     "p": 0.9775,
      "ci": [
-      0.8751,
-      0.9321
+      0.9675,
+      0.9845
      ],
-     "acc": 0.9363,
-     "msMedian": 21914,
+     "acc": 0.9849,
+     "msMedian": 18604,
      "p3": 1
     },
     "skilled": {
-     "p": 0.98,
+     "p": 0.9933,
      "ci": [
-      0.961,
-      0.9898
+      0.9869,
+      0.9966
      ],
-     "acc": 0.9837,
-     "msMedian": 16850,
+     "acc": 0.9958,
+     "msMedian": 16802,
      "p3": 1
     }
    }
@@ -738,44 +781,45 @@
   {
    "L": 15,
    "kind": "peak",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7419,
    "D": 0.6948,
-   "bL": -2.752,
+   "bL": -2.613,
    "knobs": {
-    "phrase": 14,
-    "letters": 6,
+    "id": "p19",
+    "phrase": 19,
+    "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.7275,
+     "p": 0.7717,
      "ci": [
-      0.6819,
-      0.7688
+      0.7471,
+      0.7945
      ],
-     "acc": 0.8212,
-     "msMedian": 28587,
-     "p3": 0.98
+     "acc": 0.834,
+     "msMedian": 30364,
+     "p3": 0.9858
     },
     "median": {
-     "p": 0.94,
+     "p": 0.9317,
      "ci": [
-      0.9123,
-      0.9594
+      0.916,
+      0.9446
      ],
-     "acc": 0.9667,
-     "msMedian": 20140,
+     "acc": 0.9545,
+     "msMedian": 23995,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9825,
+     "p": 0.9758,
      "ci": [
-      0.9643,
-      0.9915
+      0.9655,
+      0.9831
      ],
-     "acc": 0.9925,
-     "msMedian": 17182,
+     "acc": 0.9833,
+     "msMedian": 19530,
      "p3": 1
     }
    }
@@ -783,44 +827,45 @@
   {
    "L": 16,
    "kind": "breather",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7977,
    "D": 0.7192,
-   "bL": -2.797,
+   "bL": -3.771,
    "knobs": {
-    "phrase": 15,
-    "letters": 6,
+    "id": "p27",
+    "phrase": 27,
+    "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.705,
+     "p": 0.86,
      "ci": [
-      0.6585,
-      0.7476
+      0.8392,
+      0.8785
      ],
-     "acc": 0.8262,
-     "msMedian": 27954,
-     "p3": 0.965
+     "acc": 0.914,
+     "msMedian": 26742,
+     "p3": 0.9975
     },
     "median": {
-     "p": 0.9425,
+     "p": 0.9775,
      "ci": [
-      0.9152,
-      0.9614
+      0.9675,
+      0.9845
      ],
-     "acc": 0.9687,
-     "msMedian": 21899,
+     "acc": 0.9886,
+     "msMedian": 20098,
      "p3": 1
     },
     "skilled": {
-     "p": 0.98,
+     "p": 0.9967,
      "ci": [
-      0.961,
-      0.9898
+      0.9915,
+      0.9987
      ],
-     "acc": 0.9908,
-     "msMedian": 17308,
+     "acc": 0.9987,
+     "msMedian": 18294,
      "p3": 1
     }
    }
@@ -828,44 +873,45 @@
   {
    "L": 17,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7937,
    "D": 0.7428,
-   "bL": -3.771,
+   "bL": -3.933,
    "knobs": {
-    "phrase": 16,
+    "id": "p17",
+    "phrase": 17,
     "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.845,
+     "p": 0.8625,
      "ci": [
-      0.8063,
-      0.8772
+      0.8419,
+      0.8808
      ],
-     "acc": 0.8908,
-     "msMedian": 24771,
+     "acc": 0.9022,
+     "msMedian": 24148,
      "p3": 0.995
     },
     "median": {
-     "p": 0.9775,
+     "p": 0.9808,
      "ci": [
-      0.9578,
-      0.9881
+      0.9714,
+      0.9872
      ],
-     "acc": 0.9862,
-     "msMedian": 18336,
+     "acc": 0.9899,
+     "msMedian": 18015,
      "p3": 1
     },
     "skilled": {
-     "p": 0.995,
+     "p": 0.9975,
      "ci": [
-      0.982,
-      0.9986
+      0.9927,
+      0.9991
      ],
-     "acc": 0.9962,
-     "msMedian": 16333,
+     "acc": 0.9978,
+     "msMedian": 16185,
      "p3": 1
     }
    }
@@ -873,44 +919,45 @@
   {
    "L": 18,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7898,
    "D": 0.7656,
-   "bL": -3.566,
+   "bL": -3.268,
    "knobs": {
-    "phrase": 17,
-    "letters": 6,
+    "id": "p47",
+    "phrase": 47,
+    "letters": 9,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.8425,
+     "p": 0.845,
      "ci": [
-      0.8036,
-      0.8749
+      0.8234,
+      0.8644
      ],
-     "acc": 0.8846,
-     "msMedian": 24489,
-     "p3": 1
+     "acc": 0.8945,
+     "msMedian": 30890,
+     "p3": 0.995
     },
     "median": {
-     "p": 0.9725,
+     "p": 0.9633,
      "ci": [
-      0.9514,
-      0.9846
+      0.9511,
+      0.9726
      ],
-     "acc": 0.9825,
-     "msMedian": 18136,
+     "acc": 0.9772,
+     "msMedian": 23694,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9925,
+     "p": 0.9942,
      "ci": [
-      0.9782,
-      0.9974
+      0.988,
+      0.9972
      ],
-     "acc": 0.9954,
-     "msMedian": 16276,
+     "acc": 0.9952,
+     "msMedian": 21869,
      "p3": 1
     }
    }
@@ -918,44 +965,45 @@
   {
    "L": 19,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7861,
    "D": 0.7878,
-   "bL": -4.885,
+   "bL": -3.393,
    "knobs": {
-    "phrase": 18,
-    "letters": 7,
+    "id": "p44",
+    "phrase": 44,
+    "letters": 9,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.915,
+     "p": 0.8442,
      "ci": [
-      0.8836,
-      0.9385
+      0.8226,
+      0.8636
      ],
-     "acc": 0.9389,
-     "msMedian": 20086,
-     "p3": 1
+     "acc": 0.9141,
+     "msMedian": 30554,
+     "p3": 0.9983
     },
     "median": {
-     "p": 0.9925,
+     "p": 0.9675,
      "ci": [
-      0.9782,
-      0.9974
+      0.9559,
+      0.9761
      ],
-     "acc": 0.9943,
-     "msMedian": 14965,
+     "acc": 0.9869,
+     "msMedian": 23810,
      "p3": 1
     },
     "skilled": {
-     "p": 1,
+     "p": 0.9925,
      "ci": [
-      0.9905,
-      1
+      0.9858,
+      0.996
      ],
-     "acc": 1,
-     "msMedian": 13661,
+     "acc": 0.997,
+     "msMedian": 21896,
      "p3": 1
     }
    }
@@ -963,462 +1011,13 @@
   {
    "L": 20,
    "kind": "peak",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7224,
    "D": 0.8094,
-   "bL": -2.376,
+   "bL": -2.274,
    "knobs": {
-    "phrase": 19,
-    "letters": 7,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.7525,
-     "ci": [
-      0.7079,
-      0.7923
-     ],
-     "acc": 0.8236,
-     "msMedian": 30521,
-     "p3": 0.9825
-    },
-    "median": {
-     "p": 0.915,
-     "ci": [
-      0.8836,
-      0.9385
-     ],
-     "acc": 0.9396,
-     "msMedian": 24579,
-     "p3": 1
-    },
-    "skilled": {
-     "p": 0.9925,
-     "ci": [
-      0.9782,
-      0.9974
-     ],
-     "acc": 0.995,
-     "msMedian": 19279,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 21,
-   "kind": "breather",
-   "legacy": true,
-   "pStar": 0.7788,
-   "D": 0.8305,
-   "bL": -3.566,
-   "knobs": {
-    "phrase": 20,
-    "letters": 7,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.885,
-     "ci": [
-      0.85,
-      0.9127
-     ],
-     "acc": 0.9268,
-     "msMedian": 25897,
-     "p3": 0.9975
-    },
-    "median": {
-     "p": 0.9725,
-     "ci": [
-      0.9514,
-      0.9846
-     ],
-     "acc": 0.9868,
-     "msMedian": 19881,
-     "p3": 1
-    },
-    "skilled": {
-     "p": 0.995,
-     "ci": [
-      0.982,
-      0.9986
-     ],
-     "acc": 0.9982,
-     "msMedian": 18265,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 22,
-   "kind": "step",
-   "legacy": true,
-   "pStar": 0.7753,
-   "D": 0.851,
-   "bL": -3.245,
-   "knobs": {
-    "phrase": 21,
-    "letters": 7,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.775,
-     "ci": [
-      0.7316,
-      0.8132
-     ],
-     "acc": 0.8732,
-     "msMedian": 29889,
-     "p3": 0.995
-    },
-    "median": {
-     "p": 0.9625,
-     "ci": [
-      0.9391,
-      0.9771
-     ],
-     "acc": 0.9793,
-     "msMedian": 21473,
-     "p3": 1
-    },
-    "skilled": {
-     "p": 0.99,
-     "ci": [
-      0.9746,
-      0.9961
-     ],
-     "acc": 0.9964,
-     "msMedian": 18655,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 23,
-   "kind": "step",
-   "legacy": true,
-   "pStar": 0.7719,
-   "D": 0.871,
-   "bL": -2.587,
-   "knobs": {
-    "phrase": 22,
-    "letters": 7,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.7775,
-     "ci": [
-      0.7342,
-      0.8155
-     ],
-     "acc": 0.8361,
-     "msMedian": 30413,
-     "p3": 0.99
-    },
-    "median": {
-     "p": 0.93,
-     "ci": [
-      0.9007,
-      0.9511
-     ],
-     "acc": 0.955,
-     "msMedian": 23829,
-     "p3": 0.9975
-    },
-    "skilled": {
-     "p": 0.9925,
-     "ci": [
-      0.9782,
-      0.9974
-     ],
-     "acc": 0.9939,
-     "msMedian": 18961,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 24,
-   "kind": "step",
-   "legacy": true,
-   "pStar": 0.7686,
-   "D": 0.8906,
-   "bL": -2.283,
-   "knobs": {
-    "phrase": 23,
-    "letters": 7,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.685,
-     "ci": [
-      0.6379,
-      0.7286
-     ],
-     "acc": 0.7586,
-     "msMedian": 32522,
-     "p3": 0.9725
-    },
-    "median": {
-     "p": 0.9075,
-     "ci": [
-      0.8751,
-      0.9321
-     ],
-     "acc": 0.9446,
-     "msMedian": 24513,
-     "p3": 1
-    },
-    "skilled": {
-     "p": 0.965,
-     "ci": [
-      0.9421,
-      0.979
-     ],
-     "acc": 0.9743,
-     "msMedian": 19764,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 25,
-   "kind": "peak",
-   "legacy": true,
-   "pStar": 0.7053,
-   "D": 0.9097,
-   "bL": -2.708,
-   "knobs": {
-    "phrase": 24,
-    "letters": 7,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.765,
-     "ci": [
-      0.721,
-      0.8039
-     ],
-     "acc": 0.8282,
-     "msMedian": 30353,
-     "p3": 0.995
-    },
-    "median": {
-     "p": 0.9375,
-     "ci": [
-      0.9094,
-      0.9573
-     ],
-     "acc": 0.9682,
-     "msMedian": 24272,
-     "p3": 1
-    },
-    "skilled": {
-     "p": 0.9775,
-     "ci": [
-      0.9578,
-      0.9881
-     ],
-     "acc": 0.9846,
-     "msMedian": 19368,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 26,
-   "kind": "breather",
-   "legacy": true,
-   "pStar": 0.7622,
-   "D": 0.9285,
-   "bL": -2.314,
-   "knobs": {
+    "id": "p25",
     "phrase": 25,
-    "letters": 7,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.7425,
-     "ci": [
-      0.6975,
-      0.7829
-     ],
-     "acc": 0.8307,
-     "msMedian": 31497,
-     "p3": 0.9875
-    },
-    "median": {
-     "p": 0.91,
-     "ci": [
-      0.8779,
-      0.9343
-     ],
-     "acc": 0.9489,
-     "msMedian": 24763,
-     "p3": 0.9975
-    },
-    "skilled": {
-     "p": 0.98,
-     "ci": [
-      0.961,
-      0.9898
-     ],
-     "acc": 0.9889,
-     "msMedian": 21297,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 27,
-   "kind": "step",
-   "legacy": true,
-   "pStar": 0.759,
-   "D": 0.9469,
-   "bL": -2.477,
-   "knobs": {
-    "phrase": 26,
-    "letters": 7,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.73,
-     "ci": [
-      0.6845,
-      0.7712
-     ],
-     "acc": 0.7939,
-     "msMedian": 31323,
-     "p3": 0.9875
-    },
-    "median": {
-     "p": 0.9225,
-     "ci": [
-      0.8921,
-      0.9449
-     ],
-     "acc": 0.9429,
-     "msMedian": 25122,
-     "p3": 1
-    },
-    "skilled": {
-     "p": 0.9625,
-     "ci": [
-      0.9391,
-      0.9771
-     ],
-     "acc": 0.9686,
-     "msMedian": 22522,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 28,
-   "kind": "step",
-   "legacy": true,
-   "pStar": 0.756,
-   "D": 0.9649,
-   "bL": -3.771,
-   "knobs": {
-    "phrase": 27,
-    "letters": 7,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.8725,
-     "ci": [
-      0.8362,
-      0.9017
-     ],
-     "acc": 0.9221,
-     "msMedian": 26217,
-     "p3": 1
-    },
-    "median": {
-     "p": 0.9775,
-     "ci": [
-      0.9578,
-      0.9881
-     ],
-     "acc": 0.9893,
-     "msMedian": 20266,
-     "p3": 1
-    },
-    "skilled": {
-     "p": 0.9925,
-     "ci": [
-      0.9782,
-      0.9974
-     ],
-     "acc": 0.9943,
-     "msMedian": 18597,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 29,
-   "kind": "step",
-   "legacy": true,
-   "pStar": 0.753,
-   "D": 0.9826,
-   "bL": -1.586,
-   "knobs": {
-    "phrase": 29,
-    "letters": 7,
-    "maxTries": 6
-   },
-   "profiles": {
-    "weak": {
-     "p": 0.5575,
-     "ci": [
-      0.5085,
-      0.6054
-     ],
-     "acc": 0.6632,
-     "msMedian": 34777,
-     "p3": 0.9325
-    },
-    "median": {
-     "p": 0.83,
-     "ci": [
-      0.7901,
-      0.8636
-     ],
-     "acc": 0.8693,
-     "msMedian": 26271,
-     "p3": 0.995
-    },
-    "skilled": {
-     "p": 0.92,
-     "ci": [
-      0.8892,
-      0.9428
-     ],
-     "acc": 0.9404,
-     "msMedian": 23477,
-     "p3": 1
-    }
-   }
-  },
-  {
-   "L": 30,
-   "kind": "peak",
-   "legacy": true,
-   "pStar": 0.69,
-   "D": 1,
-   "bL": -2.666,
-   "knobs": {
-    "phrase": 30,
     "letters": 7,
     "maxTries": 6
    },
@@ -1426,44 +1025,413 @@
     "weak": {
      "p": 0.7225,
      "ci": [
-      0.6767,
-      0.7641
+      0.6965,
+      0.7471
      ],
-     "acc": 0.8064,
-     "msMedian": 32075,
-     "p3": 0.9775
+     "acc": 0.8057,
+     "msMedian": 31111,
+     "p3": 0.9808
     },
     "median": {
-     "p": 0.935,
+     "p": 0.9067,
      "ci": [
-      0.9065,
-      0.9553
+      0.8889,
+      0.9219
      ],
-     "acc": 0.9554,
-     "msMedian": 24362,
+     "acc": 0.9458,
+     "msMedian": 24639,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9675,
+     "p": 0.9783,
      "ci": [
-      0.9452,
-      0.9809
+      0.9684,
+      0.9852
      ],
-     "acc": 0.9754,
-     "msMedian": 19941,
+     "acc": 0.9865,
+     "msMedian": 19764,
      "p3": 1
     }
    }
   },
   {
-   "L": 31,
+   "L": 21,
    "kind": "breather",
-   "legacy": true,
-   "pStar": 0.7471,
-   "D": 1.0171,
+   "legacy": false,
+   "pStar": 0.7788,
+   "D": 0.8305,
+   "bL": -3.199,
+   "knobs": {
+    "id": "p39",
+    "phrase": 39,
+    "letters": 8,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8483,
+     "ci": [
+      0.8269,
+      0.8675
+     ],
+     "acc": 0.914,
+     "msMedian": 29443,
+     "p3": 0.9967
+    },
+    "median": {
+     "p": 0.9608,
+     "ci": [
+      0.9483,
+      0.9704
+     ],
+     "acc": 0.9789,
+     "msMedian": 22772,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9942,
+     "ci": [
+      0.988,
+      0.9972
+     ],
+     "acc": 0.9971,
+     "msMedian": 20407,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 22,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7753,
+   "D": 0.851,
+   "bL": -3.293,
+   "knobs": {
+    "id": "p16",
+    "phrase": 16,
+    "letters": 6,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8608,
+     "ci": [
+      0.8401,
+      0.8793
+     ],
+     "acc": 0.8979,
+     "msMedian": 24794,
+     "p3": 0.9967
+    },
+    "median": {
+     "p": 0.9642,
+     "ci": [
+      0.9521,
+      0.9733
+     ],
+     "acc": 0.976,
+     "msMedian": 18471,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.995,
+     "ci": [
+      0.9891,
+      0.9977
+     ],
+     "acc": 0.9964,
+     "msMedian": 16588,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 23,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7719,
+   "D": 0.871,
+   "bL": -3.341,
+   "knobs": {
+    "id": "p31",
+    "phrase": 31,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7867,
+     "ci": [
+      0.7626,
+      0.8089
+     ],
+     "acc": 0.862,
+     "msMedian": 30059,
+     "p3": 0.9925
+    },
+    "median": {
+     "p": 0.9658,
+     "ci": [
+      0.954,
+      0.9747
+     ],
+     "acc": 0.9775,
+     "msMedian": 21739,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9925,
+     "ci": [
+      0.9858,
+      0.996
+     ],
+     "acc": 0.9946,
+     "msMedian": 18995,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 24,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7686,
+   "D": 0.8906,
+   "bL": -2.961,
+   "knobs": {
+    "id": "p34",
+    "phrase": 34,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.8075,
+     "ci": [
+      0.7842,
+      0.8288
+     ],
+     "acc": 0.882,
+     "msMedian": 28690,
+     "p3": 0.9933
+    },
+    "median": {
+     "p": 0.9508,
+     "ci": [
+      0.9371,
+      0.9617
+     ],
+     "acc": 0.9763,
+     "msMedian": 20911,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.99,
+     "ci": [
+      0.9826,
+      0.9943
+     ],
+     "acc": 0.9942,
+     "msMedian": 18720,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 25,
+   "kind": "peak",
+   "legacy": false,
+   "pStar": 0.7053,
+   "D": 0.9097,
+   "bL": -2.245,
+   "knobs": {
+    "id": "p26",
+    "phrase": 26,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.7183,
+     "ci": [
+      0.6922,
+      0.7431
+     ],
+     "acc": 0.7823,
+     "msMedian": 31914,
+     "p3": 0.9725
+    },
+    "median": {
+     "p": 0.9042,
+     "ci": [
+      0.8862,
+      0.9196
+     ],
+     "acc": 0.9336,
+     "msMedian": 25258,
+     "p3": 0.9992
+    },
+    "skilled": {
+     "p": 0.975,
+     "ci": [
+      0.9645,
+      0.9824
+     ],
+     "acc": 0.9811,
+     "msMedian": 20935,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 26,
+   "kind": "breather",
+   "legacy": false,
+   "pStar": 0.7622,
+   "D": 0.9285,
+   "bL": -3.095,
+   "knobs": {
+    "id": "p5",
+    "phrase": 5,
+    "letters": 5,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.835,
+     "ci": [
+      0.8129,
+      0.8549
+     ],
+     "acc": 0.885,
+     "msMedian": 23533,
+     "p3": 0.995
+    },
+    "median": {
+     "p": 0.9567,
+     "ci": [
+      0.9436,
+      0.9668
+     ],
+     "acc": 0.9768,
+     "msMedian": 17154,
+     "p3": 0.9992
+    },
+    "skilled": {
+     "p": 0.9892,
+     "ci": [
+      0.9816,
+      0.9937
+     ],
+     "acc": 0.9935,
+     "msMedian": 15064,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 27,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.759,
+   "D": 0.9469,
+   "bL": -2.708,
+   "knobs": {
+    "id": "p2",
+    "phrase": 2,
+    "letters": 5,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.78,
+     "ci": [
+      0.7557,
+      0.8025
+     ],
+     "acc": 0.8372,
+     "msMedian": 25392,
+     "p3": 0.9908
+    },
+    "median": {
+     "p": 0.9375,
+     "ci": [
+      0.9224,
+      0.9498
+     ],
+     "acc": 0.9593,
+     "msMedian": 18286,
+     "p3": 0.9992
+    },
+    "skilled": {
+     "p": 0.9908,
+     "ci": [
+      0.9837,
+      0.9949
+     ],
+     "acc": 0.9932,
+     "msMedian": 15399,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 28,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.756,
+   "D": 0.9649,
+   "bL": -2.812,
+   "knobs": {
+    "id": "p3",
+    "phrase": 3,
+    "letters": 5,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.79,
+     "ci": [
+      0.766,
+      0.8121
+     ],
+     "acc": 0.8373,
+     "msMedian": 25667,
+     "p3": 0.985
+    },
+    "median": {
+     "p": 0.9433,
+     "ci": [
+      0.9288,
+      0.9551
+     ],
+     "acc": 0.964,
+     "msMedian": 19413,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9917,
+     "ci": [
+      0.9847,
+      0.9955
+     ],
+     "acc": 0.9933,
+     "msMedian": 15736,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 29,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.753,
+   "D": 0.9826,
    "bL": -2.893,
    "knobs": {
-    "phrase": 31,
+    "id": "p21",
+    "phrase": 21,
     "letters": 7,
     "maxTries": 6
    },
@@ -1471,31 +1439,123 @@
     "weak": {
      "p": 0.785,
      "ci": [
-      0.7421,
-      0.8224
+      0.7609,
+      0.8073
      ],
-     "acc": 0.8618,
-     "msMedian": 30709,
-     "p3": 0.9925
+     "acc": 0.868,
+     "msMedian": 29021,
+     "p3": 0.9892
     },
     "median": {
      "p": 0.9475,
      "ci": [
-      0.9211,
-      0.9654
+      0.9334,
+      0.9588
      ],
-     "acc": 0.9704,
-     "msMedian": 22641,
+     "acc": 0.9718,
+     "msMedian": 21341,
      "p3": 1
     },
     "skilled": {
-     "p": 0.995,
+     "p": 0.9917,
      "ci": [
-      0.982,
-      0.9986
+      0.9847,
+      0.9955
      ],
-     "acc": 0.9971,
-     "msMedian": 19038,
+     "acc": 0.9955,
+     "msMedian": 18939,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 30,
+   "kind": "peak",
+   "legacy": false,
+   "pStar": 0.69,
+   "D": 1,
+   "bL": -2.293,
+   "knobs": {
+    "id": "p0",
+    "phrase": 0,
+    "letters": 5,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6658,
+     "ci": [
+      0.6387,
+      0.692
+     ],
+     "acc": 0.731,
+     "msMedian": 28229,
+     "p3": 0.9667
+    },
+    "median": {
+     "p": 0.9083,
+     "ci": [
+      0.8907,
+      0.9234
+     ],
+     "acc": 0.9263,
+     "msMedian": 20568,
+     "p3": 0.9967
+    },
+    "skilled": {
+     "p": 0.9583,
+     "ci": [
+      0.9455,
+      0.9683
+     ],
+     "acc": 0.9665,
+     "msMedian": 18031,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 31,
+   "kind": "breather",
+   "legacy": false,
+   "pStar": 0.7471,
+   "D": 1.0171,
+   "bL": -2.613,
+   "knobs": {
+    "id": "p24",
+    "phrase": 24,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.77,
+     "ci": [
+      0.7453,
+      0.7929
+     ],
+     "acc": 0.8432,
+     "msMedian": 29939,
+     "p3": 0.985
+    },
+    "median": {
+     "p": 0.9317,
+     "ci": [
+      0.916,
+      0.9446
+     ],
+     "acc": 0.9625,
+     "msMedian": 22981,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9925,
+     "ci": [
+      0.9858,
+      0.996
+     ],
+     "acc": 0.9945,
+     "msMedian": 19103,
      "p3": 1
     }
    }
@@ -1503,44 +1563,45 @@
   {
    "L": 32,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7442,
    "D": 1.0339,
-   "bL": -4.369,
+   "bL": -2.587,
    "knobs": {
-    "phrase": 32,
+    "id": "p22",
+    "phrase": 22,
     "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.875,
+     "p": 0.7758,
      "ci": [
-      0.839,
-      0.9039
+      0.7514,
+      0.7985
      ],
-     "acc": 0.9204,
-     "msMedian": 25155,
-     "p3": 1
+     "acc": 0.8321,
+     "msMedian": 29613,
+     "p3": 0.9942
     },
     "median": {
-     "p": 0.9875,
+     "p": 0.93,
      "ci": [
-      0.9711,
-      0.9946
+      0.9141,
+      0.9431
      ],
-     "acc": 0.9918,
-     "msMedian": 19696,
+     "acc": 0.953,
+     "msMedian": 23035,
      "p3": 1
     },
     "skilled": {
-     "p": 1,
+     "p": 0.9833,
      "ci": [
-      0.9905,
-      1
+      0.9744,
+      0.9892
      ],
-     "acc": 1,
-     "msMedian": 17600,
+     "acc": 0.9896,
+     "msMedian": 19217,
      "p3": 1
     }
    }
@@ -1548,44 +1609,45 @@
   {
    "L": 33,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7414,
    "D": 1.0505,
-   "bL": -1.516,
+   "bL": -2.666,
    "knobs": {
-    "phrase": 33,
-    "letters": 7,
+    "id": "p35",
+    "phrase": 35,
+    "letters": 8,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.67,
+     "p": 0.7583,
      "ci": [
-      0.6225,
-      0.7143
+      0.7333,
+      0.7817
      ],
-     "acc": 0.7471,
-     "msMedian": 33965,
-     "p3": 0.9775
+     "acc": 0.8508,
+     "msMedian": 31219,
+     "p3": 0.9867
     },
     "median": {
-     "p": 0.82,
+     "p": 0.935,
      "ci": [
-      0.7794,
-      0.8546
+      0.9196,
+      0.9476
      ],
-     "acc": 0.8639,
-     "msMedian": 25641,
+     "acc": 0.9635,
+     "msMedian": 23011,
      "p3": 1
     },
     "skilled": {
-     "p": 0.935,
+     "p": 0.9783,
      "ci": [
-      0.9065,
-      0.9553
+      0.9684,
+      0.9852
      ],
-     "acc": 0.9561,
-     "msMedian": 23116,
+     "acc": 0.9886,
+     "msMedian": 20535,
      "p3": 1
     }
    }
@@ -1593,44 +1655,45 @@
   {
    "L": 34,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7387,
    "D": 1.0667,
-   "bL": -3.178,
+   "bL": -2.488,
    "knobs": {
-    "phrase": 34,
-    "letters": 7,
+    "id": "p15",
+    "phrase": 15,
+    "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.8,
+     "p": 0.6983,
      "ci": [
-      0.758,
-      0.8363
+      0.6718,
+      0.7236
      ],
-     "acc": 0.8843,
-     "msMedian": 28779,
-     "p3": 0.9925
+     "acc": 0.8078,
+     "msMedian": 28945,
+     "p3": 0.9825
     },
     "median": {
-     "p": 0.96,
+     "p": 0.9233,
      "ci": [
-      0.936,
-      0.9752
+      0.9069,
+      0.9371
      ],
-     "acc": 0.9825,
-     "msMedian": 20612,
-     "p3": 1
+     "acc": 0.9582,
+     "msMedian": 20986,
+     "p3": 0.9992
     },
     "skilled": {
-     "p": 0.9925,
+     "p": 0.9817,
      "ci": [
-      0.9782,
-      0.9974
+      0.9724,
+      0.9879
      ],
-     "acc": 0.9989,
-     "msMedian": 18492,
+     "acc": 0.9928,
+     "msMedian": 17212,
      "p3": 1
     }
    }
@@ -1638,44 +1701,45 @@
   {
    "L": 35,
    "kind": "peak",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.6759,
    "D": 1.0828,
-   "bL": -4.369,
+   "bL": -1.93,
    "knobs": {
-    "phrase": 36,
+    "id": "p33",
+    "phrase": 33,
     "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.8925,
+     "p": 0.69,
      "ci": [
-      0.8583,
-      0.9192
+      0.6633,
+      0.7155
      ],
-     "acc": 0.9286,
-     "msMedian": 24599,
-     "p3": 1
+     "acc": 0.7699,
+     "msMedian": 33355,
+     "p3": 0.97
     },
     "median": {
-     "p": 0.9875,
+     "p": 0.8733,
      "ci": [
-      0.9711,
-      0.9946
+      0.8533,
+      0.891
      ],
-     "acc": 0.9907,
-     "msMedian": 19746,
-     "p3": 1
+     "acc": 0.9068,
+     "msMedian": 25529,
+     "p3": 0.9983
     },
     "skilled": {
-     "p": 0.9975,
+     "p": 0.9375,
      "ci": [
-      0.986,
-      0.9996
+      0.9224,
+      0.9498
      ],
-     "acc": 0.9986,
-     "msMedian": 18022,
+     "acc": 0.954,
+     "msMedian": 23146,
      "p3": 1
     }
    }
@@ -1683,44 +1747,45 @@
   {
    "L": 36,
    "kind": "breather",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7332,
    "D": 1.0986,
-   "bL": -2.17,
+   "bL": -2.512,
    "knobs": {
-    "phrase": 28,
-    "letters": 8,
+    "id": "p14",
+    "phrase": 14,
+    "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.6975,
+     "p": 0.7092,
      "ci": [
-      0.6508,
-      0.7405
+      0.6828,
+      0.7342
      ],
-     "acc": 0.8022,
-     "msMedian": 33323,
-     "p3": 0.98
+     "acc": 0.8078,
+     "msMedian": 28954,
+     "p3": 0.9842
     },
     "median": {
-     "p": 0.8975,
+     "p": 0.925,
      "ci": [
-      0.8639,
-      0.9235
+      0.9087,
+      0.9386
      ],
-     "acc": 0.9466,
-     "msMedian": 26467,
-     "p3": 1
+     "acc": 0.9575,
+     "msMedian": 20361,
+     "p3": 0.9992
     },
     "skilled": {
-     "p": 0.97,
+     "p": 0.9858,
      "ci": [
-      0.9483,
-      0.9828
+      0.9774,
+      0.9911
      ],
-     "acc": 0.9797,
-     "msMedian": 20627,
+     "acc": 0.9926,
+     "msMedian": 17057,
      "p3": 1
     }
    }
@@ -1728,44 +1793,45 @@
   {
    "L": 37,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7306,
    "D": 1.1142,
-   "bL": -2.666,
+   "bL": -2.304,
    "knobs": {
-    "phrase": 35,
-    "letters": 8,
+    "id": "p13",
+    "phrase": 13,
+    "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.7575,
+     "p": 0.7183,
      "ci": [
-      0.7132,
-      0.7969
+      0.6922,
+      0.7431
      ],
-     "acc": 0.8594,
-     "msMedian": 31078,
-     "p3": 0.9925
+     "acc": 0.7789,
+     "msMedian": 29144,
+     "p3": 0.9792
     },
     "median": {
-     "p": 0.935,
+     "p": 0.9092,
      "ci": [
-      0.9065,
-      0.9553
+      0.8916,
+      0.9241
      ],
-     "acc": 0.9641,
-     "msMedian": 22792,
+     "acc": 0.9386,
+     "msMedian": 21703,
      "p3": 1
     },
     "skilled": {
-     "p": 0.985,
+     "p": 0.9858,
      "ci": [
-      0.9677,
-      0.9931
+      0.9774,
+      0.9911
      ],
-     "acc": 0.99,
-     "msMedian": 20538,
+     "acc": 0.9889,
+     "msMedian": 17662,
      "p3": 1
     }
    }
@@ -1773,44 +1839,45 @@
   {
    "L": 38,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.728,
    "D": 1.1295,
-   "bL": -3.566,
+   "bL": -2.234,
    "knobs": {
-    "phrase": 37,
-    "letters": 8,
+    "id": "p23",
+    "phrase": 23,
+    "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.8875,
+     "p": 0.7317,
      "ci": [
-      0.8528,
-      0.9149
+      0.7059,
+      0.756
      ],
-     "acc": 0.93,
-     "msMedian": 28634,
-     "p3": 1
+     "acc": 0.8014,
+     "msMedian": 31339,
+     "p3": 0.9817
     },
     "median": {
-     "p": 0.9725,
+     "p": 0.9033,
      "ci": [
-      0.9514,
-      0.9846
+      0.8853,
+      0.9188
      ],
-     "acc": 0.9844,
-     "msMedian": 21825,
-     "p3": 1
+     "acc": 0.9329,
+     "msMedian": 24239,
+     "p3": 0.9992
     },
     "skilled": {
-     "p": 0.9975,
+     "p": 0.9792,
      "ci": [
-      0.986,
-      0.9996
+      0.9694,
+      0.9858
      ],
-     "acc": 0.9981,
-     "msMedian": 19736,
+     "acc": 0.9842,
+     "msMedian": 19531,
      "p3": 1
     }
    }
@@ -1818,44 +1885,45 @@
   {
    "L": 39,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7254,
    "D": 1.1447,
-   "bL": -2.117,
+   "bL": -2.304,
    "knobs": {
-    "phrase": 38,
-    "letters": 8,
+    "id": "p7",
+    "phrase": 7,
+    "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.7025,
+     "p": 0.7125,
      "ci": [
-      0.6559,
-      0.7452
+      0.6862,
+      0.7374
      ],
-     "acc": 0.8084,
-     "msMedian": 33450,
-     "p3": 0.9825
+     "acc": 0.7804,
+     "msMedian": 30425,
+     "p3": 0.9733
     },
     "median": {
-     "p": 0.8925,
+     "p": 0.9092,
      "ci": [
-      0.8583,
-      0.9192
+      0.8916,
+      0.9241
      ],
-     "acc": 0.9291,
-     "msMedian": 27268,
-     "p3": 1
+     "acc": 0.9351,
+     "msMedian": 22778,
+     "p3": 0.9992
     },
     "skilled": {
-     "p": 0.9675,
+     "p": 0.9833,
      "ci": [
-      0.9452,
-      0.9809
+      0.9744,
+      0.9892
      ],
-     "acc": 0.9794,
-     "msMedian": 22975,
+     "acc": 0.9865,
+     "msMedian": 20113,
      "p3": 1
     }
    }
@@ -1863,89 +1931,91 @@
   {
    "L": 40,
    "kind": "peak",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.6629,
    "D": 1.1597,
-   "bL": -3.771,
+   "bL": -1.371,
    "knobs": {
-    "phrase": 39,
-    "letters": 8,
+    "id": "p10",
+    "phrase": 10,
+    "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.835,
+     "p": 0.5717,
      "ci": [
-      0.7955,
-      0.8682
+      0.5435,
+      0.5994
      ],
-     "acc": 0.9187,
-     "msMedian": 29944,
-     "p3": 1
+     "acc": 0.6776,
+     "msMedian": 32164,
+     "p3": 0.9208
     },
     "median": {
-     "p": 0.9775,
+     "p": 0.7975,
      "ci": [
-      0.9578,
-      0.9881
+      0.7738,
+      0.8193
      ],
-     "acc": 0.9831,
-     "msMedian": 22334,
-     "p3": 1
+     "acc": 0.8447,
+     "msMedian": 24521,
+     "p3": 0.995
     },
     "skilled": {
-     "p": 1,
+     "p": 0.8992,
      "ci": [
-      0.9905,
-      1
+      0.8808,
+      0.915
      ],
-     "acc": 1,
-     "msMedian": 20647,
-     "p3": 1
+     "acc": 0.92,
+     "msMedian": 21289,
+     "p3": 0.9983
     }
    }
   },
   {
    "L": 41,
    "kind": "breather",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7203,
    "D": 1.1744,
-   "bL": -3.892,
+   "bL": -2.206,
    "knobs": {
-    "phrase": 40,
+    "id": "p38",
+    "phrase": 38,
     "letters": 8,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.89,
+     "p": 0.73,
      "ci": [
-      0.8555,
-      0.917
+      0.7042,
+      0.7544
      ],
-     "acc": 0.9319,
-     "msMedian": 27406,
-     "p3": 0.9975
+     "acc": 0.8168,
+     "msMedian": 34573,
+     "p3": 0.9858
     },
     "median": {
-     "p": 0.98,
+     "p": 0.9008,
      "ci": [
-      0.961,
-      0.9898
+      0.8826,
+      0.9165
      ],
-     "acc": 0.9869,
-     "msMedian": 21341,
+     "acc": 0.9405,
+     "msMedian": 26946,
      "p3": 1
     },
     "skilled": {
-     "p": 1,
+     "p": 0.9733,
      "ci": [
-      0.9905,
-      1
+      0.9626,
+      0.981
      ],
-     "acc": 1,
-     "msMedian": 19849,
+     "acc": 0.9836,
+     "msMedian": 22298,
      "p3": 1
     }
    }
@@ -1953,44 +2023,45 @@
   {
    "L": 42,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7179,
    "D": 1.189,
-   "bL": -3.771,
+   "bL": -2.225,
    "knobs": {
-    "phrase": 42,
-    "letters": 8,
+    "id": "p1",
+    "phrase": 1,
+    "letters": 5,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.905,
+     "p": 0.7433,
      "ci": [
-      0.8723,
-      0.93
+      0.7179,
+      0.7672
      ],
-     "acc": 0.9344,
-     "msMedian": 27241,
-     "p3": 1
+     "acc": 0.8043,
+     "msMedian": 27115,
+     "p3": 0.9775
     },
     "median": {
-     "p": 0.9775,
+     "p": 0.9025,
      "ci": [
-      0.9578,
-      0.9881
+      0.8844,
+      0.918
      ],
-     "acc": 0.9862,
-     "msMedian": 21620,
-     "p3": 1
+     "acc": 0.9288,
+     "msMedian": 20675,
+     "p3": 0.9983
     },
     "skilled": {
-     "p": 1,
+     "p": 0.9725,
      "ci": [
-      0.9905,
-      1
+      0.9616,
+      0.9804
      ],
-     "acc": 1,
-     "msMedian": 19779,
+     "acc": 0.9802,
+     "msMedian": 17454,
      "p3": 1
     }
    }
@@ -1998,44 +2069,45 @@
   {
    "L": 43,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7154,
    "D": 1.2034,
-   "bL": -3.566,
+   "bL": -2.161,
    "knobs": {
-    "phrase": 41,
-    "letters": 9,
+    "id": "p4",
+    "phrase": 4,
+    "letters": 5,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.8425,
+     "p": 0.7192,
      "ci": [
-      0.8036,
-      0.8749
+      0.6931,
+      0.7439
      ],
-     "acc": 0.9133,
-     "msMedian": 29400,
-     "p3": 0.9975
+     "acc": 0.783,
+     "msMedian": 27246,
+     "p3": 0.9775
     },
     "median": {
-     "p": 0.9725,
+     "p": 0.8967,
      "ci": [
-      0.9514,
-      0.9846
+      0.8782,
+      0.9126
      ],
-     "acc": 0.9842,
-     "msMedian": 18493,
-     "p3": 1
+     "acc": 0.9297,
+     "msMedian": 20287,
+     "p3": 0.9992
     },
     "skilled": {
-     "p": 1,
+     "p": 0.9792,
      "ci": [
-      0.9905,
-      1
+      0.9694,
+      0.9858
      ],
-     "acc": 1,
-     "msMedian": 16651,
+     "acc": 0.9835,
+     "msMedian": 15827,
      "p3": 1
     }
    }
@@ -2043,44 +2115,45 @@
   {
    "L": 44,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.713,
    "D": 1.2177,
-   "bL": -3.476,
+   "bL": -2.366,
    "knobs": {
-    "phrase": 43,
-    "letters": 9,
+    "id": "p8",
+    "phrase": 8,
+    "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.835,
+     "p": 0.7533,
      "ci": [
-      0.7955,
-      0.8682
+      0.7282,
+      0.7769
      ],
-     "acc": 0.915,
-     "msMedian": 29719,
-     "p3": 0.9975
+     "acc": 0.8004,
+     "msMedian": 29733,
+     "p3": 0.9733
     },
     "median": {
-     "p": 0.97,
+     "p": 0.9142,
      "ci": [
-      0.9483,
-      0.9828
+      0.897,
+      0.9287
      ],
-     "acc": 0.9792,
-     "msMedian": 22914,
+     "acc": 0.9321,
+     "msMedian": 22921,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9975,
+     "p": 0.9583,
      "ci": [
-      0.986,
-      0.9996
+      0.9455,
+      0.9683
      ],
-     "acc": 0.9983,
-     "msMedian": 17839,
+     "acc": 0.966,
+     "msMedian": 20495,
      "p3": 1
     }
    }
@@ -2088,89 +2161,91 @@
   {
    "L": 45,
    "kind": "peak",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.6506,
    "D": 1.2318,
-   "bL": -3.892,
+   "bL": -1.386,
    "knobs": {
-    "phrase": 44,
-    "letters": 9,
+    "id": "p29",
+    "phrase": 29,
+    "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.855,
+     "p": 0.5875,
      "ci": [
-      0.8171,
-      0.8861
+      0.5594,
+      0.615
      ],
-     "acc": 0.9183,
-     "msMedian": 30503,
-     "p3": 0.9975
+     "acc": 0.6899,
+     "msMedian": 34712,
+     "p3": 0.9133
     },
     "median": {
-     "p": 0.98,
+     "p": 0.8,
      "ci": [
-      0.961,
-      0.9898
+      0.7764,
+      0.8217
      ],
-     "acc": 0.9931,
-     "msMedian": 23740,
-     "p3": 1
+     "acc": 0.8663,
+     "msMedian": 26319,
+     "p3": 0.9925
     },
     "skilled": {
-     "p": 0.9875,
+     "p": 0.895,
      "ci": [
-      0.9711,
-      0.9946
+      0.8764,
+      0.9111
      ],
-     "acc": 0.9958,
-     "msMedian": 21882,
-     "p3": 1
+     "acc": 0.9242,
+     "msMedian": 23602,
+     "p3": 0.9992
     }
    }
   },
   {
    "L": 46,
    "kind": "breather",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7082,
    "D": 1.2457,
-   "bL": -3.771,
+   "bL": -2.254,
    "knobs": {
-    "phrase": 45,
-    "letters": 9,
+    "id": "p28",
+    "phrase": 28,
+    "letters": 8,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.9375,
+     "p": 0.6875,
      "ci": [
-      0.9094,
-      0.9573
+      0.6607,
+      0.7131
      ],
-     "acc": 0.9636,
-     "msMedian": 25996,
-     "p3": 1
+     "acc": 0.8035,
+     "msMedian": 33764,
+     "p3": 0.9733
     },
     "median": {
-     "p": 0.9775,
+     "p": 0.905,
      "ci": [
-      0.9578,
-      0.9881
+      0.8871,
+      0.9203
      ],
-     "acc": 0.9867,
-     "msMedian": 18687,
+     "acc": 0.9449,
+     "msMedian": 23855,
      "p3": 1
     },
     "skilled": {
-     "p": 0.9975,
+     "p": 0.965,
      "ci": [
-      0.986,
-      0.9996
+      0.953,
+      0.974
      ],
-     "acc": 0.9983,
-     "msMedian": 16784,
+     "acc": 0.9799,
+     "msMedian": 20746,
      "p3": 1
     }
    }
@@ -2178,44 +2253,45 @@
   {
    "L": 47,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7059,
    "D": 1.2594,
-   "bL": -4.885,
+   "bL": -2.419,
    "knobs": {
-    "phrase": 46,
-    "letters": 9,
+    "id": "p30",
+    "phrase": 30,
+    "letters": 7,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.95,
+     "p": 0.745,
      "ci": [
-      0.924,
-      0.9674
+      0.7196,
+      0.7689
      ],
-     "acc": 0.9678,
-     "msMedian": 24378,
-     "p3": 1
+     "acc": 0.8169,
+     "msMedian": 31166,
+     "p3": 0.9792
     },
     "median": {
-     "p": 0.9925,
+     "p": 0.9183,
      "ci": [
-      0.9782,
-      0.9974
+      0.9015,
+      0.9325
      ],
-     "acc": 0.9961,
-     "msMedian": 18211,
-     "p3": 1
+     "acc": 0.9476,
+     "msMedian": 24249,
+     "p3": 0.9992
     },
     "skilled": {
-     "p": 0.9975,
+     "p": 0.9758,
      "ci": [
-      0.986,
-      0.9996
+      0.9655,
+      0.9831
      ],
-     "acc": 0.9986,
-     "msMedian": 16557,
+     "acc": 0.9832,
+     "msMedian": 19954,
      "p3": 1
     }
    }
@@ -2223,44 +2299,45 @@
   {
    "L": 48,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7036,
    "D": 1.2731,
-   "bL": -4.028,
+   "bL": -2.143,
    "knobs": {
-    "phrase": 47,
-    "letters": 9,
+    "id": "p12",
+    "phrase": 12,
+    "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.8625,
+     "p": 0.7133,
      "ci": [
-      0.8253,
-      0.8928
+      0.6871,
+      0.7382
      ],
-     "acc": 0.9042,
-     "msMedian": 30796,
-     "p3": 0.9975
+     "acc": 0.7882,
+     "msMedian": 30065,
+     "p3": 0.98
     },
     "median": {
-     "p": 0.9825,
+     "p": 0.895,
      "ci": [
-      0.9643,
-      0.9915
+      0.8764,
+      0.9111
      ],
-     "acc": 0.9858,
-     "msMedian": 23825,
-     "p3": 1
+     "acc": 0.9301,
+     "msMedian": 23136,
+     "p3": 0.9975
     },
     "skilled": {
-     "p": 0.9975,
+     "p": 0.9542,
      "ci": [
-      0.986,
-      0.9996
+      0.9408,
+      0.9646
      ],
-     "acc": 0.9981,
-     "msMedian": 21828,
+     "acc": 0.9689,
+     "msMedian": 20605,
      "p3": 1
     }
    }
@@ -2268,44 +2345,45 @@
   {
    "L": 49,
    "kind": "step",
-   "legacy": true,
+   "legacy": false,
    "pStar": 0.7013,
    "D": 1.2865,
-   "bL": -5.293,
+   "bL": -2.049,
    "knobs": {
-    "phrase": 48,
-    "letters": 11,
+    "id": "p9",
+    "phrase": 9,
+    "letters": 6,
     "maxTries": 6
    },
    "profiles": {
     "weak": {
-     "p": 0.9525,
+     "p": 0.6908,
      "ci": [
-      0.927,
-      0.9694
+      0.6641,
+      0.7163
      ],
-     "acc": 0.9745,
-     "msMedian": 26162,
-     "p3": 1
+     "acc": 0.7535,
+     "msMedian": 30542,
+     "p3": 0.97
     },
     "median": {
-     "p": 0.995,
+     "p": 0.8858,
      "ci": [
-      0.982,
-      0.9986
+      0.8666,
+      0.9026
      ],
-     "acc": 0.9982,
-     "msMedian": 20045,
-     "p3": 1
+     "acc": 0.9112,
+     "msMedian": 23446,
+     "p3": 0.9992
     },
     "skilled": {
-     "p": 1,
+     "p": 0.9592,
      "ci": [
-      0.9905,
-      1
+      0.9464,
+      0.969
      ],
-     "acc": 1,
-     "msMedian": 18838,
+     "acc": 0.9679,
+     "msMedian": 20843,
      "p3": 1
     }
    }

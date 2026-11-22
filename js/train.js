@@ -9,15 +9,18 @@ const { DIRS, mulberry32, shuffle, shade, rr, stationsFor, pointAt, strokeEdge, 
 const BB = window.BB;
 // Level parameters come from the shared difficulty table (js/difficulty.js + js/levels/train.js).
 // The reference is kept, so a later reload of difficulty.js by another script cannot drop train's table.
-// L1..11 there equal the old formulas exactly (E3). If the table failed to load (e.g. an old offline
-// cache), the game falls back to those formulas and its old 11 levels.
+// Table v2 (2026-11-21) retunes L1..30 on the shared sawtooth. If the table failed to load (e.g. an old
+// offline cache), the game falls back to the v1 formulas and its old 11 levels.
 const BBD = window.BBD && window.BBD.games().includes('train') ? window.BBD : null;
 const legacySpec = lv => ({ stations: stationsFor(lv), base: Math.max(1.8, 2.6 - 0.075*(lv-1)) * (0.75 / 0.45),
   speedF: 0.45, burstP: 0.15 });
 const specFor = lv => BBD ? BBD.level('train', lv) : legacySpec(lv);
 const LV_MAX = BBD ? BB.setLvMax('train', BBD.maxLevel('train')) : BB.LV_MAX.train;   // 30 (11 without the table)
+// Once per table version, before anything reads gameStats: moves stored stars to the current table.
+// v1 → v2 keeps level numbers, so the data stays as it is and only the marker bb_tablev_train is written.
+if (BBD && BB.migrateProgress) BB.migrateProgress('train');
 const gaOf = lv => specFor(lv).stations;
-const LEVEL_TIME = 90;               // 90 giây ra tàu + đếm ngược + chờ tàu cuối ≈ 1p40–1p50 mỗi round
+const LEVEL_TIME = 90;               // 90 giây ra tàu + đếm ngược + chờ tàu cuối ≈ 1p50–2p mỗi round
 
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
@@ -95,7 +98,7 @@ function layout(){
   ox = (W - (C-1)*cell) / 2;
   oy = (H - (R-1)*cell) / 2;
   TR = cell * 0.48;
-  speed = cell * 2.6 * spec.speedF;   // 0.45 ở mọi level hiện có
+  speed = cell * 2.6 * spec.speedF;   // bảng v2: 0.28 ở mọi level (v1: 0.45)
   map.switches.forEach(s => s.px = toPx(s.g));
   map.stations.forEach(s => s.px = toPx(s.g));
   const T = map.tunnel; T.px = toPx(T.g);
@@ -626,8 +629,10 @@ function endLevel(){
 // One line about what the next level changes (feedforward, MERGED-SPEC §4.1).
 function nextHint(lv){
   const a = specFor(lv), b = specFor(lv + 1);
+  if (b.kind === 'breather' && b.base > a.base + 1e-9)
+    return b.stations !== a.stations ? `Level ${lv+1} là màn nghỉ: ${b.stations} ga, tàu ra thưa hơn.` : `Level ${lv+1} là màn nghỉ: tàu ra thưa hơn.`;
   if (b.stations !== a.stations) return `Level ${lv+1} có ${b.stations} ga.`;
-  if (b.base > a.base + 1e-9) return `Level ${lv+1} là màn nghỉ: tàu ra thưa hơn.`;
+  if (b.base > a.base + 1e-9) return `Level ${lv+1}: tàu ra thưa hơn.`;
   if (b.base < a.base - 1e-9 || b.burstP > a.burstP + 1e-9) return `Level ${lv+1}: tàu ra dày hơn.`;
   return `Level ${lv+1} có ${b.stations} ga.`;
 }
@@ -637,7 +642,7 @@ function renderLevels(){
   const grid = $('lvgrid'), st = BB.gameStats('train').stars;
   grid.innerHTML = '';
   for (let lv = 1; lv <= LV_MAX; lv++){
-    const n = st[lv] || 0, done = n > 0 || lv <= legacyDone;
+    const n = (BB.starsAt ? BB.starsAt('train', lv) : st[lv]) || 0, done = n > 0 || lv <= legacyDone;
     const el = document.createElement('button');
     el.type = 'button';
     // "done" chỉ cho level đã thật sự qua, không suy từ level cao nhất (RTD-09); dữ liệu cũ thì giữ như bản cũ
@@ -671,6 +676,10 @@ const rule = document.createElement('p');
 rule.className = 'note rtd-rule'; rule.id = 'rRule';
 rule.textContent = '80%: 1 sao · 90%: 2 sao · 100%: 3 sao';
 $('rStars').after(rule);
+// The menu line in index.html said "mỗi level thêm 1 ga"; table v2 holds the count on some levels, so say
+// only what stays true (first and last count come from the table).
+const howGa = document.querySelector('#menu .how > div:last-child > span:last-child');
+if (howGa) howGa.innerHTML = `90 giây ra tàu, đúng <b>≥ 80%</b> để qua. Level 1 có ${gaOf(1)} ga, lên dần tới ${gaOf(LV_MAX)} ga.`;
 
 // Every button ignores taps that arrive in the wrong state, so a double tap cannot start
 // two rounds or skip a level.

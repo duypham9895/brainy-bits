@@ -214,7 +214,9 @@ function mulberry32(a) {
 // ---------- progress ----------
 // Source of truth = an append-only log of finished levels; everything else is derived or cached.
 // bb_log: [{g, lv, won, stars, score, d, ms}]   g = train|koi|mem|rain|word, d = YYYY-MM-DD
-// bb_stats: { [g]: { best: highest level passed, stars: { [lv]: 0..3 } } }
+// bb_stats: { [g]: { best: highest level passed, stars: { [id]: 0..3 } } }   id = level number, or the
+//   table's stable id when it gives one (BBD.levelId; word: "p<phrase>"), so a reorder never moves a star.
+// bb_tablev_<g>: level-table version the stored stars belong to (BB.migrateProgress).
 const GAMES = ['train', 'koi', 'mem', 'rain', 'word'];
 const GAME_NAME = { train: 'Đường Ray', koi: 'Cá Koi', mem: 'Ô Sáng', rain: 'Mưa Phép Tính', word: 'Đoán Cụm Từ' };
 // Level count per game. These are defaults so the hub can render before any game script runs;
@@ -228,22 +230,45 @@ function setLvMax(key, n) {
 }
 const LOG_MAX = 1000;
 
-function stats() { return store.json('bb_stats', {}); }
-function gameStats(g) { const s = stats()[g] || {}; return { best: s.best || 0, stars: s.stars || {} }; }
+const isObj = x => Object.prototype.toString.call(x) === '[object Object]';
+// Corrupt bb_stats ("[]", "5", a string) reads as empty instead of crashing record() in strict mode.
+function stats() { const v = store.json('bb_stats', {}); return isObj(v) ? v : {}; }
+function gameStats(g) {
+  const s = isObj(stats()[g]) ? stats()[g] : {};
+  return { best: Number(s.best) > 0 ? Math.floor(s.best) : 0, stars: isObj(s.stars) ? s.stars : {} };
+}
+// Star key for a level: the table's stable id when BBD has one, else the level number.
+function levelKey(game, level) {
+  try { const B = window.BBD; if (B && B.levelId && B.games().includes(game)) return B.levelId(game, level); } catch (e) {}
+  return level;
+}
+const starsAt = (game, level) => gameStats(game).stars[levelKey(game, level)] || 0;
+// Run once at game load, after js/levels/<g>.js: moves stored progress to the current table version.
+// Idempotent (marker bb_tablev_<g>), never lowers levels passed, never throws. Logic: BBD.progress.run.
+const bbStorage = { getItem: k => store.get(k, null), setItem: (k, v) => store.set(k, v) };
+function migrateProgress(game, opts = {}) {
+  const B = window.BBD;
+  if (!B || !B.progress) return { ran: false, reason: 'no-engine', game };
+  try { return B.progress.run(bbStorage, game, opts); } catch (e) { return { ran: false, reason: 'error', game }; }
+}
 
 // record() returns what changed, so a result screen can celebrate only real news.
-function record({ game, level, won, stars = 0, score = 0, ms = 0 }) {
+// id: stable star key (default BBD.levelId(game, level), which is the level number unless the table sets ids).
+function record({ game, level, won, stars = 0, score = 0, ms = 0, id }) {
+  const key = (typeof id === 'string' && id) || (Number.isInteger(id) && id > 0) ? id : levelKey(game, level);
   const d = dayKey();
   const dl = daily(d);                                       // read before stats change: today's target is fixed
   const log = store.json('bb_log', []);
-  log.push({ g: game, lv: level, won: !!won, stars, score, d, ms: Math.round(ms) });
+  const row = { g: game, lv: level, won: !!won, stars, score, d, ms: Math.round(ms) };
+  if (key !== level) row.id = key;
+  log.push(row);
   if (log.length > LOG_MAX) log.splice(0, log.length - LOG_MAX);
   store.setJson('bb_log', log);
 
-  const all = stats(); const s = all[game] || (all[game] = { best: 0, stars: {} });
-  s.stars = s.stars || {};
-  const prevStars = s.stars[level] || 0, prevBest = s.best || 0;
-  if (won && stars > prevStars) s.stars[level] = stars;
+  const all = stats(); const s = isObj(all[game]) ? all[game] : (all[game] = { best: 0, stars: {} });
+  if (!isObj(s.stars)) s.stars = {};
+  const prevStars = s.stars[key] || 0, prevBest = s.best || 0;
+  if (won && stars > prevStars) s.stars[key] = stars;
   if (won && level > prevBest) s.best = level;
   store.setJson('bb_stats', all);
 
@@ -271,6 +296,30 @@ function totalStars() {
   return Object.values(stats()).reduce((a, s) => a + Object.values(s.stars || {}).reduce((x, y) => x + y, 0), 0);
 }
 
+// Progress registry. bb_stats[g].best is the highest level NUMBER won; that counts levels passed only while the
+// level order never changes. A game whose order changed (word, table v2: phrases reordered) registers how it
+// counts: fn() → { done: levels passed, next: next level to play, best: highest level passed in today's order }.
+// Hub, daily challenge and share text read progressOf(); unregistered games fall back to `best` as before.
+const progressFns = new Map();
+function setProgress(game, fn) {
+  if (!GAMES.includes(game) || typeof fn !== 'function') return false;
+  progressFns.set(game, fn);
+  return true;
+}
+const wholeIn = (v, lo, hi) => { const n = Math.floor(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : null; };
+function progressOf(game) {
+  const max = LV_MAX[game], fn = progressFns.get(game);
+  if (fn) {
+    try {
+      const p = fn() || {};
+      const done = wholeIn(p.done, 0, max), next = wholeIn(p.next, 1, max), best = wholeIn(p.best, 0, max);
+      if (done !== null && next !== null) return { done, next, best: best === null ? done : best, registered: true };
+    } catch (e) { /* a broken counter must not break the hub: fall back to best */ }
+  }
+  const best = gameStats(game).best;
+  return { done: Math.min(max, best), next: Math.min(max, Math.max(1, best + 1)), best, registered: false };
+}
+
 // Daily challenge: same game for everyone on the same local day. The level is one step past the
 // player's own best (bounded), frozen for the day the first time it is read so it cannot drift.
 function daily(date = dayKey()) {
@@ -279,7 +328,7 @@ function daily(date = dayKey()) {
   const game = GAMES[Math.floor(rnd() * GAMES.length)];
   let pin = store.json('bb_daily_pin', null);
   if (!pin || pin.date !== date) {
-    pin = { date, level: Math.min(LV_MAX[game], Math.max(1, gameStats(game).best + 1)) };
+    pin = { date, level: progressOf(game).next };
     store.setJson('bb_daily_pin', pin);
   }
   return { date, idx, game, level: pin.level, done: store.get('bb_daily_done') === date };
@@ -290,9 +339,9 @@ function shareText() {
   const dl = daily();
   const lines = [`Brainy Bits #${dl.idx}`, `Chuỗi ${dayStreak()} ngày · ${totalStars()} sao`];
   for (const g of GAMES) {
-    const s = gameStats(g); if (!s.best) continue;
-    const st = s.stars[s.best] || 0;
-    lines.push(`${GAME_NAME[g]}: Lv ${s.best} (${st}/3 ★)`);
+    const lv = progressOf(g).best; if (!lv) continue;
+    const st = starsAt(g, lv);                                // stars of the level named, by its stable key
+    lines.push(`${GAME_NAME[g]}: Lv ${lv} (${st}/3 ★)`);
   }
   if (dl.done) lines.push('Đã xong thử thách hôm nay');
   lines.push(location.origin + location.pathname);
@@ -310,14 +359,17 @@ async function share() {
 const LEGACY_KEYS = ['rtd_best3', 'koi_lv2', 'koi_best', 'mem_lv', 'rain_lv', 'word_lv'];
 // One-time seed flags (bb_seeded_v1 in hub.js, bb_seed_mem / bb_seed_rain in the games, any later
 // version): all start with "bb_seed", so they are found by prefix instead of a list that can go stale.
-const SEED_PREFIX = 'bb_seed';
-function seedKeys() {
-  const ks = new Set([...mem.keys()].filter(k => k.startsWith(SEED_PREFIX)));
-  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(SEED_PREFIX)) ks.add(k); } } catch (e) {}
+// Table-version markers (bb_tablev_<g>, BBD.progress) go too: a marker left over an empty bb_stats, e.g. a newer
+// one after a downgrade, would skip the migration of whatever is stored next.
+const SEED_PREFIX = 'bb_seed', TABLEV_PREFIX = 'bb_tablev_';
+function prefixKeys(prefix) {
+  const ks = new Set([...mem.keys()].filter(k => k.startsWith(prefix)));
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(prefix)) ks.add(k); } } catch (e) {}
   return [...ks];
 }
 function resetAll() {
-  ['bb_log', 'bb_stats', 'bb_streak_cache', 'bb_daily_done', 'bb_daily_pin', ...LEGACY_KEYS, ...seedKeys()].forEach(store.del);
+  ['bb_log', 'bb_stats', 'bb_streak_cache', 'bb_daily_done', 'bb_daily_pin', ...LEGACY_KEYS,
+    ...prefixKeys(SEED_PREFIX), ...prefixKeys(TABLEV_PREFIX)].forEach(store.del);
 }
 
 // ---------- accessible overlays ----------
@@ -365,7 +417,7 @@ const takeRequest = key => { if (pending && pending.key === key) { const l = pen
 
 window.BB = {
   store, settings, motion, EASE, tone, sfx, haptic, countUp, shake, pop, trauma, hitStop, frozen,
-  celebrate, toast, record, gameStats, stats, totalStars, dayStreak, daily, shareText, share, resetAll,
+  celebrate, toast, record, gameStats, stats, starsAt, levelKey, migrateProgress, setProgress, progressOf, totalStars, dayStreak, daily, shareText, share, resetAll,
   dayKey, mulberry32, onLeave, leave, request, takeRequest, LV_MAX, setLvMax, GAME_NAME, GAMES, wireOverlays,
   get pendingSfx() { return sfxTimers.size; },
 };

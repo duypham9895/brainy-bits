@@ -45,7 +45,9 @@ that merges only when every check is green. If one game's new level cannot be ma
 
 - `docs/DIFFICULTY-RULES.md`: the rule for extending levels and the context of every game.
 - `gates/01-spec/DIFFICULTY-DECISIONS.md`: owner decisions E1-E5 and their current answers. Respect them
-  (e.g. E3 legacy levels frozen, E5 knobs only, no new game rules).
+  (E5 knobs only, no new game rules). E3 was lifted on 2026-11-21: shipped levels MAY be retuned, but only in
+  a separate reviewed PR that bumps the table `version` and migrates progress (rules file §5). The daily run
+  never does that: it only appends.
 - `js/difficulty.js` (`BBD.level`, `BBD.maxLevel`, `BBD.exhausted`, `BBD.D`, `BBD.pStar`) and each
   `js/levels/<game>.js`, plus the last 5 levels of each game and their calibration in
   `docs/difficulty/calibration-<game>.json`.
@@ -57,27 +59,41 @@ that merges only when every check is green. If one game's new level cannot be ma
 
 ## 2. Departments, in this order (one section each in the run report)
 
-1. **PM**: state today's target for each game: new level number L = maxLevel + 1, its kind from the
-   sawtooth (peak at 5k, breather at 5k+1, else step), the target pass rate `BBD.pStar(L)`.
-   Stop rules: if `BBD.exhausted(game, L)` is true (every knob at its hardCap), do NOT invent a harder
+1. **PM**: state today's target for each game: new level number L = maxLevel + 1, its kind from
+   `BBD.kind(L)` (peak at 5k and breather at 5k+1 from L10 on, else step; L1-9 are all steps, no peak at L5),
+   the target pass rate `BBD.pStar(L)`.
+   Stop rules: if `BBD.exhausted(game, L)` is true (every knob at its hardCap, or for koi (`strictPeaks`) a
+   generated peak that is not harder than the peak before it), do NOT invent a harder
    level: skip that game and add it to "needs Duy" (a new mechanic or knob is an owner decision, E5).
    Global cap: if any game would exceed 100 levels, skip it and ask Duy (the level grid and pacing were
    designed for far fewer).
 2. **Game design** (train, koi, mem, rain): extend the knob table in `js/levels/<game>.js` by exactly one
-   level using the engine formula and priority order. Change at most 1-2 knobs versus the previous level;
-   breathers ease the main knob; peaks push one notch. Never edit an existing level (stars are stored per
-   level number). Respect every hardCap and the human limits cited in the rules file
+   level: raise `maxLevel` by one and let the engine generate it from the formula and priority order; add a
+   hand-written row at the end of `levels` only if the generated one fails a gate. A knob `start` only applies
+   while `levels` has exactly `startAt` rows: after you append a row, the next generated level anchors on your
+   row, so check it with `BBD.level` and set a new `start`/`startAt` if your row is a peak. Change at most 1-2 knobs
+   versus the previous level; breathers ease the main knob (and may add a life or cut the target, E4); peaks
+   push one notch. Never edit an existing row in `levels`, never change `version`: stars and "levels passed"
+   are keyed to shipped levels, and a retune needs a migration this run is not allowed to write. Respect every hardCap and the human limits cited in the rules file
    (working memory ~4, tracking ~4 objects, touch targets >= 44 px at 320 px wide).
-3. **Content** (word only): add one new two-word Vietnamese phrase as the next level. Requirements: a real,
+3. **Content** (word only): add one new two-word Vietnamese phrase as the next level, appended at the end of
+   the play order with a new stable id (`'p' + phrase index`); never reorder existing phrases. Requirements: a real,
    common phrase a Vietnamese adult knows; correct spelling and tone marks in NFC; passes the game's
    `validSyllable()` and `tonePos()`; not already in the list; no word shared with the previous level;
    a topic hint that does not contain or reveal any word of the answer and names the right category;
    difficulty a little above the previous level (length, tone complexity, frequency). Apply
    `anti-ai-writing` to the hint. No proper nouns, brands, politics, religion or anything offensive.
-4. **Data / calibration**: run `node scripts/sim/calibrate.mjs <game>` for every changed game. Every gate
-   must pass for the new level (median-profile pass rate inside the band around p*, monotonic except
-   breathers, weak-profile breathers >= 60%, skilled can finish). If a gate fails, adjust only the new
-   level's knobs and rerun (max 5 attempts per game); if it still fails, revert that game and report.
+4. **Data / calibration**: run `node scripts/sim/calibrate.mjs <game> --from <L-4> --to <L> --n 1200`
+   (koi `--n 2000`) for every changed game. Rain: once `L` goes past 30, run with `--n 4000` instead of 1200
+   (same `--from <L-4>` window) — a bigger N narrows gate G2's tolerance, so this is stricter, not looser.
+   **The new level L must keep every gate green**: B, G1-G6 and G8 pass (G7 stays SKIP) and the command exits 0.
+   Word: gate B is waived (Duy 2026-11-21); the run prints `WAIVED: B (not passed)` and exits 0. Report it as
+   WAIVED, never as PASS; G1-G6 and G8 must still pass.
+   train, koi, mem and rain pass every gate (word: every gate but B, which is WAIVED) on every shipped level today (gate B is one-sided on L1-9 and on every
+   breather, `B_EASY_OK_BEFORE_SAW` / `BREATHER_EASY_OK`, rules file §2-3), and CI blocks on all five, so any
+   miss there fails the PR. For every game, judge the new level by its own lines: L must not appear in any
+   gate's miss list. If a gate fails, adjust only the new level's knobs and rerun (max 5 attempts per game); if
+   it still fails, revert that game and report.
    Never loosen a gate, never edit the simulator or adapters to make a level pass.
 5. **SWE**: if the game reads levels through `BBD`, no code change should be needed. If the level grid,
    result screen or "next level" flow needs a change to show the new level, keep it minimal and covered
@@ -142,6 +158,6 @@ from the branch and merge the rest. Never merge over a BLOCK. If `claude` is una
 
 ## Hard limits
 
-One level per game per day, never more. Never edit existing levels, gates, simulator, adapters,
+One level per game per day, never more. Never edit existing levels or a table `version`, gates, simulator, adapters,
 `reference/original.html`, or the decisions file. Never push to `main` or bypass hooks. Never add tracking,
 third-party scripts or assets. Never guess: when unsure about one game, skip that game and log why. Never ask the owner to do anything.

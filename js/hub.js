@@ -44,7 +44,11 @@ function seedFromLegacy() {
   BB.store.set(SEED_FLAG, '1');
 }
 
+// Levels passed. A game that registered its own count (BB.setProgress: word, whose order changed in table v2)
+// is read from there; the others keep best (and the old per-game keys) as before.
 function bestOf(key) {
+  const p = BB.progressOf ? BB.progressOf(key) : null;
+  if (p && p.registered) return p.done;
   return Math.min(BB.LV_MAX[key], Math.max(BB.gameStats(key).best, legacyBest(key)));
 }
 function starsOf(key) {
