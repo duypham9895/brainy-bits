@@ -1,6 +1,6 @@
 // Đường Ray Tư Duy: 30 levels from the shared difficulty table (js/difficulty.js + js/levels/train.js).
 // Table v2 (2026-11-21, E3 lifted): L1..30 are authored on the shared sawtooth; old progress keys must still count.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function openTrain(page, init) {
   const errors = [];

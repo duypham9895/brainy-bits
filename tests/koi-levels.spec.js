@@ -2,7 +2,7 @@
 // index.html gets those script tags from the integrator; until then this file adds them to the
 // served page (before core.js) so the test runs against the integrated game either way.
 // window.__koi exists only when the init script sets window.__BB_TEST__.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function withEngine(page) {
   await page.route(url => url.pathname === '/' || url.pathname === '/index.html', async route => {

@@ -1,6 +1,6 @@
 // Ô Sáng Ghi Nhớ: regression tests for MEM-1..MEM-4, the missed-list items and the reward layer.
 // Uses Playwright's fake clock so the multi-second "show" phases run instantly.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function open(page, { lv } = {}) {
   await page.clock.install();

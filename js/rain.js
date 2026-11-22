@@ -305,15 +305,20 @@ function loop(ts){
 }
 function startLoop(){ if (running) return; running = true; lastT = 0; requestAnimationFrame(loop); }
 
+const MIN_PLAY_H = 160;
 function resize(){
   const r = cv.getBoundingClientRect();
   if (!r.width || !r.height) return;
-  const oldW = W;
+  const oldW = W, oldH = H;
   dpr = Math.min(window.devicePixelRatio || 1, 3);
   W = r.width; H = r.height;
   cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
   // y tự co giãn theo p; x giữ đúng tỉ lệ ngang rồi kẹp trong màn hình
+  // Khung thấp đi thì mặt nước nâng lên: giọt nào giờ đã chạm vạch trượt thì lùi lại ngay trên vạch,
+  // để đổi cỡ cửa sổ không bao giờ tự làm mất mạng.
+  const pLine = (waterY() - 12 + 30) / (waterY() + 30) - 0.05;
   drops.forEach(d => {
+    if (H < oldH && d.p > pLine) d.p = Math.max(0, pLine);
     if (oldW > 0) d.x *= W/oldW;
     const half = d.w/2 + 8;
     d.x = W > 2*half ? Math.max(half, Math.min(W - half, d.x)) : W/2;
@@ -321,8 +326,10 @@ function resize(){
   parts = [];
   // Xoay máy hoặc khung chơi đổi dáng giữa ván: tạm dừng để người chơi định thần lại.
   // Xét cả viewport lẫn canvas: ở 320px dọc canvas đã W > H, nên xoay máy không làm canvas đổi dáng.
-  const land = innerWidth > innerHeight, cl = W > H;
-  if (landscape !== null && (land !== landscape || cl !== cvLand) && state === 'play') pause();
+  // Thêm: canvas vừa tụt xuống dưới MIN_PLAY_H (cửa sổ chia đôi, kéo nhỏ dần) cũng tạm dừng. Đo theo
+  // ngưỡng tuyệt đối, không theo tỉ lệ: thanh công cụ Safari/Chrome hiện ra (~60-80 px) không làm dừng ván.
+  const land = innerWidth > innerHeight, cl = W > H, shrunk = oldH >= MIN_PLAY_H && H < MIN_PLAY_H;
+  if (landscape !== null && (land !== landscape || cl !== cvLand || shrunk) && state === 'play') pause();
   landscape = land; cvLand = cl;
   // Đổi cỡ canvas xoá trắng nó; khi vòng lặp đang dừng (tạm dừng) thì tự vẽ lại một khung.
   if (!running && W && window.APP && window.APP.active === 'rain') draw(0);

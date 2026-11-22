@@ -1,5 +1,5 @@
 // Mưa Phép Tính: regression tests for RAIN-1..4, the missed items and the reward layer.
-import { test, expect } from '@playwright/test';
+import { test, expect, muteAudio } from './fixtures.js';
 
 async function openRain(page, setup) {
   if (setup) await page.addInitScript(setup);
@@ -287,6 +287,7 @@ test('long equations widen the drop instead of overflowing it', async ({ page })
 for (const vp of [{ width: 667, height: 375 }, { width: 844, height: 390 }]) {
   test(`RESP: phone landscape ${vp.width}x${vp.height} puts canvas left, pad right, drops inside`, async ({ browser }) => {
     const ctx = await browser.newContext({ viewport: vp, hasTouch: true, isMobile: true });
+    await ctx.addInitScript(muteAudio);
     const page = await ctx.newPage();
     await openRain(page);
     await startAt(page, 1);
@@ -311,6 +312,7 @@ for (const vp of [{ width: 667, height: 375 }, { width: 844, height: 390 }]) {
 
 test('RESP: laptop 1920 caps the play column at 600 px', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await ctx.addInitScript(muteAudio);
   const page = await ctx.newPage();
   await openRain(page);
   await startAt(page, 1);
@@ -327,6 +329,7 @@ test('RESP: laptop 1920 caps the play column at 600 px', async ({ browser }) => 
 
 test('RAIN-1: rotating a 320 phone to landscape pauses even though the canvas was already wider than tall', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true });
+  await ctx.addInitScript(muteAudio);
   const page = await ctx.newPage();
   await openRain(page);
   await startAt(page, 1);
@@ -470,4 +473,50 @@ test('pause, quit to the menu and start again: drops keep falling', async ({ pag
     setTimeout(() => { window.requestAnimationFrame = orig; res(n); }, 1500);
   }));
   expect(frames, 'game loop runs after Pause -> Quit -> Start').toBeGreaterThan(20);
+});
+
+test('QA: a short portrait window pauses the round and keeps a usable canvas (WebKit 390x664 -> 412x420)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 664 });
+  await openRain(page);
+  await startAt(page, 1);
+  await page.evaluate(() => window.__rainTest.spawnDrop(77, 0.8));
+  await page.setViewportSize({ width: 412, height: 420 });
+  await expect(page.locator('#rpaused')).toBeVisible();
+  const s = await dbg(page);
+  expect(s.misses).toBe(0);
+  expect(s.H).toBeGreaterThan(90);            // compact keypad: was 52px, drops hit the water at once
+  await page.click('#rResume');
+  await page.waitForTimeout(100);
+  expect((await dbg(page)).misses).toBe(0);
+});
+
+test('QA: a browser toolbar appearing (390x745 -> 390x664) does not pause the round', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 745 });
+  await openRain(page);
+  await startAt(page, 1);
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.waitForTimeout(200);
+  expect((await dbg(page)).state).toBe('play');
+});
+
+test('QA: shrinking the window step by step still pauses once the canvas gets too small', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 664 });
+  await openRain(page);
+  await startAt(page, 1);
+  for (let h = 649; h >= 420; h -= 15) await page.setViewportSize({ width: 390, height: h });
+  await expect(page.locator('#rpaused')).toBeVisible();
+});
+
+test('QA: a drop close to the water survives a sharp shrink and the resume after it', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 664 });
+  await openRain(page);
+  await startAt(page, 1);
+  await page.evaluate(() => window.__rainTest.spawnDrop(77, 0.92));
+  await page.setViewportSize({ width: 412, height: 420 });
+  await expect(page.locator('#rpaused')).toBeVisible();
+  await page.click('#rResume');
+  await page.waitForTimeout(100);
+  const s = await dbg(page);
+  expect(s.misses).toBe(0);
+  expect(s.drops.some(d => d.ans === 77)).toBe(true);
 });

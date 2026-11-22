@@ -1,6 +1,6 @@
 // Cá Koi: lỗi đã sửa theo audit 2026-11-20 (KOI-01..07, OPS-4, OPS-6) và phần thưởng (sao, kỷ lục).
 // window.__koi chỉ tồn tại khi init script đặt window.__BB_TEST__.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function openKoi(page, storage = {}) {
   const errors = [];

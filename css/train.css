@@ -14,11 +14,11 @@
    wrapping and shrinking the map mid-round. :root matches app.css's own compact rule, which wins
    otherwise. The drain pill shows "⏳ 3" here; .rtd-sr keeps "Chờ 3 tàu" for screen readers. */
 @media (max-width:430px){
-  :root #trainApp #hud{gap:5px;padding-left:10px;padding-right:10px}
+  :root #trainApp #hud{gap:5px;padding-left:max(10px, env(safe-area-inset-left));padding-right:max(10px, env(safe-area-inset-right))}
   :root #trainApp #hud .pill{font-size:13px;padding:4px 7px}
 }
 @media (max-width:359px){
-  :root #trainApp #hud{gap:4px;padding-left:8px;padding-right:8px}
+  :root #trainApp #hud{gap:4px;padding-left:max(8px, env(safe-area-inset-left));padding-right:max(8px, env(safe-area-inset-right))}
   :root #trainApp #hud .pill{font-size:12px;padding:4px 6px}
 }
 #trainApp .rtd-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}

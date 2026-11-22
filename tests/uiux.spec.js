@@ -1,7 +1,7 @@
 // UI/UX craft and accessibility gate: contrast (WCAG AA + 1.4.11), touch targets,
 // zero horizontal overflow, focus rings, reduced motion, OS text-scale opt-in,
 // and regression checks for the fixed menu/result/display bugs.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 const PROGRESS_FIXTURE = {
   bb_stats: JSON.stringify({
@@ -338,8 +338,9 @@ test('Reduced motion keeps fade-only cards and stops hub entrance/caret/toast sl
 
   await page.goto('/#chu');
   await page.click('#wStart');
-  const caretAnim = await page.evaluate(() => getComputedStyle(document.querySelector('#wBoard .wcell.caret')).animationName);
-  expect(caretAnim).toBe('none');
+  const caretAnim = await page.evaluate(() => { const c = document.querySelector('#wBoard .wcell.caret');
+    return [getComputedStyle(c).animationName, getComputedStyle(c, '::after').animationName]; });
+  expect(caretAnim).toEqual(['none', 'none']);   // the pulse lives on ::after since the QA pass
 });
 
 test('Zero horizontal overflow across 320, 390, 768 and 1440 on Hub, Settings and Menus', async ({ page }) => {

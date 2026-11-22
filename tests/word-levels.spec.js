@@ -2,7 +2,7 @@
 // bằng bot, sao lưu theo mã cụm "p<chỉ số>". Tiến độ cũ (word_lv, sao theo số level của thứ tự cũ) được dời sang đúng
 // cụm đã chơi, số level đã qua không giảm. Màn 30 chơi được và đi tiếp được, màn cuối là phá đảo.
 // index.html đã có thẻ <script>; withBBD chỉ chèn khi một bản index cũ thiếu chúng (không sửa index.html).
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 async function withBBD(page) {
   await page.route(u => u.pathname === '/' || u.pathname === '/index.html', async route => {

@@ -1,6 +1,6 @@
 // Core (js/core.js), service worker and vendored licences. One test per review finding from
 // docs/reviews/pr2-neon-round1.md that lands in a core-owned file (1, 2, 3, 4, 12, 14).
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';

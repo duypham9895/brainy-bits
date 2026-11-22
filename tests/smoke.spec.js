@@ -1,6 +1,6 @@
 // Smoke test: every game opens from the hub, starts, and returns home without a page error.
 // It proves the export runs outside claude.ai; it does not judge gameplay.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.js';
 
 const GAMES = [
   { open: '#openTrain', menu: '#menu', start: '#startBtn', wait: 4500, pause: '#pauseBtn', quit: '#quitBtn' },
