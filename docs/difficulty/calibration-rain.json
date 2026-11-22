@@ -2,7 +2,7 @@
  "game": "rain",
  "n": 1200,
  "from": 1,
- "to": 30,
+ "to": 31,
  "simVersion": 1,
  "generatedOn": "2026-11-22",
  "config": {
@@ -1532,6 +1532,54 @@
      ],
      "acc": 0.9664,
      "msMedian": 63903,
+     "p3": 1
+    }
+   }
+  },
+  {
+   "L": 31,
+   "kind": "breather",
+   "legacy": false,
+   "pStar": 0.7471,
+   "D": 1.0171,
+   "bL": -4.185,
+   "knobs": {
+    "ops": 14,
+    "fall": 8.68,
+    "every": 3.25,
+    "target": 10,
+    "lives": 4,
+    "storm": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6992,
+     "ci": [
+      0.6726,
+      0.7244
+     ],
+     "acc": 0.9138,
+     "msMedian": 35132,
+     "p3": 0.9892
+    },
+    "median": {
+     "p": 0.985,
+     "ci": [
+      0.9764,
+      0.9905
+     ],
+     "acc": 0.9447,
+     "msMedian": 32606,
+     "p3": 1
+    },
+    "skilled": {
+     "p": 0.9983,
+     "ci": [
+      0.9939,
+      0.9995
+     ],
+     "acc": 0.9675,
+     "msMedian": 31790,
      "p3": 1
     }
    }

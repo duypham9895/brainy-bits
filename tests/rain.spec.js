@@ -225,9 +225,9 @@ test('three misses lose the round with 0 stars and the lives pill reaches 0', as
   await expect(page.locator('#rLives')).toHaveAttribute('aria-label', 'Còn 0 mạng');
 });
 
-test('passing the last level (L30) shows a finished state, records stars, never offers Level 31', async ({ page }) => {
-  await openRain(page, () => { localStorage.setItem('rain_lv', '30'); });
-  await startAt(page, 30);
+test('passing the last level (L31) shows a finished state, records stars, never offers Level 32', async ({ page }) => {
+  await openRain(page, () => { localStorage.setItem('rain_lv', '31'); });
+  await startAt(page, 31);
   // giải nhanh mọi giọt: cài thẳng đáp án vào ô nhập
   for (let i = 0; i < 160; i++) {
     const s = await dbg(page);
@@ -238,15 +238,15 @@ test('passing the last level (L30) shows a finished state, records stars, never 
     await page.keyboard.press('Enter');
   }
   await expect(page.locator('#rresult')).toBeVisible();
-  await expect(page.locator('#rrTitle')).toContainText('Xong cả 30 level');
-  await expect(page.locator('#rrNext')).toHaveText('Chơi lại Level 30');
+  await expect(page.locator('#rrTitle')).toContainText('Xong cả 31 level');
+  await expect(page.locator('#rrNext')).toHaveText('Chơi lại Level 31');
   await expect(page.locator('#rrStars')).toHaveAttribute('aria-label', '3 trên 3 sao');
   const st = await page.evaluate(() => ({ lv: localStorage.getItem('rain_lv'), g: window.BB.gameStats('rain') }));
-  expect(st.lv).toBe('31');
-  expect(st.g.best).toBe(30);
-  expect(st.g.stars['30']).toBe(3);
+  expect(st.lv).toBe('32');
+  expect(st.g.best).toBe(31);
+  expect(st.g.stars['31']).toBe(3);
   await page.click('#rrNext');
-  expect((await dbg(page)).level).toBe(30);
+  expect((await dbg(page)).level).toBe(31);
 });
 
 test('legacy rain_lv seeds BB stats and stays readable; corrupt values are clamped', async ({ page }) => {
@@ -256,8 +256,8 @@ test('legacy rain_lv seeds BB stats and stays readable; corrupt values are clamp
   await expect(page.locator('#rBestTxt')).toHaveText('Đã qua tới Level 5');
   await page.evaluate(() => localStorage.setItem('rain_lv', '99'));
   await page.evaluate(() => window.rainEnter());
-  await expect(page.locator('#rBestTxt')).toHaveText('Đã qua cả 30 level');
-  await expect(page.locator('#rlvgrid .lv')).toHaveCount(30);
+  await expect(page.locator('#rBestTxt')).toHaveText('Đã qua cả 31 level');
+  await expect(page.locator('#rlvgrid .lv')).toHaveCount(31);
 });
 
 test('daily challenge hand-off starts the requested level directly', async ({ page }) => {
