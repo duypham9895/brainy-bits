@@ -2,7 +2,7 @@
  "game": "word",
  "n": 1200,
  "from": 1,
- "to": 49,
+ "to": 50,
  "simVersion": 1,
  "generatedOn": "2026-11-22",
  "config": {
@@ -60,7 +60,8 @@
     "L45 median 0.8 vs p* 0.651",
     "L47 median 0.9183 vs p* 0.706",
     "L48 median 0.895 vs p* 0.704",
-    "L49 median 0.8858 vs p* 0.701"
+    "L49 median 0.8858 vs p* 0.701",
+    "L50 median 0.8592 vs p* 0.650"
    ],
    "note": "WAIVED: Duy 2026-11-21 (3): content-only game, no knob; with 6 tries and the hint open at once the bot median sits 7–22 points above p* on every level, and those bot parameters are not yet checked against real players (G7 SKIP). Rules stay as they are; revisit when G7 data exists.",
    "waived": true,
@@ -2385,6 +2386,52 @@
      "acc": 0.9679,
      "msMedian": 20843,
      "p3": 1
+    }
+   }
+  },
+  {
+   "L": 50,
+   "kind": "peak",
+   "legacy": false,
+   "pStar": 0.65,
+   "D": 1.2999,
+   "bL": -1.809,
+   "knobs": {
+    "id": "p49",
+    "phrase": 49,
+    "letters": 7,
+    "maxTries": 6
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.6517,
+     "ci": [
+      0.6243,
+      0.6781
+     ],
+     "acc": 0.729,
+     "msMedian": 33717,
+     "p3": 0.9533
+    },
+    "median": {
+     "p": 0.8592,
+     "ci": [
+      0.8383,
+      0.8777
+     ],
+     "acc": 0.8917,
+     "msMedian": 25329,
+     "p3": 0.9992
+    },
+    "skilled": {
+     "p": 0.9075,
+     "ci": [
+      0.8898,
+      0.9226
+     ],
+     "acc": 0.9231,
+     "msMedian": 22972,
+     "p3": 0.9992
     }
    }
   }

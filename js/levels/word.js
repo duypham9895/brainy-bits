@@ -12,7 +12,8 @@
     26, 27, 29, 30, 31, 32, 33, 34, 36, 28, 35, 37, 38, 39, 40, 42, 41, 43, 44, 45, 46, 47, 48];
   const LETTERS = [5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
     7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 11];
-  const lettersOf = src => LETTERS[ORDER.indexOf(src)];
+  const EXTRA_LETTERS = { 49: 7 };
+  const lettersOf = src => { const i = ORDER.indexOf(src); return i >= 0 ? LETTERS[i] : EXTRA_LETTERS[src]; };
   // Version 2 play order. Bot estimate per phrase (scripts/sim/adapters/word.mjs, 4000 players per profile,
   // seeds independent of the slot), then rank-matched to p*(L): the easiest phrase goes to the highest p*,
   // so peaks get a harder phrase than the breather after them. L1–5 need weak ≥ 85% (G1) and
@@ -21,7 +22,7 @@
   // so the old L5→L6 peak-to-breather drop does not read as a rising step (G2). v2 never shipped, so no new
   // table version: stars are keyed by phrase id and the v1 → v2 migration is unchanged.
   const PLAY = [18, 46, 48, 45, 32, 40, 20, 37, 41, 6, 36, 43, 42, 11, 19, 27, 17, 47, 44, 25, 39, 16, 31, 34, 26,
-    5, 2, 3, 21, 0, 24, 22, 35, 15, 33, 14, 13, 23, 7, 10, 38, 1, 4, 8, 29, 28, 30, 12, 9];
+    5, 2, 3, 21, 0, 24, 22, 35, 15, 33, 14, 13, 23, 7, 10, 38, 1, 4, 8, 29, 28, 30, 12, 9, 49];
   const row = src => ({ id: 'p' + src, phrase: src, letters: lettersOf(src), maxTries: 6 });
   if (BBD && BBD.register) BBD.register('word', {
     version: 2,
@@ -34,7 +35,8 @@
       + 'players (G7 SKIP). Rules stay as they are; revisit when G7 data exists.' },
     // v1 → v2: old star key L (level number) = phrase ORDER[L − 1]. Keys past 49 or already ids stay as they are.
     migrate: ({ best, stars, remapLevels }) => ({ best, stars: remapLevels(stars, L => (L <= ORDER.length ? 'p' + ORDER[L - 1] : null)) }),
-    maxLevel: cfg => Math.min(cfg.E2_WORD_LEVELS, PLAY.length),
+    // E2_WORD_LEVELS === 49 is the "keep all" default in js/difficulty.js; any other cap (e.g. 30, 40) still clamps.
+    maxLevel: cfg => (cfg.E2_WORD_LEVELS === 49 ? PLAY.length : Math.min(cfg.E2_WORD_LEVELS, PLAY.length)),
     meta: { table: 'js/levels/word.js', game: 'js/word.js (PHRASES)' },
   });
 })(typeof globalThis !== 'undefined' ? globalThis : this);

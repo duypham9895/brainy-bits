@@ -28,7 +28,7 @@ const vni = async (page, s) => { for (const ch of s) await page.keyboard.press(c
 const st = page => page.evaluate(() => window.__word.state());
 const levelOf = (page, ans) => page.evaluate(a => window.__word.LEVELS.findIndex(p => p.words.map(w => w.join('')).join(' ') === a) + 1, ans);
 
-test('word đọc level từ BBD: 49 cụm cũ, thứ tự mới của bảng v2, sao theo mã cụm', async ({ page }) => {
+test('word đọc level từ BBD: 50 cụm, thứ tự bảng v2, sao theo mã cụm', async ({ page }) => {
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await open(page);
   const r = await page.evaluate(() => {
@@ -43,9 +43,10 @@ test('word đọc level từ BBD: 49 cụm cũ, thứ tự mới của bảng v2
     };
   });
   expect(errors).toEqual([]);
-  expect(r).toEqual({ viaBBD: true, game: 49, core: 49, bbd: 49, version: 2, samePhrases: true, reordered: true, rowsMatch: true, keys: true, marker: '2' });
-  await expect(page.locator('#wlvgrid .lv')).toHaveCount(49);
+  expect(r).toEqual({ viaBBD: true, game: 50, core: 50, bbd: 50, version: 2, samePhrases: true, reordered: true, rowsMatch: true, keys: true, marker: '2' });
+  await expect(page.locator('#wlvgrid .lv')).toHaveCount(50);
   await expect(page.locator('#wlvgrid .lv').nth(29)).toContainText('30');
+  await expect(page.locator('#wlvgrid .lv').nth(49)).toHaveAttribute('aria-label', 'Level 50, 7 chữ');
   await expect(page.locator('#hubWord')).toHaveCount(1);
 });
 
@@ -68,7 +69,7 @@ test('Level 30 chơi được, thắng thì sang Level 31', async ({ page }) => 
 test('tiến độ cũ: word_lv = 31 vẫn là 30 cụm đã qua, ✓ đi theo cụm sang vị trí mới', async ({ page }) => {
   await open(page, { lv: '31' });
   await expect(page.locator('#wlvgrid .lv.done')).toHaveCount(30);
-  await expect(page.locator('#wBestTxt')).toHaveText('Đã qua 30/49 level');
+  await expect(page.locator('#wBestTxt')).toHaveText('Đã qua 30/50 level');
   // ✓ nằm đúng trên 30 cụm đầu của thứ tự cũ, và nút bắt đầu gợi ý level đầu tiên chưa qua
   const r = await page.evaluate(() => {
     const W = window.__word, old = window.BBD.spec('word').legacy.slice(0, 30).map(x => x.phrase);
@@ -109,14 +110,21 @@ test('migration v1 → v2 với khoá thật: sao theo số level cũ sang mã c
   expect(await read()).toEqual(a);                              // tải lại: không dời lần hai
 });
 
-test('màn cuối (49): phá đảo, không có Level 50', async ({ page }) => {
+test('màn 49 sang màn 50; màn cuối (50): ghi sao, phá đảo, không có Level 51', async ({ page }) => {
   await open(page);
   await pick(page, 49); await page.click('#wStart');
   expect(await st(page)).toMatchObject({ level: 49, puzzle: 'con mèo' });
   await vni(page, 'conme2o'); await page.keyboard.press('Enter');
   await expect(page.locator('#wresult')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#wrNext')).toHaveText('Level 50 →');
+  await page.click('#wrNext');
+  await expect(page.locator('#wLevel')).toHaveText('Level 50 · 4+3 chữ');
+  expect(await st(page)).toMatchObject({ state: 'play', level: 50, puzzle: 'nước mía' });
+  await vni(page, 'nuo7c1mia1'); await page.keyboard.press('Enter');
+  await expect(page.locator('#wresult')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('#wrTitle')).toContainText('Phá đảo');
   await expect(page.locator('#wrNext')).toHaveText('Chơi lại từ Level 1');
+  expect(await page.evaluate(() => window.BB.gameStats('word').stars.p49)).toBe(3);
 });
 
 // G7 parity (MERGED-SPEC §4.4): the bot's own rows at L1/L15/L30, 3 seeds each, replayed through the real

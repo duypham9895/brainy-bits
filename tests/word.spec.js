@@ -129,16 +129,16 @@ test('W13 + tiến độ cũ: word_lv hỏng không làm sập, word_lv cũ vẫ
   await expect(page.locator('#wStart')).toContainText('Level 1');   // cụm cũ L1 (bà nội) đã sang level khác
   await open(page, { lv: '6' });
   await expect(page.locator('#wlvgrid .lv.done')).toHaveCount(5);
-  await expect(page.locator('#wBestTxt')).toHaveText('Đã qua 5/49 level');
+  await expect(page.locator('#wBestTxt')).toHaveText('Đã qua 5/50 level');
   expect(errors).toEqual([]);
 });
 
 test('Level cuối: không có Level N+1', async ({ page }) => {
   await open(page);
   const n = await page.evaluate(() => window.__word.LV_MAX);
-  expect(await levelOf(page, 'con mèo')).toBe(n);                  // bảng v2: cụm cuối là con mèo
+  expect(await levelOf(page, 'nước mía')).toBe(n);                  // bảng v2: cụm cuối là nước mía
   await pick(page, n); await page.click('#wStart');
-  await vni(page, 'conme2o'); await page.keyboard.press('Enter');
+  await vni(page, 'nuo7c1mia1'); await page.keyboard.press('Enter');
   await expect(page.locator('#wresult')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('#wrNext')).not.toContainText(`Level ${n + 1}`);
   await expect(page.locator('#wrTitle')).toContainText('Phá đảo');
@@ -237,21 +237,21 @@ for (const [w, h] of [[667, 375], [844, 390], [320, 568], [1920, 1080]]) {
 }
 
 // ---------- Review PR #2 (Neon round 1) ----------
-test('Neon #1: core/hub/chia sẻ đếm đúng 49 level của Đoán Cụm Từ', async ({ page }) => {
+test('Neon #1: core/hub/chia sẻ đếm đúng 50 level của Đoán Cụm Từ', async ({ page }) => {
   // Người chơi cũ đã qua 24 level, có word_lv từ trước khi hub seed lần đầu (trước khi trang chạy).
   await page.addInitScript(() => localStorage.setItem('word_lv', '25'));
   await page.goto('/');
   const r = await page.evaluate(() => ({ core: window.BB.LV_MAX.word, game: window.__word.LV_MAX, phrases: window.__word.PHRASES.length,
     best: window.wordBest(), share: window.BB.shareText(), p: window.BB.progressOf('word'),
     topStars: window.BB.starsAt('word', window.BB.progressOf('word').best) }));
-  expect(r).toMatchObject({ core: 49, game: 49, phrases: 49, best: 24 });
+  expect(r).toMatchObject({ core: 50, game: 50, phrases: 50, best: 24 });
   // Share names the highest level passed in today's (v2) order and the stars of that level's own phrase.
   expect(r.p).toMatchObject({ done: 24, registered: true });
   expect(r.share).toContain(`Đoán Cụm Từ: Lv ${r.p.best} (${r.topStars}/3 ★)`);
-  await expect(page.locator('#hubWord')).toContainText('24/49');
+  await expect(page.locator('#hubWord')).toContainText('24/50');
   await page.click('#openWord');
-  await expect(page.locator('#wBestTxt')).toHaveText('Đã qua 24/49 level');
-  await expect(page.locator('#wlvgrid .lv')).toHaveCount(49);
+  await expect(page.locator('#wBestTxt')).toHaveText('Đã qua 24/50 level');
+  await expect(page.locator('#wlvgrid .lv')).toHaveCount(50);
 });
 
 test('Neon #4: rời game ngay sau khi đoán cụm dài nhất → không còn tiếng tick nào kêu trên hub', async ({ page }) => {
@@ -328,7 +328,7 @@ test('Neon #14: window.__word chỉ mở cho trình duyệt tự động hoặc 
   await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false }));
   await page.goto('/');
   expect(await page.evaluate(() => typeof window.__word)).toBe('undefined');
-  expect(await page.evaluate(() => window.BB.LV_MAX.word)).toBe(49);   // số level vẫn đúng khi không có cửa test
+  expect(await page.evaluate(() => window.BB.LV_MAX.word)).toBe(50);   // số level vẫn đúng khi không có cửa test
   await page.goto('/?test');
   expect(await page.evaluate(() => typeof window.__word)).toBe('object');
 });
@@ -337,7 +337,7 @@ test('Neon #14: nút level có aria-pressed theo level đang chọn', async ({ p
   await open(page);
   const pressed = () => page.locator('#wlvgrid .lv[aria-pressed="true"]');
   await expect(pressed()).toHaveCount(1);
-  await expect(page.locator('#wlvgrid .lv[aria-pressed="false"]')).toHaveCount(48);
+  await expect(page.locator('#wlvgrid .lv[aria-pressed="false"]')).toHaveCount(49);
   await pick(page, 7);
   await expect(pressed()).toHaveCount(1);
   await expect(page.locator('#wlvgrid .lv').nth(6)).toHaveAttribute('aria-pressed', 'true');

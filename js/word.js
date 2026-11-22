@@ -18,6 +18,7 @@ const PHRASES = [
   ['thành phố','Địa điểm'], ['pháo hoa','Sự kiện'], ['bệnh viện','Địa điểm'], ['hạnh phúc','Cảm xúc, khái niệm'], ['nông thôn','Địa điểm'],
   ['sinh nhật','Sự kiện'], ['trường học','Địa điểm'], ['ánh trăng','Thiên nhiên'], ['điện thoại','Đồ vật'], ['bánh chưng','Món ăn'],
   ['giáng sinh','Sự kiện'], ['thanh xuân','Cảm xúc, khái niệm'], ['nghệ thuật','Văn hoá'], ['truyền thống','Văn hoá'],
+  ['nước mía','Đồ uống'],
 ].map(([p, cat]) => ({ words: p.normalize('NFC').split(' ').map(w => [...w]), cat }))
  .map((x, i) => ({ ...x, i, n: x.words[0].length + x.words[1].length }))
  .sort((a, b) => a.n - b.n || a.i - b.i);

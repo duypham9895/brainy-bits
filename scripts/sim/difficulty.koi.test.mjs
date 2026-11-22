@@ -35,10 +35,10 @@ describe('koi: table v2, one template for every level', () => {
     assert.equal(B.level('koi', 31).authored, undefined);
     assert.equal(B.exhausted('koi', 40), false, '+10 levels still have knobs left');
   });
-  test('koi: L1..40 follow one template and stay inside the tracking limits', () => {
+  test('koi: L1..41 follow one template and stay inside the tracking limits', () => {
     const B = loadBBD();
-    assert.equal(B.maxLevel('koi'), 30);
-    for (let L = 1; L <= 40; L++) {
+    assert.equal(B.maxLevel('koi'), 31);
+    for (let L = 1; L <= 41; L++) {
       const r = B.level('koi', L);
       assert.ok(r.koi >= 12 && r.koi <= 15, `L${L} koi ${r.koi}`);
       if (r.kind === 'breather') assert.equal(r.koi, 12, `L${L} breather plays 12 fish`);
@@ -101,8 +101,8 @@ describe('koi: table v2, one template for every level', () => {
   });
   // N=2000 (≈2 s each): at N=400 the sampling error (±2 points) is close to the B band, so a pass there can be luck.
   // Zero failures and zero waivers, on the shipped L1..30 and on the engine-made L31..40 ("+10 levels" from the rule).
-  test('koi calibrates green at N=2000: L1..30 and generated L31..40, no gate failed, nothing waived', async () => {
-    for (const [from, to] of [[1, 30], [1, 40]]) {
+  test('koi calibrates green at N=2000: L1..31 and generated L31..41, no gate failed, nothing waived', async () => {
+    for (const [from, to] of [[1, 31], [1, 41]]) {
       const r = await calibrate('koi', { n: 2000, from, to, write: false, quiet: true });
       assert.deepEqual(failsByGate(r), {}, `L${from}..${to}`);
       assert.deepEqual(r.waived, [], `L${from}..${to}`);

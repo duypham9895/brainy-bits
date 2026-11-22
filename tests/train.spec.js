@@ -58,18 +58,18 @@ test('RTD-03: no two switches closer than 2 cells', async ({ page }) => {
   for (const d of dists) expect(d).toBeGreaterThanOrEqual(2);
 });
 
-test('RTD-04 / OPS-6: passing Level 30 shows a finished state, never Level 31', async ({ page }) => {
+test('RTD-04 / OPS-6: passing Level 31 shows a finished state, never Level 32', async ({ page }) => {
   await openTrain(page);
   await page.click('#startBtn');
-  await page.evaluate(() => __rtd.endWith(30, 20, 20));
+  await page.evaluate(() => __rtd.endWith(31, 20, 20));
   await expect(page.locator('#result')).toBeVisible();
   await expect(page.locator('#rNext')).toHaveText('Chọn level khác');
-  await expect(page.locator('#rTitle')).toContainText('Xong cả 30 level');
+  await expect(page.locator('#rTitle')).toContainText('Xong cả 31 level');
   await page.click('#rNext');
   await expect(page.locator('#menu')).toBeVisible();
   const best = await page.evaluate(() => [trainBest(), BB.gameStats('train').best, +localStorage.getItem('rtd_best3')]);
-  expect(best).toEqual([30, 30, 30]);
-  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 30 · 15 ga');
+  expect(best).toEqual([31, 31, 31]);
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 31 · 15 ga');
 });
 
 test('RTD-09 + C: stars follow the rule, animate in, persist and show on the level tile', async ({ page }) => {
@@ -89,10 +89,10 @@ test('RTD-09 + C: stars follow the rule, animate in, persist and show on the lev
   await expect(page.locator('#lvgrid .lv').nth(0)).not.toHaveClass(/done/);
 });
 
-test('legacy rtd_best3 is kept and capped at LV_MAX (30)', async ({ page }) => {
-  await openTrain(page, () => { try { localStorage.setItem('rtd_best3', '31'); } catch (e) {} });
-  expect(await page.evaluate(() => trainBest())).toBe(30);
-  await expect(page.locator('#bestTxt')).toHaveText('Đã qua cả 30 level');
+test('legacy rtd_best3 is kept and capped at LV_MAX (31)', async ({ page }) => {
+  await openTrain(page, () => { try { localStorage.setItem('rtd_best3', '32'); } catch (e) {} });
+  expect(await page.evaluate(() => trainBest())).toBe(31);
+  await expect(page.locator('#bestTxt')).toHaveText('Đã qua cả 31 level');
 });
 
 test('OPS-10 / SHELL-08 + perf: leaving mid-round keeps the round and stops the loop', async ({ page }) => {

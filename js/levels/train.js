@@ -52,6 +52,7 @@
   if (BBD && BBD.register) BBD.register('train', {
     version: 2,          // v1 = legacy 11 levels + generated 12..30. Level numbers keep their meaning, so the
                          // default migration (keep best and stars as they are) is the right one: no `migrate`.
+    maxLevel: 31,
     legacyLevels,
     levels,
     knobs: [
@@ -72,10 +73,10 @@
     ],
     priority: ['base', 'burstP'],
     lighterKnobs: ['base'],
-    // Generated breathers only (L1–30 rows are written out). With the old base slope, 0.10 made L36 too easy
-    // for G3 (median 0.777 vs L32 0.734 + tolerance). 0.08 lands L36 at base 3.50 + burstP 0.02: median 0.77,
-    // weak 0.61 (G4 ≥ 0.60). Thin on both sides.
-    relief: [{ knob: 'base', by: 0.08 }],
+    // Generated breathers only (L1–30 rows are written out). 0.08 was kept thin before BREATHER_EASY_OK (2026-11-22)
+    // and failed G4 on L41 (weak 0.56). 0.20 keeps L31 at L26's 3.63 cap, L36 at 3.62 (+burstP 0.02), L41 at 3.55
+    // (+burstP 0.06), holding weak ≥ 0.61 and median inside ±5% through L41.
+    relief: [{ knob: 'base', by: 0.20 }],
     peak: [{ knob: 'base', by: 0.20 }],
     // L30 is a peak: played at 3.27, while its `levels` row keeps the step trend 3.50 so the formula for L31+
     // continues from the trend, not from a peak (a peak anchor would make L32 harder than L30).

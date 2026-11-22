@@ -123,6 +123,7 @@
     if (!BBD || typeof BBD.register !== 'function' || BBD.games().includes('rain')) return false;
     BBD.register('rain', {
       version: 2,
+      maxLevel: 31,
       legacyLevels,
       levels,
       // Same level numbers, same order of play: stars and rain_lv stay where they are (no mapper).
