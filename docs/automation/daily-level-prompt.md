@@ -96,7 +96,7 @@ that merges only when every check is green. If one game's new level cannot be ma
    to turn a SKIP into PASS. Rain waives G9 (Duy 2026-11-22, A): when L15 is in the window
    the run prints `WAIVED: G9 (not passed)`; report it as WAIVED, never PASS.
    Word: gate B is waived (Duy 2026-11-21); the run prints `WAIVED: B (not passed)` and exits 0. Report it as
-   WAIVED, never as PASS; G1-G6, G8 and G9 must still pass.
+   WAIVED, never as PASS; every other gate must not FAIL (SKIP outside the window is expected, see above).
    train, koi and mem pass every gate (rain: every gate but G9, WAIVED; word: every gate but B, WAIVED) on every shipped level today (gate B is one-sided on L1-14 and on every
    breather, `B_EASY_OK_BEFORE_SAW` / `BREATHER_EASY_OK`, rules file §2-3), and CI blocks on all five, so any
    miss there fails the PR. For every game, judge the new level by its own lines: L must not appear in any

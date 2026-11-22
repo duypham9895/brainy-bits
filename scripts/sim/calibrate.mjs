@@ -116,14 +116,15 @@ export function checkGates(rows, BBD, game, adapter, n) {
   // L−4 while BREATHER_EASY_OK is off (round-2 review). Blind breathers are listed, never silently passed.
   const g3Need = L => (BBD.CONFIG.BREATHER_EASY_OK ? [L - 1] : [L - 1, L - 4]);
   const g3Blind = brRows.filter(r => g3Need(r.L).some(x => !byL.has(x))).map(r => `L${r.L}`);
-  if (!brRows.length || g3Blind.length === brRows.length) skip('G3', g3Name, brRows.length ? `levels compared with ${g3Blind.join(', ')} not in range` : 'no breather in range');
-  else gate('G3', g3Name,
-    brRows.flatMap(r => {
-      const f = [], b = r.profiles.median.p, pk = P(r.L - 1, 'median'), l4 = P(r.L - 4, 'median');
-      if (pk !== undefined && b < pk - tolFor(b, pk, n)) f.push(`L${r.L} ${b} harder than peak L${r.L - 1} ${pk}`);
-      if (!BBD.CONFIG.BREATHER_EASY_OK && l4 !== undefined && b > l4 + tolFor(b, l4, n)) f.push(`L${r.L} ${b} easier than L${r.L - 4} ${l4}`);
-      return f;
-    }), g3Blind.length ? `not fully checked (a compared level is not in range): ${g3Blind.join(', ')}` : '');
+  // Misses are computed first: a breather that fails a comparison it could make is a FAIL even if another is blind.
+  const g3Fails = brRows.flatMap(r => {
+    const f = [], b = r.profiles.median.p, pk = P(r.L - 1, 'median'), l4 = P(r.L - 4, 'median');
+    if (pk !== undefined && b < pk - tolFor(b, pk, n)) f.push(`L${r.L} ${b} harder than peak L${r.L - 1} ${pk}`);
+    if (!BBD.CONFIG.BREATHER_EASY_OK && l4 !== undefined && b > l4 + tolFor(b, l4, n)) f.push(`L${r.L} ${b} easier than L${r.L - 4} ${l4}`);
+    return f;
+  });
+  if (!brRows.length || (!g3Fails.length && g3Blind.length === brRows.length)) skip('G3', g3Name, brRows.length ? `levels compared with ${g3Blind.join(', ')} not in range` : 'no breather in range');
+  else gate('G3', g3Name, g3Fails, g3Blind.length ? `not fully checked (a compared level is not in range): ${g3Blind.join(', ')}` : '');
   if (!brRows.length) skip('G4', 'weak ≥ 60% on every breather', 'no breather in range');
   else gate('G4', 'weak ≥ 60% on every breather',
     brRows.filter(r => r.profiles.weak.p < G4_WEAK).map(r => `L${r.L} weak ${r.profiles.weak.p}`));
