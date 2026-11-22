@@ -18,7 +18,7 @@
   }
   // L1..30 as written rows: [koi, decoys, spdMul, turnMul, cd]. Pass rates vs p* (calibrate koi --n 2000):
   // docs/difficulty/calibration-koi.json. Retuned 2026-11-22 for Duy's B (early ramp, first peak L15,
-  // docs/difficulty/RESEARCH-EARLY-LEVELS.md). L1–14 are steps, one knob per level: a koi is added on a level
+  // docs/difficulty/RESEARCH-EARLY-LEVELS.md). L1–14 are steps; besides the cooldown (cd) that grows a little every level, one knob moves per level: a koi is added on a level
   // that holds the pace (L3, L5, L9, L12), the next level speeds the fish up 0.05 or turns them more (L7, L13).
   // 10 koi at L1 (big fish: the pond shrinks fish only above 11), 14 by L12. L15, the first peak, brings the
   // first grey fish (2) on a shorter pond (12 koi) at the L14 pace: mild, shorter rather than denser.

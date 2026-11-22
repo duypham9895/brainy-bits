@@ -27,6 +27,6 @@ Lưu ý `node --test scripts/sim/` (thư mục) không chạy trên Node 22; ph�
 |---|---|
 | `load-bbd.mjs` | Nạp `js/difficulty.js` + `js/levels/*.js` vào một `node:vm` mới, đúng như browser chạy classic script. |
 | `human.mjs` | Profile `weak` / `median` / `skilled`, RNG `mulberry32` + `cyrb53`, ex-Gaussian RT, working memory, lapse, learning. Mỗi tham số ghi nguồn trong comment. |
-| `calibrate.mjs` | Monte Carlo + gate B, G1–G8. |
+| `calibrate.mjs` | Monte Carlo + gate B, G1–G9 (G7 SKIP). |
 | `adapters/mem.mjs` | Adapter mẫu, làm đủ. |
-| `adapters/{train,koi,rain,word}.mjs` | TODO stub, ghi sẵn interface và những gì phải mô hình hoá. `calibrate` từ chối chạy chúng (exit 2). |
+| `adapters/{train,koi,rain,word}.mjs` | Adapter đủ cho từng game (trước là TODO stub; `calibrate` vẫn từ chối adapter nào còn khai `TODO`, exit 2). |

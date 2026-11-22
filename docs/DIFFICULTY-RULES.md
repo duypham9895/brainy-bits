@@ -91,7 +91,7 @@ report-only. `calibrate.mjs` thoát 2 khi `--n`/`--from`/`--to` rỗng, NaN hay 
 `--to` bỏ trống, tức maxLevel), nên bound `$(node -e …)` lỗi làm bước đỏ. G1 / G5 / G9 báo SKIP (không phải PASS) khi
 L1–10 / L30 / L15 nằm ngoài khoảng chạy; G3 / G4 báo SKIP khi không có màn thở (hoặc đỉnh trước nó) trong khoảng chạy;
 gate được miễn mà không chạy tới vẫn là SKIP, không phải WAIVED. Test `KNOWN-FAIL` cũ (ghim danh sách trượt của mem và rain) đã thay bằng test không còn trượt nào:
-`node --test scripts/sim/*.test.mjs` = 75/75 (2026-11-22).
+`node --test scripts/sim/*.test.mjs` = 77/77 (2026-11-22, sau mở màn dễ).
 
 ## 4. "Thêm 10 màn cho mỗi game"
 
@@ -102,7 +102,7 @@ gate được miễn mà không chạy tới vẫn là SKIP, không phải WAIVE
 | 3 | `BBD.exhausted(g, N+10)` phải là `false`. Koi (`strictPeaks: true`) còn báo `true` từ đỉnh sinh ra đầu tiên không khó hơn màn trước nó hoặc đỉnh trước (hiện là L65). | — |
 | 4 | **Nếu `exhausted` là true, hoặc chỉ còn knob `rule: true`: DỪNG.** Đề xuất knob/luật mới cho Duy, mỗi phương án một mockup HTML (Quy tắc Vibe 9). Không tự nâng `hardCap`. | Duy đã chọn |
 | 5 | `node scripts/sim/calibrate.mjs <g> --from N-4 --to N+10 --n 1200` (koi `--n 2000`) | Exit 0 trên các màn mới |
-| 6 | Gate trượt ở màn mới: chỉnh `max`, `start`, `peak`, `relief` hoặc `overrides` của **màn mới**, chạy lại. Màn mới cần dòng viết tay thì thêm vào cuối `levels`. `start` chỉ áp dụng khi `levels` có đúng `startAt` dòng: thêm dòng thì màn sinh ra kế tiếp neo vào dòng mới; dòng mới là đỉnh thì đặt `start`/`startAt` mới. | Exit 0 |
+| 6 | Gate trượt ở màn mới: chỉnh `max`, `start`, `peak`, `relief` hoặc `overrides` của **màn mới**, chạy lại. Màn mới cần dòng viết tay thì thêm vào cuối `levels`. `start` chỉ áp dụng khi `levels` có đúng `startAt` dòng: thêm dòng thì màn sinh ra kế tiếp neo vào dòng mới; dòng mới là đỉnh thì đặt `start`/`startAt` mới. Dòng màn thở viết tay cũng dời mốc neo: so `BBD.level(g, N+1..N+10)` và `BBD.exhausted` trước và sau khi thêm dòng; màn sinh ra dễ đi hoặc `exhausted` đến sớm hơn thì không ship dòng đó (review 2026-11-22). | Exit 0 |
 | 7 | `node --test scripts/sim/difficulty.test.mjs` và `PW_PORT=8920 npx playwright test`; sửa số 30 ghi cứng trong `tests/<g>-levels.spec.js`. | Xanh hết |
 | 8 | Không cần sửa game: game đọc `BBD.maxLevel(g)` và gọi `BB.setLvMax`. | Màn mới hiện trong hub |
 | 9 | Nhánh `feat/levels-<g>-<to>`, PR vào `main` (LUẬT 12), một dòng có ngày vào Log của `PIPELINE.md`. | PR xanh |
@@ -216,7 +216,7 @@ Game mà calibrate đang trượt ở màn cũ: run vẫn thêm màn mới nếu
 
 | Gate | Điều kiện | Áp cho |
 |---|---|---|
-| B | Hai chiều: `|p_median − p*| ≤ 0.05`. Một chiều, chỉ bắt `p_median < p* − 0.05` (dễ hơn không bắt), ở L1–14 trước đỉnh đầu (`B_EASY_OK_BEFORE_SAW`) và ở mọi màn thở (`BREATHER_EASY_OK`); từ đỉnh đầu, màn bước vẫn hai chiều. | mọi màn; bảng có `gateWaivers.B` thì báo WAIVED (chỉ word) |
+| B | Hai chiều: `|p_median − p*| ≤ 0.05`. Một chiều, chỉ bắt `p_median < p* − 0.05` (dễ hơn không bắt), ở L1–14 trước đỉnh đầu (`B_EASY_OK_BEFORE_SAW`) và ở mọi màn thở (`BREATHER_EASY_OK`); từ đỉnh đầu, màn bước vẫn hai chiều. | mọi màn; bảng có `gateWaivers.B` thì báo WAIVED (hiện chỉ word dùng) |
 | G1 | weak ≥ 90% ở L1–5, ≥ 82% ở L6–10 (Duy 2026-11-22, B; trước đó ≥ 85% ở L1–5) | mọi game |
 | G2 | median không tăng giữa hai màn bước liền nhau (dung sai 2·SE) | mọi màn |
 | G3 | Mọi màn thở: dễ hơn đỉnh trước. Vế "khó hơn L−4" chỉ áp khi `BREATHER_EASY_OK: false` (luật cũ); mặc định đã bỏ (Duy 2026-11-22), G4 không đổi. | mọi màn thở |

@@ -46,7 +46,7 @@ export function validateWaivers(waivers, game = '?') {
 export function applyWaivers(gates, waivers, game) {
   const w = validateWaivers(waivers, game);
   // A SKIP (pass: null, no level in range) is not evaluated, so it stays SKIP: WAIVED would read as "checked, then waived".
-  return gates.map(g => (w[g.id] === undefined || (g.pass === null && !g.fails.length) ? g
+  return gates.map(g => (w[g.id] === undefined || g.waived || (g.pass === null && !(g.fails || []).length) ? g
     : { ...g, pass: null, waived: true, waiver: w[g.id], measuredPass: g.pass, note: `WAIVED: ${w[g.id]}` }));
 }
 // Gate B misses. Duy 2026-11-22: before the first peak (L < PERIOD·SAW_FROM_PERIODS) a level that is easier than p*
@@ -112,15 +112,18 @@ export function checkGates(rows, BBD, game, adapter, n) {
   // No breather in range, or none with its peak in range: SKIP, never PASS (review 2026-11-22).
   const brRows = rows.filter(r => r.kind === 'breather');
   const g3Name = `breather easier than the peak before it${BBD.CONFIG.BREATHER_EASY_OK ? '' : ' and harder than L−4'}`;
-  const g3Blind = brRows.filter(r => !byL.has(r.L - 1)).map(r => `L${r.L}`);
-  if (!brRows.length || g3Blind.length === brRows.length) skip('G3', g3Name, brRows.length ? `peak before ${g3Blind.join(', ')} not in range` : 'no breather in range');
+  // A breather is blind when a level its checks compare against is not in the run: the peak before it, and also
+  // L−4 while BREATHER_EASY_OK is off (round-2 review). Blind breathers are listed, never silently passed.
+  const g3Need = L => (BBD.CONFIG.BREATHER_EASY_OK ? [L - 1] : [L - 1, L - 4]);
+  const g3Blind = brRows.filter(r => g3Need(r.L).some(x => !byL.has(x))).map(r => `L${r.L}`);
+  if (!brRows.length || g3Blind.length === brRows.length) skip('G3', g3Name, brRows.length ? `levels compared with ${g3Blind.join(', ')} not in range` : 'no breather in range');
   else gate('G3', g3Name,
     brRows.flatMap(r => {
       const f = [], b = r.profiles.median.p, pk = P(r.L - 1, 'median'), l4 = P(r.L - 4, 'median');
       if (pk !== undefined && b < pk - tolFor(b, pk, n)) f.push(`L${r.L} ${b} harder than peak L${r.L - 1} ${pk}`);
       if (!BBD.CONFIG.BREATHER_EASY_OK && l4 !== undefined && b > l4 + tolFor(b, l4, n)) f.push(`L${r.L} ${b} easier than L${r.L - 4} ${l4}`);
       return f;
-    }), g3Blind.length ? `not checked (peak before not in range): ${g3Blind.join(', ')}` : '');
+    }), g3Blind.length ? `not fully checked (a compared level is not in range): ${g3Blind.join(', ')}` : '');
   if (!brRows.length) skip('G4', 'weak ≥ 60% on every breather', 'no breather in range');
   else gate('G4', 'weak ≥ 60% on every breather',
     brRows.filter(r => r.profiles.weak.p < G4_WEAK).map(r => `L${r.L} weak ${r.profiles.weak.p}`));

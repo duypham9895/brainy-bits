@@ -89,8 +89,11 @@ that merges only when every check is green. If one game's new level cannot be ma
 4. **Data / calibration**: run `node scripts/sim/calibrate.mjs <game> --from <L-4> --to <L> --n 1200`
    (koi `--n 2000`) for every changed game. Rain: once `L` goes past 30, run with `--n 4000` instead of 1200
    (same `--from <L-4>` window) — a bigger N narrows gate G2's tolerance, so this is stricter, not looser.
-   **The new level L must keep every gate green**: B, G1-G6, G8 and G9 pass (G7 stays SKIP; G1/G9 SKIP when the window
-   does not reach L1-10/L15) and the command exits 0. Rain waives G9 (Duy 2026-11-22, A): when L15 is in the window
+   **The new level L must keep every gate green**: the command exits 0 and no gate prints FAIL. G7 is always SKIP.
+   A gate whose levels are outside the `--from <L-4> --to <L>` window prints SKIP, and that is expected, not a
+   failure: G1 (L1-10), G9 (L15), G5 (L30), and G3/G4 when the window has no breather or not the peak before it
+   (for example on a peak day the window L31-35 holds breather L31 but not peak L30). Never widen or shift the window
+   to turn a SKIP into PASS. Rain waives G9 (Duy 2026-11-22, A): when L15 is in the window
    the run prints `WAIVED: G9 (not passed)`; report it as WAIVED, never PASS.
    Word: gate B is waived (Duy 2026-11-21); the run prints `WAIVED: B (not passed)` and exits 0. Report it as
    WAIVED, never as PASS; G1-G6, G8 and G9 must still pass.

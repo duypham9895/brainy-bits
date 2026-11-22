@@ -142,7 +142,7 @@ test('G9 waiver: rain only, SKIP beats WAIVED, G3/G4 skip without breathers, G1 
   assert.match(st([row(1, 0.97, 0.95)], 'G1').note, /tier L6–10 not checked/);
 });
 
-test('waiver rejected: any gate other than B, or no reason string, throws (table load and calibrate)', () => {
+test('waiver rejected: a gate that is not waivable (anything but B, or G9 outside rain), or no reason string, throws', () => {
   for (const bad of [{ G1: 'r' }, { G3: 'r' }, { G7: 'r' }, { B: '' }, { B: '   ' }, { B: true }, { B: 1 }, ['B'], 'B']) {
     assert.throws(() => fakeBBD(bad), /gateWaivers|cannot be waived|reason/, JSON.stringify(bad));
     assert.throws(() => validateWaivers(bad, 'x'), /gateWaivers|cannot be waived|reason/, JSON.stringify(bad));
