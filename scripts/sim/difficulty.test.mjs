@@ -15,17 +15,18 @@ const harderOrEqual = (k, a, b) => (k.dir > 0 ? a >= b - 1e-9 : a <= b + 1e-9); 
 test('D(L), kind(L) and p*(L) match MERGED-SPEC §4.1', () => {
   const B = loadBBD();
   close(B.D(1), 0); close(B.D(30), 1); close(B.D(10), Math.sqrt(9 / 29)); close(B.D(20), Math.sqrt(19 / 29));
-  // Duy 2026-11-21 (1)=A: no peak at L5; first peak L10, first breather L11 (kind of L1..31: difficulty.sawtooth.test.mjs).
-  assert.equal(B.kind(5), 'step'); assert.equal(B.kind(6), 'step'); assert.equal(B.kind(1), 'step');
-  assert.equal(B.kind(10), 'peak'); assert.equal(B.kind(11), 'breather');
+  // Duy 2026-11-22 (B): first peak L15, first breather L16, L1–14 steps (kind of L1..31: difficulty.sawtooth.test.mjs).
+  assert.equal(B.kind(5), 'step'); assert.equal(B.kind(10), 'step'); assert.equal(B.kind(1), 'step');
+  assert.equal(B.kind(15), 'peak'); assert.equal(B.kind(16), 'breather');
   assert.equal(B.kind(30), 'peak'); assert.equal(B.kind(31), 'breather'); assert.equal(B.kind(29), 'step');
-  close(B.pStar(1), 0.92);
+  close(B.pStar(1), 0.97);                                   // early ramp 0.97 → 0.90 over L1–15
   close(B.pStar(30), 0.69);                                  // E1 = A: L30 peak ≈ 0.69
-  close(B.pStar(29), 0.92 - 0.17 * Math.sqrt(28 / 29));
-  close(B.pStar(15), 0.92 - 0.17 * Math.sqrt(14 / 29) - 0.06);
-  close(B.pStar(16), 0.92 - 0.17 * Math.sqrt(15 / 29));      // breather offset 0 (A-1 fix)
-  close(B.pStar(5), 0.92 - 0.17 * Math.sqrt(4 / 29));        // L5 is a step now: no −0.06 dip
-  for (let L = 11; L <= 41; L += 5) {                         // breather between its peak and L−4
+  close(B.pStar(29), 0.90 - 0.15 * 14 / 15);                 // 0.90 (L15) → 0.75 (L30) in a straight line
+  close(B.pStar(15), 0.90 - 0.06);
+  close(B.pStar(16), 0.90 - 0.15 / 15);                      // breather offset 0 (A-1 fix)
+  close(B.pStar(5), 0.97 - 0.07 * 4 / 14);
+  close(B.pStar(31), 0.92 - 0.17 * Math.sqrt(30 / 29));      // √ curve from L31
+  for (let L = 16; L <= 41; L += 5) {                         // breather between its peak and L−4
     assert.ok(B.pStar(L) > B.pStar(L - 1)); assert.ok(B.pStar(L) < B.pStar(L - 4));
   }
   close(B.pStar(200), 0.65);                                  // floor
