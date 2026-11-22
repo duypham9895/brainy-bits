@@ -42,7 +42,7 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
   };
 
   // Table version 2 (E3 lifted 2026-11-21): the old rows stay as `legacyLevels` reference data; the game plays `levels`.
-  test('legacy rows = the old spec (===); v2 plays them unchanged on L1..6, L7..10 keep tier and chain at faster rain (decision 2)', () => {
+  test('legacy rows = the old spec (===); v2 plays them unchanged on L1..6, L7..10 keep tier and hold one pace (early ramp B)', () => {
     const B = loadBBD(), leg = B.spec('rain').legacy;
     assert.equal(B.version('rain'), 2);
     assert.equal(leg.length, 10);
@@ -55,10 +55,11 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
       const r = B.level('rain', L);
       assert.equal(r.legacy, false, `L${L}`); assert.equal(r.authored, true, `L${L}`);
       if (L <= 6) for (const k of ['ops', 'fall', 'every', 'target']) assert.equal(r[k], leg[L - 1][k], `L${L} ${k}`);
-      // L7..10: content and chain stay (decision 2), the rain is pulled toward B with speed only (review 2026-11-22)
+      // L7..10: content stays (decision 2); early ramp (Duy 2026-11-22, B): they hold the L6 chain and fall and one
+      // spawn gap, so only the math tier changes level to level (weak ≥ 82%, G1)
       else if (L <= 10) {
-        for (const k of ['ops', 'target']) assert.equal(r[k], leg[L - 1][k], `L${L} ${k}`);
-        assert.ok(r.fall < leg[L - 1].fall && r.every < leg[L - 1].every, `L${L}: faster rain than the old row`);
+        assert.equal(r.ops, leg[L - 1].ops, `L${L} ops`);
+        assert.deepEqual([r.every, r.fall, r.target, r.lives], [3.8, leg[5].fall, leg[5].target, 3], `L${L} held pace`);
       }
     }
     assert.equal(B.authoredCount('rain'), 30);
@@ -105,6 +106,9 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
         assert.equal(r.lives, 4, `L${L} breather extra life`);
         assert.ok(r.ops > p.ops, `L${L} breather opens a new tier`);
         assert.ok(r.every > p.every && r.fall > p.fall, `L${L} breather rains slower than peak L${L - 1}`);
+      } else if (r.L === 15) {
+        // first peak (early ramp B): shorter, not longer — a denser rain over a short chain
+        assert.ok(r.every < p.every && r.fall <= p.fall && r.target < p.target, `L15 peak: shorter chain, denser rain than L14`);
       } else if (p.kind !== 'breather' && r.ops === p.ops) {
         assert.ok(r.every <= p.every && r.fall <= p.fall && r.target >= p.target, `L${L} easier than L${L - 1}`);
         assert.ok(r.every < p.every || r.fall < p.fall || r.target > p.target, `L${L} identical to L${L - 1}`);
@@ -113,10 +117,10 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
       assert.ok(r.every >= 2.2 && r.fall >= 6.8 && r.target <= 25, `L${L} past a hardCap`);
     }
     for (let L = 1; L <= 9; L++) assert.equal(B.level('rain', L).lives, 3, `L${L} old rows keep 3 lives`);
-    // L7..10: the rain speeds up level by level (no 87 → 13% weak cliff in one step at L10)
-    for (let L = 7; L <= 10; L++) {
+    // L7..11: one new tier per level and no pace change (early ramp B: hold the pace knobs on a level that adds content)
+    for (let L = 8; L <= 11; L++) {
       const r = B.level('rain', L), p = B.level('rain', L - 1);
-      assert.ok(r.every <= p.every && r.fall < p.fall, `L${L} rain not faster than L${L - 1}`);
+      assert.deepEqual([r.every, r.fall, r.target], [p.every, p.fall, p.target], `L${L} pace held from L${L - 1}`);
     }
     // L31+ (engine continuation, not shipped): breathers keep the safety net, every knob stays inside its cap
     for (let L = 31; L <= 60; L++) {

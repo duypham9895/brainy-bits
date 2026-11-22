@@ -106,12 +106,20 @@
   // open a new tier with the E4 safety net as knobs: a short chain (10 drops), one extra life (4) and slower rain,
   // so weak players pass ≥ 60% (gate G4). That makes them easier than p* (gate B) and than L−4 (gate G3): in rain
   // no breather can hold weak ≥ 60% with median ≤ p* + 5. Columns: ops, every (s), fall (s), target, lives.
+  // Early ramp, Duy 2026-11-22 (B): steps L1–14, first peak L15, breathers 16/21/26. Rows L7–25 re-tuned:
+  //  · L7–10 hold the L6 chain (16 drops, fall 10.25 s) and one slower spawn gap (3.8 s); only the math tier
+  //    changes, so the weak bot stays ≥ 82% (G1) as tiers 7–10 arrive. Was 2.60/8.00 → 2.40/7.25 with a 20-drop chain.
+  //  · L11 (tier 11, new) holds L10's pace; L12–14 tighten one knob a level (every 3.4 → 3.0, then fall 9.0).
+  //  · L15, the first peak, is short (8 drops) rather than long: median ≈ p* 0.84. Under human.mjs no legal knob mix
+  //    reaches weak ≥ 70% (G9) with median ≤ p* + 5 at tier 11 (best ≈ 40%, 5 drops at every hardCap).
+  //  · L16 breather falls slower (8.60 → 9.20 s) so it stays slower than the L15 peak in both speed knobs.
+  //  · L17–25 only ease `every` 0.05–0.2 s so the median sits on the new p* (B).
   const TABLE = {
-    7: [7, 2.60, 8.00, 17, 3], 8: [8, 2.45, 7.55, 18, 3], 9: [9, 2.40, 7.30, 19, 3],
-    10: [10, 2.40, 7.25, 20, 3],
-    11: [11, 3.40, 9.00, 10, 4], 12: [11, 2.80, 8.15, 20, 3], 13: [11, 2.80, 8.15, 21, 3], 14: [11, 2.80, 8.15, 22, 3], 15: [11, 2.65, 7.85, 22, 3],
-    16: [12, 3.20, 8.60, 10, 4], 17: [12, 2.70, 7.85, 22, 3], 18: [12, 2.70, 7.85, 23, 3], 19: [12, 2.65, 7.85, 23, 3], 20: [12, 2.55, 7.55, 24, 3],
-    21: [13, 3.20, 8.60, 10, 4], 22: [13, 2.70, 7.90, 24, 3], 23: [13, 2.70, 7.90, 25, 3], 24: [13, 2.70, 7.85, 25, 3], 25: [13, 2.55, 7.55, 25, 3],
+    7: [7, 3.80, 10.25, 16, 3], 8: [8, 3.80, 10.25, 16, 3], 9: [9, 3.80, 10.25, 16, 3],
+    10: [10, 3.80, 10.25, 16, 3],
+    11: [11, 3.80, 10.25, 16, 3], 12: [11, 3.40, 10.25, 16, 3], 13: [11, 3.00, 10.25, 16, 3], 14: [11, 3.00, 9.00, 16, 3], 15: [11, 2.30, 9.00, 8, 3],
+    16: [12, 3.20, 9.20, 10, 4], 17: [12, 2.90, 7.85, 22, 3], 18: [12, 2.90, 7.85, 23, 3], 19: [12, 2.85, 7.85, 23, 3], 20: [12, 2.65, 7.55, 24, 3],
+    21: [13, 3.20, 8.60, 10, 4], 22: [13, 2.80, 7.90, 24, 3], 23: [13, 2.80, 7.90, 25, 3], 24: [13, 2.75, 7.85, 25, 3], 25: [13, 2.65, 7.55, 25, 3],
     26: [14, 3.30, 8.80, 10, 4], 27: [14, 2.65, 7.85, 25, 3], 28: [14, 2.65, 7.80, 25, 3], 29: [14, 2.65, 7.75, 25, 3], 30: [14, 2.55, 7.45, 25, 3],
   };
   const LIVES = 3;                                           // old game: 3 misses lose on every level
