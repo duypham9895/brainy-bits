@@ -701,9 +701,10 @@ describe('train: table v2, one template for every level', () => {
       if (L === 1) continue;
       const p = B.level('train', L - 1);
       assert.ok(r.stations - p.stations <= 1, `L${L}: +1 station at most`);
-      // L5 (5 stations after 6 at L4) is the only drop: the G1/B window has no base on 6 stations there.
-      // A drop must pay with denser trains, so a step never gets easier on both knobs.
-      if (r.stations < p.stations) assert.ok(L === 5 && r.stations === p.stations - 1 && r.base < p.base, `L${L}: stations drop only at L5, by 1, with a smaller base`);
+      // Retune 2026-11-22 (Duy B): the old L5 drop to 5 stations is gone; the map never shrinks.
+      assert.ok(r.stations >= p.stations, `L${L}: stations never drop`);
+      // L1–14 (no peak yet): one knob per level, a new station keeps the base of the level before it.
+      if (L <= 14) assert.ok(r.stations === p.stations || r.base === p.base, `L${L}: stations and base change at once`);
       if (r.kind === 'breather') assert.ok(r.base > p.base, `L${L}: a breather sends trains further apart than the peak before it`);
       if (r.kind === 'peak') assert.ok(r.base < p.base || r.stations > p.stations, `L${L}: a peak adds a station or sends trains closer`);
     }
@@ -764,7 +765,7 @@ describe('train: table v2, one template for every level', () => {
     assert.deepEqual(r.waived, []);
     assert.equal(r.ok, true);
     assert.deepEqual(r.gates.map(g => [g.id, g.status]),
-      [['B', 'PASS'], ['G1', 'PASS'], ['G2', 'PASS'], ['G3', 'PASS'], ['G4', 'PASS'], ['G5', 'PASS'], ['G6', 'PASS'], ['G7', 'SKIP'], ['G8', 'PASS']]);
+      [['B', 'PASS'], ['G1', 'PASS'], ['G2', 'PASS'], ['G3', 'PASS'], ['G4', 'PASS'], ['G5', 'PASS'], ['G6', 'PASS'], ['G9', 'PASS'], ['G7', 'SKIP'], ['G8', 'PASS']]);
     assert.equal(r.gates.find(g => g.id === 'G7').pass, null);
   });
 });

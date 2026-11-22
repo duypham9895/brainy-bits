@@ -37,7 +37,7 @@ test('the game plays table v2 for L1..30; v1 rows stay in the table as reference
   r.out.forEach((x, i) => expect(x, `L${i + 1}`).toEqual([true, true, true, true, true]));
   expect(r.leg).toEqual(Array(11).fill(true));
   expect(r.v).toBe(2);
-  expect(r.ga).toEqual([5, 7, 15, 15]);
+  expect(r.ga).toEqual([5, 9, 15, 15]);
 });
 
 test('menu copy matches the table: first and last station count, no "+1 ga mỗi level"', async ({ page }) => {
@@ -70,7 +70,7 @@ test('corrupt progress does not crash the game on boot', async ({ page }) => {
     localStorage.setItem('bb_stats', '{bad'); localStorage.setItem('bb_tablev_train', 'zz'); localStorage.setItem('rtd_best3', '3');
     sessionStorage.setItem('seeded', '1'); } } catch (e) {} });
   await expect(page.locator('#lvgrid .lv')).toHaveCount(31);
-  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 4 · 6 ga');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 4 · 7 ga');
   expect(errors).toEqual([]);
 });
 
@@ -97,7 +97,7 @@ test('next-level flow: L11 leads on to L12, a peak announces the breather', asyn
   await page.evaluate(() => __rtd.endWith(11, 20, 20));
   await expect(page.locator('#rTitle')).toHaveText('Qua Level 11! 🎉');
   await expect(page.locator('#rNext')).toHaveText('Level 12 →');
-  await expect(page.locator('#rDetail')).toHaveText('Level 12 có 12 ga.');
+  await expect(page.locator('#rDetail')).toHaveText('Level 12 có 13 ga.');
   await page.click('#rNext');
   expect(await page.evaluate(() => [__rtd.state, __rtd.level, __rtd.spec.base === BBD.level('train', 12).base])).toEqual(['countdown', 12, true]);
   await page.evaluate(() => __rtd.endWith(15, 19, 20));
@@ -130,7 +130,7 @@ test('old progress keys still count: rtd_best3 only, and bb_stats stars', async 
     localStorage.clear(); localStorage.setItem('rtd_best3', '11'); sessionStorage.setItem('seeded', '1'); } } catch (e) {} });
   await expect(page.locator('#lvgrid .lv.done')).toHaveCount(11);
   await expect(page.locator('#bestTxt')).toHaveText('Đã qua tới Level 11');
-  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 12 · 12 ga');   // a finished 11-level player moves on
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 12 · 13 ga');   // a finished 11-level player moves on
   await expect(page.locator('#lvgrid .lv').nth(11)).not.toHaveClass(/done/);
 });
 
@@ -142,7 +142,7 @@ test('stars saved under the old 11-level cap keep showing', async ({ page }) => 
   const tiles = page.locator('#lvgrid .lv');
   await expect(tiles.nth(8).locator('.lvst')).toHaveText('★★★');
   await expect(tiles.nth(2).locator('.lvst')).toHaveText('★★☆');
-  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 10 · 10 ga');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 10 · 11 ga');
 });
 
 test('without the table (script blocked) the game still boots on the old 11 levels', async ({ page }) => {
