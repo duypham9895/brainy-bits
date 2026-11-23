@@ -113,7 +113,11 @@ that merges only when every check is green. If one game's new level cannot be ma
       and passes after: the new level appears in the grid, is selectable, starts, the HUD shows the right
       level, finishing it records stars and shows the "finished" state if it is the last level.
    4. Full suite on Chromium: `PW_PORT=8990 npx playwright test`. Zero failures; a flaky test is rerun once and
-      reported, never deleted or loosened.
+      reported, never deleted or loosened. A test that flakes is a bug to root-cause, not to rerun past: measure
+      its failure rate, then grep every copy of the helper involved and fix them all in one place. Koi taps go
+      through `tests/koi-helpers.js` (`tapFish`, `feedAll`), which aim via the game's own `window.__koi.fishAt`;
+      never hand-roll a `pointerdown` on `#kcv` at a fish centre (2026-11-23: that guess hit a neighbour in ~1–2%
+      of rounds and flaked CI).
    5. Safari engine smoke: install WebKit if missing (`npx playwright install webkit`) and run
       `tests/smoke.spec.js` plus the changed games' level specs on WebKit (iPhone 13 device) with a throwaway
       config in `/tmp` that reuses `playwright.config.js`. Report pass/fail; a WebKit-only failure blocks the PR.
