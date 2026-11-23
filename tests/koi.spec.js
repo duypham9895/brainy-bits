@@ -139,10 +139,10 @@ test('legacy progress: over-cap key is clamped, BB stats seeded, daily hand-off 
   await openKoi(page, { koi_lv2: '14' });
   const r = await page.evaluate(() => ({ lv: localStorage.getItem('koi_lv2'), best: BB.gameStats('koi').best, kb: koiBest() }));
   expect(r).toEqual({ lv: '11', best: 10, kb: { best: 10, lv: 11 } });
-  await expect(page.locator('#klvgrid .lv')).toHaveCount(31);
+  await expect(page.locator('#klvgrid .lv')).toHaveCount(32);
   await page.evaluate(() => { BB.request('koi', 99); window.koiEnter(); });
   await expect(page.locator('#kmenu')).toBeHidden();
-  await expect(page.locator('#kPond')).toHaveText(/^Level 31 · \d+ cá$/);
+  await expect(page.locator('#kPond')).toHaveText(/^Level 32 · \d+ cá$/);
 });
 
 test('HUD and pause button meet size and copy rules', async ({ page }) => {
