@@ -601,8 +601,13 @@ function endLevel(){
   $('rStreak').textContent = bestStreak;
   $('rDetail').textContent = finished ? 'Đây là level cuối. Quay lại lấy đủ 3 sao ở từng level nhé.'
     : passed ? nextHint(level)
+    : BB.softLoss(level) && total > 0 ? `Cần 80% để qua. Thiếu ${Math.max(1, Math.ceil(total * 0.795 - 1e-9) - correct)} tàu nữa.`
     : 'Cần đúng ít nhất 80% để qua level.';
-  $('rNext').textContent = finished ? 'Chọn level khác' : passed ? `Level ${level+1} →` : `Chơi lại Level ${level}`;
+  BB.lossAid($('rNext'), { game: 'train', level, won: passed, maxLevel: LV_MAX,
+    tip: 'Đổi ray <b>sau khi</b> tàu phía trước đã qua ngã rẽ. Đổi sớm là tàu đó chạy nhầm ga.',
+    onSkip: L => { if (state !== 'result') return; level = L; startLevel(); } });
+  const cue = BB.peakCue($('rNext'), { game: 'train', level, won: passed, last: finished, maxLevel: LV_MAX });
+  $('rNext').textContent = finished ? 'Chọn level khác' : passed ? `Level ${level+1}${cue ? ' · thử thách' : ''} →` : `Chơi lại Level ${level}`;
 
   const starEls = [...$('rStars').children];
   starEls.forEach(s => s.classList.remove('on'));
@@ -650,11 +655,13 @@ function renderLevels(){
     el.setAttribute('aria-pressed', lv === chosenLv ? 'true' : 'false');
     el.setAttribute('aria-label', `Level ${lv}, ${gaOf(lv)} ga` + (n ? `, ${n} sao` : done ? ', đã qua' : ''));
     el.innerHTML = `${lv}<small>${gaOf(lv)} ga</small>` +
-      (n ? `<span class="lvst" aria-hidden="true">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</span>` : '');
+      (n ? `<span class="lvst" aria-hidden="true">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</span>` : '') +
+      (BB.isPeak(lv, 'train') ? BB.PEAK_TAG : '');
+    if (BB.isPeak(lv, 'train')) el.setAttribute('aria-label', el.getAttribute('aria-label') + ', màn thử thách');
     el.onclick = () => { chosenLv = lv; renderLevels(); menuHud(lv); BB.sfx('key'); };
     grid.appendChild(el);
   }
-  $('startBtn').textContent = `Chơi Level ${chosenLv} · ${gaOf(chosenLv)} ga`;
+  $('startBtn').textContent = `Chơi Level ${chosenLv} · ${BB.isPeak(chosenLv, 'train') ? 'thử thách' : `${gaOf(chosenLv)} ga`}`;
 }
 function toMenu(){
   clearResTimers();

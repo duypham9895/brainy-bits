@@ -415,10 +415,66 @@ let pending = null;
 const request = (key, level) => { pending = { key, level }; };
 const takeRequest = key => { if (pending && pending.key === key) { const l = pending.level; pending = null; return l; } return null; };
 
+// ---------- thua nhẹ tay + báo trước màn thử thách (gates/01-spec/DIFFICULTY-DECISIONS.md, 2026-11-23, Duy chọn B) ----------
+// Không đổi luật chơi: chỉ thêm chữ vào màn kết quả và nhãn trên lưới level, nên sim và gate không đổi.
+const SOFT_LOSS_TO = 5;                 // màn thua có mẹo ở Level 1..5
+const lossRun = {};                     // game -> { L, n }: thua n lần liền nhau ở level L (trong phiên này)
+const softLoss = L => L >= 1 && L <= SOFT_LOSS_TO;
+// game: chỉ tính đỉnh khi bảng level của game đó đã nạp vào BBD (thiếu bảng thì game chạy thứ tự cũ, không có đỉnh).
+const isPeak = (L, game) => {
+  try { const B = window.BBD; return !!(B && (!game || B.games().includes(game)) && B.kind(L) === 'peak'); } catch (e) { return false; }
+};
+const clearLoss = game => { delete lossRun[game]; };
+const SVG = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${p}</svg>`;
+const ICON_TIP = SVG('<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>');
+const ICON_PEAK = SVG('<path d="M3 20l6.5-11 4 6.5 2.5-4L21 20z"/><path d="M9.5 9V4l3 1.5-3 1.5"/>');
+// Gọi mỗi lần hiện màn kết quả, kể cả khi thắng (để xoá phần cũ và đếm lại chuỗi thua).
+// next = nút chính của màn kết quả. tip là chữ cố định của game (có thể có <b>), không bao giờ là dữ liệu người dùng.
+const lossAid = (next, o) => {
+  const card = next.parentElement;
+  card.querySelectorAll('.bb-aid').forEach(n => n.remove());
+  if (o.won) { delete lossRun[o.game]; return false; }
+  const run = lossRun[o.game] && lossRun[o.game].L === o.level ? lossRun[o.game] : { L: o.level, n: 0 };
+  run.n += 1; lossRun[o.game] = run;
+  if (!softLoss(o.level)) return false;
+  const tip = document.createElement('div');
+  tip.className = 'tip bb-aid';
+  tip.innerHTML = `${ICON_TIP}<span>${o.tip}</span>`;
+  card.insertBefore(tip, next);
+  if (run.n >= 2 && o.level < o.maxLevel && o.onSkip) {
+    const skip = document.createElement('button');
+    skip.type = 'button'; skip.className = 'btn alt bb-aid';
+    skip.textContent = `Sang Level ${o.level + 1} trước`;
+    skip.onclick = () => { delete lossRun[o.game]; o.onSkip(o.level + 1); };
+    const note = document.createElement('p');
+    note.className = 'muted bb-aid';
+    note.textContent = `Level ${o.level} vẫn mở, quay lại lúc nào cũng được.`;
+    next.after(skip, note);
+  }
+  return true;
+};
+// Thắng ở level ngay trước một đỉnh: báo trước màn sau là màn thử thách. Trả true nếu đã báo.
+const peakCue = (next, o) => {
+  const card = next.parentElement;
+  card.querySelectorAll('.bb-cue').forEach(n => n.remove());
+  const L = o.level + 1;
+  // maxLevel: đỉnh là level cuối (vd. word L50) thì không hứa "Level 51 nhẹ lại"; kind() không biết số level của game.
+  if (!o.won || o.last || L > o.maxLevel || !(o.peak ? o.peak(L) : isPeak(L, o.game))) return false;
+  let after = '';
+  try { if (L < o.maxLevel && window.BBD.kind(L + 1) === 'breather') after = ` Qua được thì Level ${L + 1} nhẹ lại.`; } catch (e) {}
+  const cue = document.createElement('div');
+  cue.className = 'cue bb-cue';
+  cue.innerHTML = `${ICON_PEAK}<span><b>Level ${L} là màn thử thách.</b>${after}</span>`;
+  card.insertBefore(cue, next);
+  return true;
+};
+const PEAK_TAG = '<span class="peaktag" aria-hidden="true">thử thách</span>';
+
 window.BB = {
   store, settings, motion, EASE, tone, sfx, haptic, countUp, shake, pop, trauma, hitStop, frozen,
   celebrate, toast, record, gameStats, stats, starsAt, levelKey, migrateProgress, setProgress, progressOf, totalStars, dayStreak, daily, shareText, share, resetAll,
   dayKey, mulberry32, onLeave, leave, request, takeRequest, LV_MAX, setLvMax, GAME_NAME, GAMES, wireOverlays,
+  softLoss, isPeak, lossAid, clearLoss, peakCue, PEAK_TAG,
   get pendingSfx() { return sfxTimers.size; },
 };
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', wireOverlays) : wireOverlays();
