@@ -213,7 +213,7 @@ function finish(){
     : `Chưa qua Level ${level} 😅`;
   $('mrBig').textContent = `${perfect}/${round}`;
   $('mrDetail').textContent = !passed
-    ? (BB.softLoss(level) ? `Đúng ${perfect}/${round} lượt, cần ${NEED}.` : `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. Cần đúng ít nhất ${NEED} lượt để qua level.`)
+    ? (BB.softLoss(level) ? `Mới đúng ${perfect} lượt, cần ${NEED}.` : `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. Cần đúng ít nhất ${NEED} lượt để qua level.`)
     : last
       ? `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. ${stars < 3 ? 'Chơi lại để gom đủ 3 sao.' : 'Level cuối, đủ 3 sao.'}`
       : `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. ${nextTxt()}`;
