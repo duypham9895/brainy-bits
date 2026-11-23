@@ -425,8 +425,13 @@ function finish(win){
   $('rrDetail').textContent = last
     ? (stars < 3 ? 'Bạn đã qua level khó nhất. Chơi lại để lấy đủ 3 sao nhé.' : 'Bạn đã qua level khó nhất với đủ 3 sao.')
     : win ? `Level ${level+1}: ${nextInfo(level)}.`
+    : BB.softLoss(level) ? `Còn ${Math.max(1, target - solved)} phép nữa là qua.`
     : `Để rơi xuống nước ${misses} giọt. Giải đủ ${target} phép trước khi hết ${lives} mạng nhé.`;
-  $('rrNext').textContent = win && !last ? `Level ${level+1} →` : `Chơi lại Level ${level}`;
+  BB.lossAid($('rrNext'), { game: 'rain', level, won: win, maxLevel: lvMax(),
+    tip: 'Giải giọt <b>thấp nhất</b> trước, giọt đó sắp chạm nước.',
+    onSkip: L => startLevel(L) });
+  const cue = BB.peakCue($('rrNext'), { game: 'rain', level, won: win, last, maxLevel: lvMax() });
+  $('rrNext').textContent = win && !last ? `Level ${level+1}${cue ? ' · thử thách' : ''} →` : `Chơi lại Level ${level}`;
   showOnly('rresult');
   showStars(stars, win);
 
@@ -453,14 +458,15 @@ function renderLevels(){
     const st = starsAt(L), isDone = L <= done;
     el.className = 'lv' + (isDone ? ' done' : '') + (L === chosen ? ' on' : '');
     el.innerHTML = `${L}<small>${spec(L).target} phép</small>` +
-      (st ? `<span class="lvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span>` : '');
-    el.setAttribute('aria-label', `Level ${L}, ${spec(L).target} phép` + (isDone ? ', đã qua' : '') + (st ? `, ${st} sao` : ''));
+      (st ? `<span class="lvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span>` : '') +
+      (BB.isPeak(L, 'rain') ? BB.PEAK_TAG : '');
+    el.setAttribute('aria-label', `Level ${L}, ${spec(L).target} phép` + (isDone ? ', đã qua' : '') + (st ? `, ${st} sao` : '') + (BB.isPeak(L, 'rain') ? ', màn thử thách' : ''));
     el.setAttribute('aria-pressed', L === chosen ? 'true' : 'false');
     el.onclick = () => { chosen = L; renderLevels(); BB.sfx('tap'); grid.children[L-1].focus({ preventScroll: true }); };
     grid.appendChild(el);
   }
   $('rLvTxt').textContent = `${levelName(chosen)} · giải ${spec(chosen).target} phép · ${livesOf(chosen)} mạng`;
-  $('rStart').textContent = `Chơi Level ${chosen}`;
+  $('rStart').textContent = `Chơi Level ${chosen}${BB.isPeak(chosen, 'rain') ? ' · thử thách' : ''}`;
 }
 
 function toMenu(){

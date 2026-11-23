@@ -61,7 +61,7 @@ test('first boot of v2 migrates once: marker written, old stars and keys kept', 
     rtd: localStorage.getItem('rtd_best3'), again: BB.migrateProgress('train').reason }));
   expect(s).toEqual({ v: '2', st: { best: 14, stars: { 1: 3, 11: 1, 12: 2, 14: 1 } }, rtd: '14', again: 'current' });
   await expect(page.locator('#lvgrid .lv').nth(11).locator('.lvst')).toHaveText('★★☆');
-  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 15 · 15 ga');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 15 · thử thách');
 });
 
 test('corrupt progress does not crash the game on boot', async ({ page }) => {

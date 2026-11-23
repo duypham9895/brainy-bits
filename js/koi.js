@@ -503,13 +503,14 @@ function renderKLevels(){
     el.className = 'lv' + (done ? ' done' : '') + (lv === chosenK ? ' on' : '');
     el.setAttribute('aria-pressed', lv === chosenK ? 'true' : 'false');
     el.setAttribute('aria-label', `Level ${lv}, ${params(lv).koi} cá${done ? ', đã qua' : ''}${n ? `, ${n} sao` : ''}`);
-    el.innerHTML = `${lv}<small>${params(lv).koi} cá</small>` + (n ? `<span class="kst" aria-hidden="true">${starStr(n)}</span>` : '');
+    el.innerHTML = `${lv}<small>${params(lv).koi} cá</small>` + (n ? `<span class="kst" aria-hidden="true">${starStr(n)}</span>` : '') + (BB.isPeak(lv, 'koi') ? BB.PEAK_TAG : '');
+    if (BB.isPeak(lv, 'koi')) el.setAttribute('aria-label', el.getAttribute('aria-label') + ', màn thử thách');
     el.onclick = () => { chosenK = lv; if (state === 'menu') { diff = lv; updateHud(); } renderKLevels(); BB.sfx('key'); };
     grid.appendChild(el);
   }
   const p = params(chosenK);
   $('kLevelTxt').textContent = `${p.koi} cá koi${p.decoys ? ` + ${p.decoys} cá xám` : ''} · chờ ${cdTxt(p)} giây giữa 2 lần cho ăn${moveTxt(p)}`;
-  $('kStartBtn').textContent = `Chơi Level ${chosenK} · ${p.koi} cá`;
+  $('kStartBtn').textContent = `Chơi Level ${chosenK} · ${BB.isPeak(chosenK, 'koi') ? 'thử thách' : `${p.koi} cá`}`;
 }
 
 // Level mới: nói cá bơi nhanh / đổi hướng thế nào, ngắn gọn. Level cũ (×1) không thêm chữ.
@@ -547,13 +548,18 @@ function pondResult(){
   const parts = [`Cho ăn đúng ${pondCorrect}/${pondKoi} con cá koi.`];
   parts.push(pondMistakes ? `Nhầm ${pondMistakes} lần.` : 'Không nhầm lần nào!');
   if (!kPassed) parts.push(pellets > 0 ? 'Nhầm 2 lần nên hồ dừng sớm. Chỉ được nhầm 1 lần.' : 'Chỉ được nhầm tối đa 1 lần để qua level.');
+  if (!kPassed && BB.softLoss(diff)) parts.splice(1, parts.length, `Nhầm ${pondMistakes} lần, được phép 1.`);
   $('krDetail').textContent = parts.join(' ');
+  BB.lossAid($('krNext'), { game: 'koi', level: diff, won: kPassed, maxLevel: LV_MAX,
+    tip: 'Cho ăn theo một vòng quanh hồ, từ trái sang phải. Cá đã ăn trông y hệt cá chưa ăn, đi theo thứ tự thì dễ nhớ hơn.',
+    onSkip: L => { if (state === 'result') startKoiLevel(L); } });
+  const cue = BB.peakCue($('krNext'), { game: 'koi', level: diff, won: kPassed, last, maxLevel: LV_MAX });
   krStars.classList.toggle('hidden', !kPassed);
   paintStars(krStars, stars, true);
   krRule.textContent = kPassed ? STAR_HINT[stars] : '';
   krRule.classList.toggle('hidden', !kPassed);
   if (kPassed && last) $('krNext').textContent = 'Xem tổng kết →';
-  else $('krNext').textContent = kPassed ? `Level ${diff+1} · ${params(diff+1).koi} cá →` : `Chơi lại Level ${diff}`;
+  else $('krNext').textContent = kPassed ? `Level ${diff+1} · ${cue ? 'thử thách' : `${params(diff+1).koi} cá`} →` : `Chơi lại Level ${diff}`;
   show('kresult', true);
   updateHud();
 

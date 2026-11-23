@@ -46,7 +46,7 @@ test('word đọc level từ BBD: 50 cụm, thứ tự bảng v2, sao theo mã c
   expect(r).toEqual({ viaBBD: true, game: 50, core: 50, bbd: 50, version: 2, samePhrases: true, reordered: true, rowsMatch: true, keys: true, marker: '2' });
   await expect(page.locator('#wlvgrid .lv')).toHaveCount(50);
   await expect(page.locator('#wlvgrid .lv').nth(29)).toContainText('30');
-  await expect(page.locator('#wlvgrid .lv').nth(49)).toHaveAttribute('aria-label', 'Level 50, 7 chữ');
+  await expect(page.locator('#wlvgrid .lv').nth(49)).toHaveAttribute('aria-label', 'Level 50, 7 chữ, màn thử thách');
   await expect(page.locator('#hubWord')).toHaveCount(1);
 });
 
@@ -116,7 +116,7 @@ test('màn 49 sang màn 50; màn cuối (50): ghi sao, phá đảo, không có L
   expect(await st(page)).toMatchObject({ level: 49, puzzle: 'con mèo' });
   await vni(page, 'conme2o'); await page.keyboard.press('Enter');
   await expect(page.locator('#wresult')).toBeVisible({ timeout: 5000 });
-  await expect(page.locator('#wrNext')).toHaveText('Level 50 →');
+  await expect(page.locator('#wrNext')).toHaveText('Level 50 · thử thách →');
   await page.click('#wrNext');
   await expect(page.locator('#wLevel')).toHaveText('Level 50 · 4+3 chữ');
   expect(await st(page)).toMatchObject({ state: 'play', level: 50, puzzle: 'nước mía' });

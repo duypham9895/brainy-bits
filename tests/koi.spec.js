@@ -204,7 +204,9 @@ test('neon-13: failing on the last pellet says "Chỉ được nhầm tối đa 
   for (let i = 0; i < 2; i++) { await skipCooldown(page); expect(await tapFish(page, 'fed')).toBe(true); }
   expect(await page.evaluate(() => window.__koi.pellets)).toBe(0);
   await expect(page.locator('#kresult')).toBeVisible();
-  await expect(page.locator('#krDetail')).toContainText('Chỉ được nhầm tối đa 1 lần để qua level.');
+  // L1–5 thua nhẹ tay (DIFFICULTY-DECISIONS 2026-11-23): câu ngắn + mẹo thay cho câu luật dài.
+  await expect(page.locator('#krDetail')).toHaveText('Cho ăn đúng 8/10 con cá koi. Nhầm 2 lần, được phép 1.');
+  await expect(page.locator('#kresult .tip')).toContainText('Cho ăn theo một vòng quanh hồ');
   await expect(page.locator('#krDetail')).not.toContainText('Cần nhầm');
   expect(errors).toEqual([]);
 });

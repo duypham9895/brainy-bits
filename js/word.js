@@ -107,6 +107,8 @@ const LV_MAX = BBD ? Math.min(BBD.maxLevel('word'), PHRASES.length) : PHRASES.le
 const rowsBBD = BBD ? Array.from({ length: LV_MAX }, (_, k) => PHRASES.find(p => p.i === BBD.level('word', k + 1).phrase)) : null;
 const LEVELS = rowsBBD && rowsBBD.every(Boolean) ? rowsBBD : PHRASES.slice(0, LV_MAX);
 if (rowsBBD && !rowsBBD.every(Boolean)) console.warn('word: BBD table mismatch, using legacy order');
+// Màn thử thách chỉ có nghĩa khi đang chạy bảng BBD; thứ tự cũ (xếp theo số chữ) không có đỉnh.
+const isPeakW = L => LEVELS === rowsBBD && BB.isPeak(L, 'word');
 // Số level thật nằm ở đây, không phải hằng số trong core.js: đăng ký trước khi hub.js đọc
 // (word.js nạp trước hub.js), để hub, thử thách ngày và chia sẻ cùng đếm đúng số cụm.
 if (BB.setLvMax) BB.setLvMax('word', LV_MAX); else if (BB.LV_MAX) BB.LV_MAX.word = LV_MAX;
@@ -371,15 +373,19 @@ function finish(win, snap, quiet = false){
   level = snap.level; puzzle = snap.puzzle;               // luôn chấm đúng cụm đã chơi
   const stars = win ? starsFor(snap.tries) : 0;
   const rec = BB.record({ game: 'word', level, won: win, stars, score: win ? MAX_TRIES + 1 - snap.tries : 0, ms: snap.ms });
-  if (quiet) return;
+  if (quiet) { BB.clearLoss('word'); return; }   // rời game giữa chừng: không còn là chuỗi thua liền nhau
   const last = level >= LV_MAX;
   const ans = answer(puzzle).toUpperCase();
   $('wrTitle').textContent = win ? (last ? 'Phá đảo! 🏆' : 'Chính xác! 🎉') : 'Hết lượt rồi 😅';
   $('wrBig').textContent = win ? ans : '? ? ?';
   $('wrDetail').textContent = win
     ? (last ? `Đoán ra sau ${snap.tries}/${MAX_TRIES} lượt. Bạn đã qua hết ${LV_MAX} cụm từ.` : `Đoán ra sau ${snap.tries}/${MAX_TRIES} lượt.`)
-    : 'Chơi lại cụm từ này, hoặc xem đáp án.';
-  $('wrNext').textContent = win ? (last ? 'Chơi lại từ Level 1' : `Level ${level + 1} →`) : `Chơi lại Level ${level}`;
+    : `${BB.softLoss(level) ? `Hết ${MAX_TRIES} lượt. ` : ''}Chơi lại cụm từ này, hoặc xem đáp án.`;
+  BB.lossAid($('wrNext'), { game: 'word', level, won: win, maxLevel: LV_MAX,
+    tip: 'Lượt đầu, chọn từ có nhiều nguyên âm khác nhau để biết nhanh cụm này có vần nào. Kẹt thì bấm 💡 xem chủ đề.',
+    onSkip: L => startLevel(L) });
+  const cue = BB.peakCue($('wrNext'), { game: 'word', level, won: win, last, maxLevel: LV_MAX, peak: isPeakW });
+  $('wrNext').textContent = win ? (last ? 'Chơi lại từ Level 1' : `Level ${level + 1}${cue ? ' · thử thách' : ''} →`) : `Chơi lại Level ${level}`;
   $('wrReveal').classList.toggle('hidden', win);
   showStars(win ? stars : -1);
   $('wresult').classList.remove('hidden');
@@ -418,13 +424,13 @@ function renderLevels(){
   for (let L = 1; L <= LV_MAX; L++){
     const el = document.createElement('button'), st = starsOf(L);
     el.className = 'lv' + (isDone(L) ? ' done' : '') + (L === chosen ? ' on' : '');
-    el.innerHTML = `${L}<small>${LEVELS[L-1].n} chữ</small>` + (st ? `<i class="wlvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</i>` : '');
-    el.setAttribute('aria-label', `Level ${L}, ${LEVELS[L-1].n} chữ` + (st ? `, ${st} sao` : isDone(L) ? ', đã qua' : ''));
+    el.innerHTML = `${L}<small>${LEVELS[L-1].n} chữ</small>` + (st ? `<i class="wlvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</i>` : '') + (isPeakW(L) ? BB.PEAK_TAG : '');
+    el.setAttribute('aria-label', `Level ${L}, ${LEVELS[L-1].n} chữ` + (st ? `, ${st} sao` : isDone(L) ? ', đã qua' : '') + (isPeakW(L) ? ', màn thử thách' : ''));
     el.setAttribute('aria-pressed', L === chosen ? 'true' : 'false');
     el.onclick = () => { chosen = L; renderLevels(); BB.sfx('tap'); };
     grid.appendChild(el);
   }
-  $('wStart').textContent = `Chơi Level ${chosen} · ${LEVELS[chosen-1].n} chữ cái`;
+  $('wStart').textContent = `Chơi Level ${chosen} · ${isPeakW(chosen) ? 'thử thách' : `${LEVELS[chosen-1].n} chữ cái`}`;
 }
 function resumeBtn(){
   let b = $('wResume');
@@ -525,6 +531,7 @@ $('wrReveal').onclick = () => {
   $('wrBig').textContent = answer(puzzle).toUpperCase();
   $('wrDetail').textContent = 'Lần sau sẽ đoán ra thôi!';
   $('wrReveal').classList.add('hidden');
+  BB.lossAid($('wrNext'), { game: 'word', level, won: true });   // bỏ mẹo + nút sang level: nút chính giờ đã đi tiếp
   $('wrNext').textContent = level < LV_MAX ? `Level ${level+1} →` : 'Về Level 1';
   passed = true;   // cho đi tiếp, nhưng level này không có sao nên không có ✓
 };
