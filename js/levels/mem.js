@@ -56,7 +56,7 @@
   const levels = V2.map(([size, t, disp]) => ({ size, t, k: 0.3, disp }));
   if (BBD && BBD.register) BBD.register('mem', {
     version: 2,
-    maxLevel: 31,
+    maxLevel: 32,
     legacyLevels,
     levels,
     // Knobs below drive L31+ only and follow the same template as rows 6–30: steps hold 6 tiles and spread
