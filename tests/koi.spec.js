@@ -1,6 +1,7 @@
 // Cá Koi: lỗi đã sửa theo audit 2026-11-20 (KOI-01..07, OPS-4, OPS-6) và phần thưởng (sao, kỷ lục).
 // window.__koi chỉ tồn tại khi init script đặt window.__BB_TEST__.
 import { test, expect } from './fixtures.js';
+import { tapFish, skipCooldown } from './koi-helpers.js';
 
 async function openKoi(page, storage = {}) {
   const errors = [];
@@ -25,21 +26,7 @@ async function start(page, lv) {
   await expect(page.locator('#kmenu')).toBeHidden();
 }
 
-// Chạm vào một con cá thoả `kind` (decoy | fresh | fed) nằm xa các con khác, trong cùng một frame.
-async function tapFish(page, kind, opts = {}) {
-  return page.evaluate(([kind, o]) => {
-    const K = window.__koi, fs = K.fish;
-    const ok = f => kind === 'decoy' ? f.decoy : !f.decoy && (kind === 'fed' ? f.fed : !f.fed);
-    const iso = f => Math.min(...fs.filter(g => g !== f).map(g => Math.hypot(g.x - f.x, g.y - f.y)));
-    const c = fs.filter(ok).sort((a, b) => iso(b) - iso(a))[0];
-    if (!c) return false;
-    const cv = document.getElementById('kcv'), r = cv.getBoundingClientRect();
-    cv.dispatchEvent(new PointerEvent('pointerdown', Object.assign({ bubbles: true, cancelable: true,
-      isPrimary: true, button: 0, pointerType: 'touch', clientX: r.left + c.x, clientY: r.top + c.y }, o)));
-    return true;
-  }, [kind, opts]);
-}
-const skipCooldown = page => page.evaluate(() => { window.__koi.cooldown = 0; });
+// tapFish / skipCooldown: tests/koi-helpers.js (one shared helper, aims via the game's own fishAt()).
 
 test('KOI-02: double-tap on a grey fish counts one mistake, then the dial locks', async ({ page }) => {
   const errors = await openKoi(page);
@@ -173,8 +160,8 @@ test('review: tap ellipse leans toward the head, not the tail', async ({ page })
   await skipCooldown(page);
   const r = await page.evaluate(() => {
     const K = window.__koi, fs = K.fish, cv = document.getElementById('kcv'), rc = cv.getBoundingClientRect();
-    const iso = f => Math.min(...fs.filter(g => g !== f).map(g => Math.hypot(g.x - f.x, g.y - f.y)));
-    const f = fs.filter(g => !g.decoy).sort((a, b) => iso(b) - iso(a))[0];
+    const f = fs.find(g => !g.decoy);
+    fs.forEach(g => { if (g !== f) { g.x = -1000; g.y = -1000; } });     // no neighbour can win the tap (tests/koi-helpers.js)
     const tap = k => cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, isPrimary: true,
       button: 0, pointerType: 'touch', clientX: rc.left + f.x + Math.cos(f.ang) * k * f.L, clientY: rc.top + f.y + Math.sin(f.ang) * k * f.L }));
     const big = f.L * 0.52 > 20;                       // trần 20px chỉ áp khi cá nhỏ

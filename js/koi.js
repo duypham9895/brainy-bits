@@ -656,6 +656,7 @@ if (window.__BB_TEST__) window.__koi = {
   get state(){ return state; }, get fish(){ return fish; }, get pellets(){ return pellets; },
   get earlyTaps(){ return earlyTaps; }, set cooldown(v){ cooldown = v; }, get cooldown(){ return cooldown; },
   get diff(){ return diff; }, get turnMul(){ return turnMul; }, params: d => params(d), LV_MAX, engine: !!BBD,
+  fishAt: (x, y) => fishAt(x, y),   // tests/koi-helpers.js taps only points the game itself resolves to the target
 };
 updateHud();
 })();

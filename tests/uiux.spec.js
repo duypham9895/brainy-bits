@@ -2,6 +2,7 @@
 // zero horizontal overflow, focus rings, reduced motion, OS text-scale opt-in,
 // and regression checks for the fixed menu/result/display bugs.
 import { test, expect } from './fixtures.js';
+import { feedAll } from './koi-helpers.js';
 
 const PROGRESS_FIXTURE = {
   bb_stats: JSON.stringify({
@@ -276,14 +277,7 @@ test('Result cards place stars above the big hero number across Train, Koi, Rain
   await page.goto('/#koi');
   await page.click('#kStartBtn');
   const koiN = await page.evaluate(() => window.__koi.fish.filter(x => !x.decoy).length);   // L1 = 10 since the 2026-11-22 easy opening (12 in table v2 before, 6 in v1)
-  for (let i = 0; i < koiN; i++) {
-    await page.evaluate(() => {
-      const K = window.__koi; K.cooldown = 0;
-      const f = K.fish.find(x => !x.decoy && !x.fed);
-      const cv = document.getElementById('kcv'), r = cv.getBoundingClientRect();
-      cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, isPrimary: true, button: 0, clientX: r.left + f.x, clientY: r.top + f.y }));
-    });
-  }
+  expect(await feedAll(page)).toBe(koiN);   // shared helper: taps only points the game's fishAt() resolves to the target
   await expect(page.locator('#kresult')).toBeVisible();
   const kPos = await page.evaluate(() => ({
     stars: document.getElementById('krStars').getBoundingClientRect().top,

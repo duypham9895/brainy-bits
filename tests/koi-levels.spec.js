@@ -3,6 +3,7 @@
 // served page (before core.js) so the test runs against the integrated game either way.
 // window.__koi exists only when the init script sets window.__BB_TEST__.
 import { test, expect } from './fixtures.js';
+import { feedAll } from './koi-helpers.js';
 
 async function withEngine(page) {
   await page.route(url => url.pathname === '/' || url.pathname === '/index.html', async route => {
@@ -41,51 +42,7 @@ async function start(page, lv) {
   await expect(page.locator('#kmenu')).toBeHidden();
 }
 
-// Feed every unfed koi, most isolated first, skipping the dial wait. Returns how many were fed.
-async function feedAll(page) {
-  let n = 0;
-  for (let i = 0; i < 20; i++) {
-    let status = 'wait';
-    for (let tries = 0; tries < 20 && status === 'wait'; tries++) {
-      status = await page.evaluate(() => {
-        const K = window.__koi, fs = K.fish;
-        if (K.state !== 'play') return 'done';
-        const pt = f => [f.x + Math.cos(f.ang) * f.L * 0.04, f.y + Math.sin(f.ang) * f.L * 0.04];
-        const iso = f => {
-          const [x, y] = pt(f);
-          return Math.min(...fs.filter(g => g !== f).map(g => { const [gx, gy] = pt(g); return Math.hypot(gx - x, gy - y); }));
-        };
-        const c = fs.filter(f => !f.decoy && !f.fed).sort((a, b) => iso(b) - iso(a))[0];
-        if (!c) return 'done';
-        if (iso(c) < 10) return 'wait';
-        K.cooldown = 0;
-        const [tx, ty] = pt(c);
-        const cv = document.getElementById('kcv'), r = cv.getBoundingClientRect();
-        cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, isPrimary: true,
-          button: 0, pointerType: 'touch', clientX: r.left + tx, clientY: r.top + ty }));
-        return 'fed';
-      });
-      if (status === 'wait') await page.waitForTimeout(60);
-    }
-    if (status === 'wait') {
-      status = await page.evaluate(() => {
-        const K = window.__koi, fs = K.fish;
-        if (K.state !== 'play') return 'done';
-        const c = fs.filter(f => !f.decoy && !f.fed)[0];
-        if (!c) return 'done';
-        K.cooldown = 0;
-        const tx = c.x + Math.cos(c.ang) * c.L * 0.04, ty = c.y + Math.sin(c.ang) * c.L * 0.04;
-        const cv = document.getElementById('kcv'), r = cv.getBoundingClientRect();
-        cv.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, isPrimary: true,
-          button: 0, pointerType: 'touch', clientX: r.left + tx, clientY: r.top + ty }));
-        return 'fed';
-      });
-    }
-    if (status !== 'fed') break;
-    n++;
-  }
-  return n;
-}
+// feedAll: tests/koi-helpers.js (one shared helper, aims via the game's own fishAt()).
 
 test('engine wired: LV_MAX = 32 for game, hub and daily; table v2 plays BBD rows, v1 kept as legacyLevels', async ({ page }) => {
   const errors = await openKoi(page);
