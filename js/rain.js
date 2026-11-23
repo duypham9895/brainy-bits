@@ -434,6 +434,7 @@ function finish(win){
   $('rrNext').textContent = win && !last ? `Level ${level+1}${cue ? ' · thử thách' : ''} →` : `Chơi lại Level ${level}`;
   showOnly('rresult');
   showStars(stars, win);
+  $('rrRule').classList.toggle('hidden', !win);   // luật sao chỉ hiện khi qua, như koi và word
 
   if (win) {
     BB.sfx('levelUp'); BB.haptic('levelUp');

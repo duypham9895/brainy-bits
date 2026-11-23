@@ -610,6 +610,7 @@ function endLevel(){
   $('rNext').textContent = finished ? 'Chọn level khác' : passed ? `Level ${level+1}${cue ? ' · thử thách' : ''} →` : `Chơi lại Level ${level}`;
 
   const starEls = [...$('rStars').children];
+  $('rRule').classList.toggle('hidden', !passed);   // luật sao chỉ hiện khi qua, như koi và word
   starEls.forEach(s => s.classList.remove('on'));
   $('rStars').setAttribute('aria-label', `${stars} trên 3 sao`);
   show('result', true);

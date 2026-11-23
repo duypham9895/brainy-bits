@@ -223,6 +223,7 @@ function finish(){
   const cue = BB.peakCue($('mrNext'), { game: 'mem', level, won: passed, last, maxLevel: LV_MAX });
   $('mrNext').textContent = passed && !last ? `Level ${level+1}${cue ? ' · thử thách' : ''} →` : `Chơi lại Level ${level}`;
   showStars(stars);
+  $('mrStarRule').classList.toggle('hidden', !passed);   // luật sao chỉ hiện khi qua, như koi và word
   $('mresult').classList.remove('hidden');
 
   if (passed) {
