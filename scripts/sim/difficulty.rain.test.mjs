@@ -96,7 +96,7 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
   // a 10-drop chain, 4 lives instead of 3, slower rain than the peak before.
   test('L1..30 (v2): tiers per block, breathers = 10 drops + 4 lives + slower rain, steps never get easier, caps hold', () => {
     const B = loadBBD();
-    assert.equal(B.maxLevel('rain'), 31);
+    assert.equal(B.maxLevel('rain'), 32);
     const ops = Array.from({ length: 30 }, (_, i) => B.level('rain', i + 1).ops);
     assert.deepEqual(ops, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14]);
     for (let L = 7; L <= 30; L++) {

@@ -140,7 +140,7 @@ test('hub reads legacy keys, seeds BB stats once and shows level/LV_MAX and star
   await expect(page.locator('#hubTrain')).toHaveText('Đã qua 3/32 level');
   await expect(page.locator('#hubMem')).toHaveText('Đã qua 4/32 level');
   await expect(page.locator('#hubKoi')).toHaveText('Đã qua 10/32 level');
-  await expect(page.locator('#hubRain')).toHaveText('Đã qua 2/31 level · ★ 5/93');
+  await expect(page.locator('#hubRain')).toHaveText('Đã qua 2/32 level · ★ 5/96');
   await expect(page.locator('#hubWord')).toHaveText('50 level, chưa chơi');
   await expect(page.locator('#hubStars')).toHaveText('5');
   const s = await page.evaluate(() => BB.gameStats('mem').best);
