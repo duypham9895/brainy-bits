@@ -13,12 +13,12 @@ async function openTrain(page, init) {
   return errors;
 }
 
-test('the level grid shows 31 levels and the hub/daily cap agrees', async ({ page }) => {
+test('the level grid shows 32 levels and the hub/daily cap agrees', async ({ page }) => {
   const errors = await openTrain(page);
-  await expect(page.locator('#lvgrid .lv')).toHaveCount(31);
-  await expect(page.locator('#lvgrid .lv').nth(30)).toHaveAttribute('aria-label', 'Level 31, 15 ga');
+  await expect(page.locator('#lvgrid .lv')).toHaveCount(32);
+  await expect(page.locator('#lvgrid .lv').nth(31)).toHaveAttribute('aria-label', 'Level 32, 15 ga');
   const r = await page.evaluate(() => ({ usesTable: __rtd.usesTable, max: __rtd.LV_MAX, bb: BB.LV_MAX.train, bbd: BBD.maxLevel('train') }));
-  expect(r).toEqual({ usesTable: true, max: 31, bb: 31, bbd: 31 });
+  expect(r).toEqual({ usesTable: true, max: 32, bb: 32, bbd: 32 });
   expect(errors).toEqual([]);
 });
 
@@ -69,24 +69,24 @@ test('corrupt progress does not crash the game on boot', async ({ page }) => {
     localStorage.clear();
     localStorage.setItem('bb_stats', '{bad'); localStorage.setItem('bb_tablev_train', 'zz'); localStorage.setItem('rtd_best3', '3');
     sessionStorage.setItem('seeded', '1'); } } catch (e) {} });
-  await expect(page.locator('#lvgrid .lv')).toHaveCount(31);
+  await expect(page.locator('#lvgrid .lv')).toHaveCount(32);
   await expect(page.locator('#startBtn')).toHaveText('Chơi Level 4 · 7 ga');
   expect(errors).toEqual([]);
 });
 
-test('level 31 (breather) can be picked and started, with its table parameters', async ({ page }) => {
+test('level 32 (step) can be picked and started, with its table parameters', async ({ page }) => {
   const errors = await openTrain(page);
-  await page.locator('#lvgrid .lv').nth(30).click();
-  await expect(page.locator('#lvgrid .lv').nth(30)).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 31 · 15 ga');
-  await expect(page.locator('#hLevel')).toHaveText('Level 31 · 15 ga');
+  await page.locator('#lvgrid .lv').nth(31).click();
+  await expect(page.locator('#lvgrid .lv').nth(31)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 32 · 15 ga');
+  await expect(page.locator('#hLevel')).toHaveText('Level 32 · 15 ga');
   await page.click('#startBtn');
   const s = await page.evaluate(() => ({ state: __rtd.state, level: __rtd.level, spec: { ...__rtd.spec },
-    want: { ...BBD.level('train', 31) }, ga: __rtd.map.stations.length }));
+    want: { ...BBD.level('train', 32) }, ga: __rtd.map.stations.length }));
   expect(s.state).toBe('countdown');
-  expect(s.level).toBe(31);
+  expect(s.level).toBe(32);
   expect(s.spec).toEqual(s.want);
-  expect(s.spec.kind).toBe('breather');
+  expect(s.spec.kind).toBe('step');
   expect(s.ga).toBe(15);
   expect(errors).toEqual([]);
 });
@@ -106,7 +106,7 @@ test('next-level flow: L11 leads on to L12, a peak announces the breather', asyn
   expect(await page.evaluate(() => __rtd.level)).toBe(16);
 });
 
-test('passing level 30 leads to L31 breather; passing level 31 records stars and shows the finished state', async ({ page }) => {
+test('passing level 30 leads to L31 breather, L31 leads to L32 step, and L32 records stars and shows the finished state', async ({ page }) => {
   await openTrain(page);
   await page.click('#startBtn');
   await page.evaluate(() => __rtd.endWith(30, 20, 20));
@@ -116,13 +116,19 @@ test('passing level 30 leads to L31 breather; passing level 31 records stars and
   await page.click('#rNext');
   expect(await page.evaluate(() => __rtd.level)).toBe(31);
   await page.evaluate(() => __rtd.endWith(31, 20, 20));
-  await expect(page.locator('#rTitle')).toContainText('Xong cả 31 level');
+  await expect(page.locator('#rTitle')).toHaveText('Qua Level 31! 🎉');
+  await expect(page.locator('#rDetail')).toHaveText('Level 32: tàu ra dày hơn.');
+  await expect(page.locator('#rNext')).toHaveText('Level 32 →');
+  await page.click('#rNext');
+  expect(await page.evaluate(() => __rtd.level)).toBe(32);
+  await page.evaluate(() => __rtd.endWith(32, 20, 20));
+  await expect(page.locator('#rTitle')).toContainText('Xong cả 32 level');
   await expect(page.locator('#rNext')).toHaveText('Chọn level khác');
   await page.click('#rNext');
   await expect(page.locator('#menu')).toBeVisible();
-  expect(await page.evaluate(() => [trainBest(), BB.gameStats('train').best, +localStorage.getItem('rtd_best3'), BB.gameStats('train').stars[31]])).toEqual([31, 31, 31, 3]);
-  await expect(page.locator('#bestTxt')).toHaveText('Đã qua cả 31 level');
-  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 31 · 15 ga');
+  expect(await page.evaluate(() => [trainBest(), BB.gameStats('train').best, +localStorage.getItem('rtd_best3'), BB.gameStats('train').stars[32]])).toEqual([32, 32, 32, 3]);
+  await expect(page.locator('#bestTxt')).toHaveText('Đã qua cả 32 level');
+  await expect(page.locator('#startBtn')).toHaveText('Chơi Level 32 · 15 ga');
 });
 
 test('old progress keys still count: rtd_best3 only, and bb_stats stars', async ({ page }) => {
@@ -155,11 +161,11 @@ test('without the table (script blocked) the game still boots on the old 11 leve
   expect(errors).toEqual([]);
 });
 
-test('320 px phone: 31 tiles fit without sideways scroll; switch tap targets stay ≥ 44 px', async ({ page }) => {
+test('320 px phone: 32 tiles fit without sideways scroll; switch tap targets stay ≥ 44 px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await openTrain(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.locator('#lvgrid .lv').nth(30).click();
+  await page.locator('#lvgrid .lv').nth(31).click();
   await page.click('#startBtn');
   const t = await page.evaluate(() => {
     const cell = __rtd.cell, TR = cell * 0.48;
