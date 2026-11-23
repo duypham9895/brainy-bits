@@ -382,7 +382,7 @@ function finish(win, snap, quiet = false){
     ? (last ? `Đoán ra sau ${snap.tries}/${MAX_TRIES} lượt. Bạn đã qua hết ${LV_MAX} cụm từ.` : `Đoán ra sau ${snap.tries}/${MAX_TRIES} lượt.`)
     : `${BB.softLoss(level) ? `Hết ${MAX_TRIES} lượt. ` : ''}Chơi lại cụm từ này, hoặc xem đáp án.`;
   BB.lossAid($('wrNext'), { game: 'word', level, won: win, maxLevel: LV_MAX,
-    tip: 'Lượt đầu, chọn từ có nhiều nguyên âm khác nhau để biết nhanh cụm này có vần nào. Kẹt thì bấm 💡 xem chủ đề.',
+    tip: 'Lượt đầu, chọn từ có nhiều nguyên âm khác nhau để biết nhanh cụm này có vần nào. Kẹt thì bấm <b>Xem gợi ý chủ đề</b>.',
     onSkip: L => startLevel(L) });
   const cue = BB.peakCue($('wrNext'), { game: 'word', level, won: win, last, maxLevel: LV_MAX, peak: isPeakW });
   $('wrNext').textContent = win ? (last ? 'Chơi lại từ Level 1' : `Level ${level + 1}${cue ? ' · thử thách' : ''} →`) : `Chơi lại Level ${level}`;

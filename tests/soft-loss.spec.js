@@ -87,6 +87,7 @@ test('Rain L3: losing twice shows the tip, the gap, then a skip to Level 4 that 
   await expect(page.locator('#rresult')).toBeVisible();
   await expect(page.locator('#rrDetail')).toHaveText(/^Còn \d+ phép nữa là qua\.$/);
   await expect(page.locator('#rresult .tip')).toContainText('Giải giọt thấp nhất trước');
+  await expect(page.locator('#rrRule')).toBeHidden();   // thua: không hiện luật sao (như koi, word)
   await expect(page.locator('#rresult .btn.alt', { hasText: 'Sang Level 4' })).toHaveCount(0);
   await page.click('#rrNext');                         // Chơi lại Level 3
   await expect(page.locator('#rresult')).toBeHidden();
