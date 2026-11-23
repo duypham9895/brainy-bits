@@ -2,9 +2,9 @@
  "game": "train",
  "n": 1200,
  "from": 1,
- "to": 31,
+ "to": 32,
  "simVersion": 1,
- "generatedOn": "2026-11-22",
+ "generatedOn": "2026-11-23",
  "config": {
   "E1": "A",
   "breatherEasyOk": true,
@@ -1558,6 +1558,53 @@
      "acc": 0.9144,
      "msMedian": 117961,
      "p3": 0.9808
+    }
+   }
+  },
+  {
+   "L": 32,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7442,
+   "D": 1.0339,
+   "bL": -1.02,
+   "knobs": {
+    "stations": 15,
+    "base": 3.47,
+    "speedF": 0.28,
+    "burstP": 0,
+    "twoTone": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.5975,
+     "ci": [
+      0.5695,
+      0.6249
+     ],
+     "acc": 0.7397,
+     "msMedian": 117933,
+     "p3": 0.8342
+    },
+    "median": {
+     "p": 0.735,
+     "ci": [
+      0.7093,
+      0.7592
+     ],
+     "acc": 0.8235,
+     "msMedian": 118613,
+     "p3": 0.9375
+    },
+    "skilled": {
+     "p": 0.8633,
+     "ci": [
+      0.8427,
+      0.8816
+     ],
+     "acc": 0.9109,
+     "msMedian": 118304,
+     "p3": 0.9667
     }
    }
   }
