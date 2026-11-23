@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Cứu một lần</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --accent:#ffb02e;--sub:#b6d0c0;--muted:#98b8a5;--note:#d2e4d8;--rule-ui:rgba(255,255,255,.26);--surface-soft:rgba(255,255,255,.06);
+  --ease:cubic-bezier(0.22,1,0.36,1);--focus:#ffd54a;
+  --page:#0b120e;--page-ink:#f3efe6;--page-sub:#afc3b6;--page-rule:rgba(255,255,255,.12);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--page);color:var(--page-ink);font-family:"Be Vietnam Pro",system-ui,sans-serif;line-height:1.5}
+main{max-width:1180px;margin:0 auto;padding:20px 16px 48px}
+a{color:#f2c057}
+a:focus-visible,button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+.top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--page-rule);padding-bottom:12px}
+.top .tag{font-size:.8rem;color:var(--page-sub)}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opts a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:12px;background:rgba(255,255,255,.06);color:var(--page-ink);text-decoration:none;font-weight:700;font-size:.92rem}
+.opts a[aria-current="page"]{background:#f09248;color:#1c1005}
+h1.t{font-size:clamp(1.4rem,1.1rem + 1.2vw,1.9rem);line-height:1.25;margin:18px 0 6px;text-wrap:balance}
+.lede{color:var(--page-sub);max-width:68ch;margin:0 0 6px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin:16px 0 24px;padding:0;list-style:none}
+.facts li{background:rgba(255,255,255,.045);border-radius:14px;padding:10px 14px;font-size:.9rem;color:var(--page-sub)}
+.facts b{color:var(--page-ink);display:block;font-size:.95rem}
+
+.stage{display:flex;flex-wrap:wrap;gap:32px 22px;justify-content:center}
+figure{margin:0;width:min(360px,100%);min-inline-size:0}
+figcaption{margin-top:14px;font-size:.88rem;color:var(--page-sub)}
+figcaption b{color:var(--page-ink)}
+.step{display:inline-block;font-size:.75rem;font-weight:800;color:#1c1005;background:#f2c057;border-radius:8px;padding:1px 8px;margin-right:6px}
+
+.phone{position:relative;border-radius:30px;overflow:hidden;min-height:640px;padding:18px 14px;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(120% 80% at 30% 10%,#21402e 0%,#10231a 55%,#0a170f 100%);box-shadow:0 0 0 8px #1a1f1c,0 0 0 9px #2c3430,0 24px 60px rgba(0,0,0,.5)}
+.phone.rain{background:radial-gradient(120% 80% at 30% 10%,#1d4a74 0%,#0f2a44 55%,#081a2c 100%)}
+.phone::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.035) 46px 48px);pointer-events:none}
+.phone .dim{position:absolute;inset:0;background:rgba(6,14,9,.55)}
+.phone > .card{z-index:1}
+
+.card{position:relative;background:linear-gradient(170deg,#1b3326 0%,#12241a 100%);border:1px solid rgba(255,255,255,.14);
+  border-radius:26px;padding:22px 20px 20px;width:100%;text-align:center;color:#fff;
+  box-shadow:0 22px 60px rgba(0,0,0,.56),inset 0 1px 0 rgba(255,255,255,.1)}
+.rain .card{background:linear-gradient(170deg,#173a5c 0%,#0e2338 100%)}
+.card h2{margin:0;font-size:1.5rem;font-weight:800;line-height:1.2;text-wrap:balance}
+.stars{display:flex;justify-content:center;gap:8px;font-size:40px;margin:6px 0 2px;line-height:1}
+.stars .s{color:rgba(255,255,255,.16)}
+.stars .s.on{color:#ffd54a}
+.big{font-size:3rem;font-weight:800;line-height:1.05;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 4px}
+.stats div{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:9px 8px;font-size:.82rem;color:var(--sub)}
+.stats b{display:block;font-size:1.25rem;color:#fff;font-variant-numeric:tabular-nums}
+.note{color:var(--note);font-size:.92rem;line-height:1.45;margin:8px 0 0;text-wrap:balance}
+.muted{color:var(--muted);font-size:.85rem;line-height:1.4;margin:10px 0 0}
+.label{font-size:.78rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:4px 0 8px;font-weight:700}
+.btn{display:block;width:100%;margin-top:12px;border:0;border-radius:16px;padding:13px 16px;font-family:inherit;font-size:1.1rem;font-weight:800;line-height:1.2;
+  background:linear-gradient(180deg,#ffc342,#ff7a2e);color:#2a1300;box-shadow:0 5px 0 #b8481a,0 10px 22px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.35);
+  cursor:pointer;transition:transform .12s var(--ease),box-shadow .12s var(--ease)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #b8481a}
+.btn.alt{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.16);box-shadow:none;font-size:1rem;font-weight:700}
+.lvgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.lv{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:1.5px solid var(--rule-ui);background:var(--surface-soft);color:#fff;
+  border-radius:14px;min-height:60px;padding:6px 2px;font-family:inherit;font-size:1.1rem;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+.lv small{display:block;font-size:.72rem;font-weight:600;color:var(--muted);line-height:1.15}
+.lv .lvst{font-size:.62rem;color:#ffd54a;letter-spacing:1px}
+.lv.done{background:rgba(126,224,129,.12);border-color:rgba(126,224,129,.42)}
+.lv.on{border-color:var(--accent);background:rgba(255,176,46,.2)}
+.lv.on small{color:#ffe7b8}
+
+.tip{display:flex;gap:10px;align-items:flex-start;text-align:left;margin:12px 0 0;padding:10px 12px;border-radius:14px;background:rgba(255,213,74,.1);font-size:.9rem;line-height:1.42;color:#f3efe6}
+.tip svg{flex:none;width:20px;height:20px;margin-top:1px;color:#ffd54a}
+.tip b{color:#ffd54a}
+.peaktag{display:inline-block;margin-top:2px;font-size:.62rem;font-weight:800;color:#2a1300;background:#ffb02e;border-radius:6px;padding:1px 5px;line-height:1.3}
+.cue{display:flex;gap:10px;align-items:center;text-align:left;margin:12px 0 0;padding:10px 12px;border-radius:14px;background:rgba(255,176,46,.12);font-size:.9rem;line-height:1.4;color:#f3efe6}
+.cue svg{flex:none;width:22px;height:22px;color:#ffb02e}
+.list{display:grid;gap:7px;margin:14px 0 4px;text-align:left;padding:0;list-style:none}
+.list li{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.055);border-radius:14px;padding:9px 12px;font-size:.9rem;line-height:1.38;color:#edf4ef}
+.list svg{flex:none;width:18px;height:18px;color:var(--accent)}
+.badge-ico{width:56px;height:56px;margin:0 auto 10px;border-radius:50%;background:rgba(255,176,46,.16);display:grid;place-items:center;color:#ffb02e}
+.badge-ico svg{width:30px;height:30px}
+.hud{position:absolute;top:18px;left:20px;right:20px;display:flex;justify-content:space-between;font-weight:800;font-size:.95rem;color:#dbe8f5;z-index:1}
+.seg{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 14px}
+.seg button{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--page-rule);background:rgba(255,255,255,.05);color:var(--page-ink);font:inherit;font-weight:700;font-size:.85rem;cursor:pointer}
+.seg button[aria-pressed="true"]{background:#f2c057;color:#1c1005;border-color:#f2c057}
+
+.tbl{width:100%;border-collapse:collapse;font-size:.88rem;text-align:left}
+.tbl th,.tbl td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.1);vertical-align:top}
+.tbl th{color:var(--muted);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}
+.tbl td:first-child{font-weight:700;color:#fff;white-space:nowrap}
+
+section.after{margin-top:36px;border-top:1px solid var(--page-rule);padding-top:16px;max-width:760px}
+section.after h2{font-size:1.1rem;margin:0 0 8px}
+section.after p,section.after li{color:var(--page-sub);font-size:.92rem}
+.foot{margin-top:28px;font-size:.8rem;color:var(--page-sub)}
+@media (hover:hover){.opts a:hover{background:rgba(255,255,255,.12)}.opts a[aria-current="page"]:hover{background:#f09248}.btn:hover{filter:brightness(1.05)}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<main>
+<div class="top">
+  <span class="tag">Brainy Bits · câu 3 · ví dụ trên Đường Ray, 4 game kia cùng khuôn</span>
+  <nav class="opts" aria-label="Phương án">
+    <a href="retry-cue.html">Tóm tắt</a>
+    <a href="mockup-retry-a.html" aria-current="page">A · Cứu một lần</a>
+    <a href="mockup-retry-b.html">B · Thua nhẹ tay</a>
+    <a href="mockup-retry-c.html">C · Chỉ báo trước</a>
+  </nav>
+</div>
+<h1 class="t">A · Cứu một lần: thua ở L1–5 được chơi tiếp, không phải làm lại từ đầu</h1>
+<p class="lede">Đây là đổi luật chơi. Ở L1–5, lần thua đầu trong một ván không kết thúc ván ngay: người chơi được thêm một cơ hội ngay tại chỗ.</p>
+<ul class="facts">
+  <li><b>Đổi gì</b>Luật L1–5 của cả 5 game, mỗi game một kiểu cứu. Báo trước L15 bằng một dòng chữ.</li>
+  <li><b>Sim và gate</b>Phải sửa. Tỉ lệ qua thay đổi, nên 5 adapter bot phải mô phỏng lần cứu, rồi chạy lại calibrate và G1.</li>
+  <li><b>Rủi ro</b>Theo bot, L1–13 đã qua 94–98%. Thêm cứu thì gần như không ai thua, mở màn càng phẳng.</li>
+  <li><b>Công</b>Khoảng 2–3 ngày. Koi, Ô Sáng và Cụm Từ chưa có kiểu cứu rõ ràng.</li>
+</ul>
+
+<div class="stage">
+  <figure>
+    <div class="phone rain"><div class="dim"></div>
+      <div class="hud" aria-hidden="true"><span>Level 3</span><span>9/13</span></div>
+      <div class="card">
+        <div class="badge-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c3.8 5.2 6.5 8.8 6.5 12.2a6.5 6.5 0 0 1-13 0c0-3.4 2.7-7 6.5-12.2z"/><path d="M12 12v6M9 15h6"/></svg></div>
+        <h2>Còn một lần cứu</h2>
+        <p class="note">Hết mạng ở phép 9/13. Ở Level 1–5, bạn được chơi tiếp một lần với 1 mạng.</p>
+        <button type="button" class="btn">Chơi tiếp · 1 mạng</button>
+        <button type="button" class="btn alt">Xem kết quả</button>
+      </div>
+    </div>
+    <figcaption><span class="step">1</span><b>Mưa, L3, hết mạng.</b> Ván dừng lại, các phép đã giải vẫn được tính. Chơi tiếp thì có thêm 1 mạng.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="phone"><div class="dim"></div>
+      <div class="card">
+        <h2>Thêm 30 giây?</h2>
+        <div class="big">70%</div>
+        <div class="stats"><div><b>14/20</b> tàu về đúng ga</div><div><b>5</b> chuỗi đúng dài nhất</div></div>
+        <p class="note">Cần 80%. Ở Level 1–5, bạn được chơi thêm 30 giây một lần. Tàu đã về đúng vẫn được giữ.</p>
+        <button type="button" class="btn">Chơi thêm 30 giây</button>
+        <button type="button" class="btn alt">Xem kết quả</button>
+      </div>
+    </div>
+    <figcaption><span class="step">2</span><b>Đường Ray, L3, hết giờ.</b> Game này thua vì tỉ lệ đúng khi hết giờ, nên cứu bằng thời gian, không bằng mạng.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="phone"><div class="dim"></div>
+      <div class="card">
+        <h2>Qua Level 14!</h2>
+        <div class="stars" aria-label="2 trên 3 sao"><span class="s on">★</span><span class="s on">★</span><span class="s">★</span></div>
+        <div class="big">92%</div>
+        <div class="stats"><div><b>23/25</b> tàu về đúng ga</div><div><b>11</b> chuỗi đúng dài nhất</div></div>
+        <p class="note">Level 15 là màn thử thách: tàu ra dày hơn.</p>
+        <button type="button" class="btn">Level 15 →</button>
+        <button type="button" class="btn alt">Về menu</button>
+      </div>
+    </div>
+    <figcaption><span class="step">3</span><b>Báo trước L15, mức nhẹ.</b> Chỉ đổi một dòng chữ có sẵn. Lưới level không có nhãn.</figcaption>
+  </figure>
+</div>
+
+<section class="after">
+  <h2>Kiểu cứu cho từng game</h2>
+  <table class="tbl">
+    <thead><tr><th>Game</th><th>Thua vì</th><th>Cứu bằng</th></tr></thead>
+    <tbody>
+      <tr><td>Đường Ray</td><td>Dưới 80% khi hết giờ</td><td>Thêm 30 giây</td></tr>
+      <tr><td>Mưa</td><td>Hết mạng</td><td>Thêm 1 mạng</td></tr>
+      <tr><td>Koi, Ô Sáng, Cụm Từ</td><td>Mỗi game một kiểu</td><td>Chưa thiết kế. Cần thêm một vòng mockup</td></tr>
+    </tbody>
+  </table>
+</section>
+<p class="foot">Mockup, chưa phải code thật. Mưa L3: 13 phép, 3 mạng, lấy từ bảng level hiện tại; số tàu và % là ví dụ.</p>
+</main>
+</body>
+</html>
