@@ -157,13 +157,13 @@ test('service worker shows a new deploy despite max-age=600, drops old caches an
 
     // An older cache left by the previous VERSION is deleted when the new worker activates.
     await page.evaluate(async () => {
-      await (await caches.open('bb-v6')).put('/old', new Response('old'));
+      await (await caches.open('bb-v7')).put('/old', new Response('old'));
       await (await navigator.serviceWorker.getRegistration()).unregister();
     });
     await page.reload();
     await page.evaluate(() => navigator.serviceWorker.ready);
-    await expect.poll(() => page.evaluate(() => caches.keys())).not.toContain('bb-v6');
-    expect(await page.evaluate(() => caches.keys())).toContain('bb-v7');
+    await expect.poll(() => page.evaluate(() => caches.keys())).not.toContain('bb-v7');
+    expect(await page.evaluate(() => caches.keys())).toContain('bb-v8');
 
     // Offline: the cached app shell still opens.
     if (!(await page.evaluate(() => !!navigator.serviceWorker.controller))) await page.reload();

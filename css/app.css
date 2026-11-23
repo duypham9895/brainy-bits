@@ -149,6 +149,15 @@
   #rDetail,#krDetail,#kdNote,#mrDetail,#rrDetail,#wrDetail{order:5}
   #rRule,#krRule,#mrStarRule,#rrRule,#wrRule{order:6;font-size:.8rem;line-height:1.4;color:var(--muted);margin:6px 0 2px}
   #result .btn,#kresult .btn,#kdone .btn,#mresult .btn,#rresult .btn,#wresult .btn{order:7}
+  /* Thua nhẹ tay + báo trước màn thử thách (BB.lossAid / BB.peakCue / BB.PEAK_TAG, DIFFICULTY-DECISIONS 2026-11-23) */
+  .card .tip,.card .cue{order:6;display:flex;gap:10px;text-align:left;margin:12px 0 0;padding:10px 12px;border-radius:14px;font-size:.9rem;line-height:1.42;color:#f3efe6}
+  .card .tip{align-items:flex-start;background:rgba(255,213,74,.1)}
+  .card .cue{align-items:center;background:rgba(255,176,46,.12)}
+  .card .tip svg{flex:none;width:20px;height:20px;margin-top:1px;color:#ffd54a}
+  .card .cue svg{flex:none;width:22px;height:22px;color:#ffb02e}
+  .card .tip b{color:#ffd54a}
+  .card p.muted.bb-aid{order:7;margin-top:6px}
+  .lv .peaktag{display:block;margin-top:2px;font-size:.62rem;font-weight:800;color:#2a1300;background:#ffb02e;border-radius:6px;padding:1px 5px;line-height:1.3}
   #result .card:has(.s.on),#kresult .card:has(.s.on),#kdone .card:has(.s.on),#mresult .card:has(.s.on),#rresult .card:has(span.on),#wresult .card:has(span.on){
     border-color:rgba(255,213,74,.34);
     box-shadow:0 22px 60px rgba(0,0,0,.58),inset 0 1px 0 rgba(255,213,74,.28)
@@ -529,7 +538,7 @@
   /* ---- Forced Colors Mode (Windows High Contrast) ---- */
   @media (forced-colors: active){
     .card h1,.hubtitle,.koih,.mem-h,.rain-h,.word-h{background:none;color:CanvasText;-webkit-background-clip:border-box;background-clip:border-box}
-    .card,.hubshelf,.gamecard,.dailycard,.pill,.btn,.iconbtn,.lv,.mtile,.wcell,.switch i,.hstat,.how div,dialog.qr-dialog,.qr-targets button,.seg button,.qr-btn-main,.qr-btn-sub{border:1px solid CanvasText}
+    .card,.hubshelf,.gamecard,.dailycard,.pill,.btn,.iconbtn,.lv,.mtile,.wcell,.switch i,.hstat,.how div,dialog.qr-dialog,.qr-targets button,.seg button,.qr-btn-main,.qr-btn-sub,.card .tip,.card .cue,.lv .peaktag{border:1px solid CanvasText}
     .lv.on,:focus-visible{outline:2px solid Highlight}
   }
 

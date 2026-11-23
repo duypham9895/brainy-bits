@@ -121,7 +121,7 @@ test('level grid shows 32 levels; L11+ say how many fish and how fast', async ({
   await expect(lv.nth(31).locator('small')).toHaveText('12 cá');
   await lv.nth(29).click();
   await expect(page.locator('#kLevelTxt')).toHaveText('13 cá koi + 5 cá xám · chờ 3,2 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,4, đổi hướng ×1,3');
-  await expect(page.locator('#kStartBtn')).toHaveText('Chơi Level 30 · 13 cá');
+  await expect(page.locator('#kStartBtn')).toHaveText('Chơi Level 30 · thử thách');
   await lv.nth(30).click();
   await expect(lv.nth(30)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#kLevelTxt')).toHaveText('12 cá koi + 5 cá xám · chờ 3,2 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,3, đổi hướng ×1,25');

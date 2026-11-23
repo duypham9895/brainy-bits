@@ -213,11 +213,15 @@ function finish(){
     : `Chưa qua Level ${level} 😅`;
   $('mrBig').textContent = `${perfect}/${round}`;
   $('mrDetail').textContent = !passed
-    ? `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. Cần đúng ít nhất ${NEED} lượt để qua level.`
+    ? (BB.softLoss(level) ? `Đúng ${perfect}/${round} lượt, cần ${NEED}.` : `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. Cần đúng ít nhất ${NEED} lượt để qua level.`)
     : last
       ? `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. ${stars < 3 ? 'Chơi lại để gom đủ 3 sao.' : 'Level cuối, đủ 3 sao.'}`
       : `Nhớ đúng hoàn toàn ${perfect}/${round} lượt. ${nextTxt()}`;
-  $('mrNext').textContent = passed && !last ? `Level ${level+1} →` : `Chơi lại Level ${level}`;
+  BB.lossAid($('mrNext'), { game: 'mem', level, won: passed, maxLevel: LV_MAX,
+    tip: 'Nhìn cả cụm ô sáng như <b>một hình</b>, ví dụ chữ L hay đường chéo, đừng nhớ từng ô.',
+    onSkip: L => startLevel(L) });
+  const cue = BB.peakCue($('mrNext'), { game: 'mem', level, won: passed, last, maxLevel: LV_MAX });
+  $('mrNext').textContent = passed && !last ? `Level ${level+1}${cue ? ' · thử thách' : ''} →` : `Chơi lại Level ${level}`;
   showStars(stars);
   $('mresult').classList.remove('hidden');
 
@@ -281,17 +285,17 @@ function renderLevels(){
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'lv' + (L <= done ? ' done' : '') + (L === chosen ? ' on' : '');
-    el.innerHTML = `${L}<small>${spec(L).t} ô</small>`;
+    el.innerHTML = `${L}<small>${spec(L).t} ô</small>` + (BB.isPeak(L, 'mem') ? BB.PEAK_TAG : '');
     const k = BB.starsAt('mem', L);
     if (L <= done && k) el.dataset.st = '★'.repeat(k);
-    el.setAttribute('aria-label', `Level ${L}, ${spec(L).t} ô${L <= done ? ', đã qua' : ''}${k ? `, ${k} sao` : ''}`);
+    el.setAttribute('aria-label', `Level ${L}, ${spec(L).t} ô${L <= done ? ', đã qua' : ''}${k ? `, ${k} sao` : ''}${BB.isPeak(L, 'mem') ? ', màn thử thách' : ''}`);
     el.setAttribute('aria-pressed', L === chosen ? 'true' : 'false');
     el.onclick = () => { chosen = L; previewLevel(); renderLevels(); BB.sfx('tap'); grid.children[L-1].focus({ preventScroll: true }); };
     grid.appendChild(el);
   }
   const s = spec(chosen);
   $('mLvTxt').textContent = `Lưới ${s.size}×${s.size} · ${s.t} ô sáng · nhìn ${secTxt(s.show)} giây${s.disp >= DISP_SHOWN ? ' · ô rải xa' : ''}`;
-  $('mStart').textContent = `Chơi Level ${chosen} · ${s.t} ô`;
+  $('mStart').textContent = `Chơi Level ${chosen} · ${BB.isPeak(chosen, 'mem') ? 'thử thách' : `${s.t} ô`}`;
 }
 // The HUD and grid behind the menu follow the chosen level (fixes the stale level pill).
 function previewLevel(){ level = chosen; round = 0; perfect = 0; n = spec(level).size; buildGrid(); hud(); }
