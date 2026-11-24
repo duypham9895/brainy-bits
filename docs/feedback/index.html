@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Phân tích 4 phản hồi người dùng thật</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;650;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/doc.css">
+</head>
+<body>
+<nav><div class="in">
+  <a href="../index.html">Tổng quan</a>
+  <a href="index.html">Phản hồi người dùng</a>
+  <button id="t" type="button">sáng</button>
+</div></nav>
+
+<main>
+<section>
+  <div class="meta r"><span class="words">—</span><span>Deep-dive · 2026-11-24</span></div>
+  <h1 class="r">Bốn phản hồi người dùng đều trúng lỗi thật trong code.</h1>
+  <div class="tldr r"><p><strong>Mọi phản hồi đều truy ra nguyên nhân trực tiếp trong mã nguồn.</strong>
+  Đợt mở màn dễ (2026-11-22) nén phẳng phương sai L1–L14 khiến năm trò chạy đều như đồng hồ.
+  <code>Đoán Cụm Từ</code> gãy từ khâu bỏ dấu đến 29.792 âm tiết bịa; <code>Mưa Phép Tính</code> rơi hàng số trên macOS bật bộ gõ <code>Vietnamese</code> và bị nút ẩn nuốt <code>Enter</code>.</p></div>
+</section>
+
+<section>
+  <div class="g three r">
+    <div class="k"><div class="n">0%</div><div class="cap">tàu dồn dập L1–L32 (<code>burstP=0</code>) và 0 cặp trùng màu ở Đường Ray</div></div>
+    <div class="k"><div class="n">29.792</div><div class="cap">âm tiết ảo trong <code>word.js</code> (gấp &gt;4× thật) + lỗi gõ <code>cứu</code>, <code>thuở</code>, Telex</div></div>
+    <div class="k"><div class="n">0</div><div class="cap">phím hàng số ăn khi bật macOS Vietnamese + nút ẩn nuốt <code>Enter</code> ở Mưa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2 class="r">Nguyên nhân gốc</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>Phản hồi</th><th>Nguyên nhân trong code</th><th>Số đo xác nhận</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Đường Ray</strong> xe ra đều</td><td><code>burstP=0</code> L1–L32; <code>speedF=0.28</code> cố định; túi màu 1× cấm lặp; chọn <code>argmin(messScore)</code></td><td><code>CV=0.28</code>; <code>0%</code> tàu dưới 3s L1–L15; <code>0</code> lặp màu qua 3.500+ cặp</td></tr>
+      <tr><td><strong>Năm trò</strong> thiếu ngẫu nhiên</td><td>Mưa lệch tam giác <code>add(m)</code>, tốc rơi cố định; Ô Sáng 9 màn 3 ô; Koi 14 màn không cá xám</td><td>Mưa <code>CV=0.115</code>; <code>9+1</code> gấp 12,3× <code>1+9</code>; 21,9% phép trừ ra 0</td></tr>
+      <tr><td><strong>Đoán Cụm Từ</strong> lỗi chữ Việt</td><td><code>modify()</code> quét ngược; thiếu Telex, chặn <code>isComposing</code>; 63 vần bịa; dấu cũ/mới; thứ tự ngược</td><td><code>cứu→cuứ</code>, <code>thuở→thưở</code>, <code>đồng</code> Telex→<code>ddoong</code>; nhận <code>ka, boch, bănh</code></td></tr>
+      <tr><td><strong>Mưa Phép Tính</strong> kẹt phím</td><td>Thiếu fallback <code>Digit</code> trên <code>e.code</code>; không <code>blur()</code> nút mở màn; phím ảo che laptop</td><td>macOS <code>Vietnamese</code> phát <code>ă â ê...</code> chết hàng số; nút ẩn nuốt <code>Enter</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2 class="r">Ngoài internet xử lý thế nào</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>Mảng</th><th>Chuẩn thực tế</th><th>Áp dụng</th></tr></thead>
+    <tbody>
+      <tr><td>Sóng tàu/mưa</td><td><em>Left 4 Dead</em> Director + Bounded Exponential; <em>Train Conductor</em> sóng êm → dồn → nghỉ; túi 2×</td><td>Mở <code>burstP</code> sớm kèm quãng nghỉ; lệch tốc độ nhẹ; túi màu 2×</td></tr>
+      <tr><td>Wordle Việt</td><td><em>wordle-vietnamese</em> / Phởdle: từ điển ~7.000 âm tiết thật, Telex+VNI, gộp dấu cũ/mới</td><td>Sửa <code>modify()</code>, thêm Telex+IME, từ điển MIT/CC0 + luật <code>c/k, g/gh, ng/ngh</code></td></tr>
+      <tr><td>Phím laptop</td><td>Lumosity <em>Raindrops</em> ẩn phím ảo trên desktop, hiện caret + hint; MDN dùng <code>e.code</code></td><td>Fallback <code>Digit0–9</code>, <code>blur()</code> khi vào ván, hint phím + gập phím ảo</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2 class="r">Lộ trình sửa đề xuất (3 PR)</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>PR</th><th>Phạm vi</th><th>Rủi ro calibrate</th></tr></thead>
+    <tbody>
+      <tr><td><strong>PR 1</strong></td><td>Bàn phím laptop cho Mưa + sửa lệch phân phối cộng/trừ</td><td>Thấp — kiểm lại Mưa</td></tr>
+      <tr><td><strong>PR 2</strong></td><td>Sửa tiếng Việt Đoán Cụm Từ + xếp lại thứ tự dễ chơi</td><td>Trung bình — cô lập Word</td></tr>
+      <tr><td><strong>PR 3</strong></td><td>Khôi phục nhịp sóng, biến thiên tốc độ, túi màu 2× cả 5 trò</td><td>Cao — chạy lại full calibration</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2 class="r">Chưa xác minh</h2>
+  <div class="k c r"><p>Chưa rõ thiết bị/IME và từ lỗi cụ thể người dùng đã gõ; chưa có telemetry người thật (G7 còn SKIP); chưa kiểm file <code>LICENSE</code> gốc của kho âm tiết tiếng Việt; chưa chạy <code>calibrate.mjs</code> cho PR 3. Đầy đủ: <code>USER-FEEDBACK-DEEP-DIVE.md</code>.</p></div>
+</section>
+</main>
+
+<footer>
+  <p>brainy-bits · nhánh <code>docs/user-feedback-deep-dive</code>.</p>
+  <div class="v"><strong>Same vendor, same priors — no external verifier ran.</strong></div>
+</footer>
+<script src="../assets/doc.js"></script>
+</body>
+</html>
