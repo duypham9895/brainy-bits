@@ -307,7 +307,7 @@ Cột "lặp" được đếm theo chữ gốc sau NFD, nên chỉ là ước l�
 
 ---
 
-## 4. Rule viết sẵn (đề xuất lưu tại `gates/03-build/DIFFICULTY-RULE.md`, sau khi Duy duyệt)
+## 4. Rule viết sẵn (đề xuất lưu tại "gates/03-build/DIFFICULTY-RULE.md" — bản chốt hiện tại: `docs/DIFFICULTY-RULES.md`, sau khi Duy duyệt)
 
 ### 4.1 Lệnh "thêm 10 màn cho mỗi game"
 
