@@ -82,7 +82,7 @@ function safeBottom(){
 
 // vùng cá bơi (chừa chỗ cho vòng hẹn giờ ở dưới)
 const area = () => ({ x0: 8, y0: 8, x1: W - 8, y1: H - 96 - SB });
-const fishLen = () => Math.max(34, Math.min(60, Math.min(W, H) * 0.13)) * (fish.length > 11 || params(diff).koi > 11 ? 0.85 : 1);
+const fishLen = () => Math.max(34, Math.min(60, Math.min(W, H) * 0.13)) * (params(diff).koi > 11 ? 0.85 : 1);
 
 // ---------- tạo hồ ----------
 function setupPond(){
@@ -669,6 +669,7 @@ if (window.__BB_TEST__) window.__koi = {
   get state(){ return state; }, get fish(){ return fish; }, get pellets(){ return pellets; },
   get earlyTaps(){ return earlyTaps; }, set cooldown(v){ cooldown = v; }, get cooldown(){ return cooldown; },
   get diff(){ return diff; }, get turnMul(){ return turnMul; }, params: d => params(d), LV_MAX, engine: !!BBD,
+  fishLen: () => fishLen(), area: () => area(),
   fishAt: (x, y) => fishAt(x, y),   // tests/koi-helpers.js taps only points the game itself resolves to the target
 };
 updateHud();

@@ -131,11 +131,16 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
     detail: { fed, mistakes, cap: +capF.toFixed(2), lossRate: +lossRate.toFixed(3), slip: +slip.toFixed(4) } };
 }
 
-// Gate G6: the smaller hit-ellipse diameter at this viewport.
+// Gate G6: the smaller hit-ellipse diameter at this viewport, plus crowding & overlap density.
 export function geometry(levelSpec, viewportW, viewportH = 700) {
   const H = Math.max(200, viewportH - 60);               // HUD above the canvas [NEW: approximate]
+  const area = pondArea(viewportW, H);
   const len = fishLen(viewportW, H, levelSpec.koi);
   const { a, b } = hitAxes(len);
-  return { minTargetPx: 2 * Math.min(a, b) };
+  const total = levelSpec.koi + (levelSpec.decoys || 0);
+  const rOv = a + b;
+  const pOverlapNeighbor = +(1 - Math.exp(-(Math.max(0, total - 1) / area) * Math.PI * rOv * rOv)).toFixed(4);
+  const hitAreaFill = +((total * Math.PI * a * b) / area).toFixed(4);
+  return { minTargetPx: 2 * Math.min(a, b), pOverlapNeighbor, hitAreaFill };
 }
 

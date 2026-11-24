@@ -181,11 +181,15 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
 // H = 1.6·W (portrait phone canvas under the HUD) [assumption]. visualDiscPx = the drawn green disc (js/train.js DISC_MIN_R), reported only.
 export function geometry(levelSpec, viewportW, viewportH = Math.round(viewportW * 1.6)) {
   const n = levelSpec.stations;
-  const C = n <= 6 ? 6 : n <= 11 ? 7 : 8;
-  const R = Math.max(C, Math.min(C * 2, Math.round(C * viewportH / viewportW)));
+  const base = n <= 6 ? 6 : n <= 11 ? 7 : 8;
+  const a = viewportH / viewportW;
+  let C = a >= 1 ? base : Math.max(base, Math.min(base * 2, Math.round(base / a)));
+  let R = a >= 1 ? Math.max(base, Math.min(base * 2, Math.round(base * a))) : base;
+  while (C * R < 6 * n) { if (C <= R) C++; else R++; }
   const cell = Math.min(viewportW / (C - 1 + 1.3), viewportH / (R - 1 + 1.3), 72);
   const TR = cell * 0.48;
   // MIN_SW_DIST is Manhattan (2), so two switches can sit diagonally, √2 cells apart (Euclid).
   const hit = 2 * Math.max(32, TR + 16), spacing = Math.SQRT2 * cell;
-  return { minTargetPx: Math.min(hit, spacing), cell, visualDiscPx: 2 * Math.max(TR + 1, 22) };
+  const visualDiscPx = 2 * Math.max(TR + 1, 22);
+  return { minTargetPx: Math.min(hit, spacing), cell, visualDiscPx, switchGapPx: +(spacing - visualDiscPx).toFixed(1) };
 }
