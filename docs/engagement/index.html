@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Kiểm thử độ kích thích, kích thước &amp; cơ chế core — Brainy Bits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;650;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/doc.css">
+</head>
+<body>
+<nav><div class="in">
+  <a href="../index.html">Tổng quan</a>
+  <a href="index.html">Tò mò &amp; Kích thước</a>
+  <button id="t" type="button">sáng</button>
+</div></nav>
+
+<main>
+<section>
+  <div class="meta r"><span class="words">—</span><span>Deep-dive · 2026-11-24</span></div>
+  <h1 class="r">Automation chỉ chặn lỗi kích thước và ván phẳng, không bảo đảm 100% cảm giác vui.</h1>
+  <div class="tldr r"><p><strong>Kết luận JUDGE:</strong> Automation không đo được hào hứng chủ quan (định luật Goodhart, bot vô cảm), nhưng bắt chính xác 2 điểm gãy trên <code>main</code>: ván mở màn phẳng (<code>rain</code> 0% thắng sát nút, <code>mem</code> 68–85% thắng 2-0, <code>koi</code> L5 chênh kỹ năng 0%) và chật kích thước màn cao (<code>koi</code> L30@320px chồng chạm 60,9%, <code>train</code> L15@667×315 ô 38px &lt; đĩa 44px).</p></div>
+</section>
+
+<section>
+  <div class="g three r">
+    <div class="k"><div class="n">4/15</div><div class="cap">cổng test sống sót (thêm 2 kiểm tra nhỏ)</div></div>
+    <div class="k"><div class="n">7/25</div><div class="cap">cơ chế giữ được sàn yếu G1/G4/G9</div></div>
+    <div class="k"><div class="n">60,9%</div><div class="cap">chồng vùng chạm <code>koi</code> L30@320px (G6 tĩnh bỏ sót)</div></div>
+  </div>
+</section>
+
+<section>
+  <h2 class="r">4 cổng automation test sống sót</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>Cổng</th><th>Bắt lỗi gì</th><th>Triển khai thực dụng</th></tr></thead>
+    <tbody>
+      <tr><td><strong>T-GOODHART</strong></td><td>Lách số trên prior <code>[NEW]</code></td><td>Nối xong <code>G7</code> trước; dùng ngưỡng cờ đỏ một chiều; gắn nhãn chưa đo thật.</td></tr>
+      <tr><td><strong>T-DRAMA</strong></td><td>Ván thắng áp đảo hoặc thiếu kịch tính</td><td>Dùng <code>margin</code> &amp; <code>detail</code> sẵn có (0 ms MC); sửa kiểm <code>mem</code> 2-0; giữ <code>clutchWin</code> L15+.</td></tr>
+      <tr><td><strong>T-SKILLDEPTH</strong></td><td>Phân biệt trình độ &amp; auto-pass</td><td>Dùng 3 bot sẵn có: đơn điệu toàn bảng, <code>spread &gt;= 0,08</code> L15+, kiểm tốc L1–14, test 0 input.</td></tr>
+      <tr><td><strong>S-CROWD</strong></td><td>Kích thước, chen chúc &amp; tỷ lệ canvas</td><td>Node <code>G6</code> thêm <code>667×375</code> &amp; mật độ <code>koi</code>; Playwright L15/maxLevel ở 320px &amp; 667×375.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2 class="r">7 cơ chế core &amp; meta sống sót</h2>
+  <div class="tw r"><table>
+    <thead><tr><th>Game</th><th>Cơ chế giữ lại</th><th>Giới hạn an toàn</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Mưa</strong></td><td>Giọt Mặt trời; phá đôi cùng đáp án; cứu <code>AUTO_WAIT</code></td><td>Tối đa 1–2 giọt từ L6+; rơi 0 phạt; +1 <code>solved</code>; khớp adapter N=4000.</td></tr>
+      <tr><td><strong>Cá Koi</strong></td><td>Cá xám sớm L7; ân hạn 140 ms cuối <code>cd</code></td><td>Tối đa 1 cá xám L7–14; báo trước ở L6; đồng bộ <code>fish.length</code>.</td></tr>
+      <tr><td><strong>Ray &amp; Ô sáng</strong></td><td>Đèn hầm trước burst; nhãn thắng <em>Kịp lúc!</em> / hoà 1-1</td><td>Chỉ hiện khi thắng sát hoặc cứu; tĩnh khi giảm chuyển động.</td></tr>
+      <tr><td><strong>Từ &amp; Menu</strong></td><td>Nhãn không gợi ý; share lưới 4 màu; gom chặng 5 màn</td><td>Không phạt mở gợi ý; lưới không chữ; giảm cao menu 626px ở 320px.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2 class="r">Nhóm bị loại</h2>
+  <div class="k c r"><p><strong>Loại 11 test:</strong> ICM/DRL-MCTS, ERA/MAP-Elites, Bayesian Surprise, Clutter Python, Moving-target Fitts <code>koi</code>, CDP CPU 4x trên CI, giả lập VisualViewport.<br><strong>Loại 18 cơ chế:</strong> mở loạt <code>E5</code> (<code>twoTone</code>, tàu nhanh, cá rẽ đàn, <code>storm</code>), DDA giữa ván, <code>mem</code> ô độc/xoay/thứ tự, <code>word</code> 3 từ, khoá lộ trình và radar 5 trục.</p></div>
+</section>
+
+<section>
+  <h2 class="r">Chưa xác minh được</h2>
+  <div class="k c r"><p>Prior <code>[NEW]</code> trong <code>human.mjs</code> và tốc độ đảo của <code>train</code> chưa khớp người thật (<code>G7</code> còn SKIP); chưa thử tay trên điện thoại hoặc Zalo WebView. Chi tiết &amp; URL nguồn: <code>ENGAGEMENT-TESTING-AND-MECHANICS.md</code>.</p></div>
+</section>
+</main>
+
+<footer>
+  <p>brainy-bits · nhánh <code>docs/engagement-and-autotest-research</code>.</p>
+  <div class="v"><strong>Same vendor, same priors — no external verifier ran.</strong></div>
+</footer>
+<script src="../assets/doc.js"></script>
+</body>
+</html>
