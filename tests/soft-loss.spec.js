@@ -1,6 +1,6 @@
 // Thua nhẹ tay + nhãn màn thử thách (gates/01-spec/DIFFICULTY-DECISIONS.md, 2026-11-23, Duy chọn B).
 // Không đổi luật chơi: chỉ kiểm chữ trên màn kết quả và nhãn trên lưới level.
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 
 const GAMES = [
   { hash: '/#tau', menu: '#menu',  grid: '#lvgrid',  start: '#startBtn' },
@@ -15,12 +15,12 @@ for (const g of GAMES) {
     await page.goto(g.hash);
     await expect(page.locator(g.menu)).toBeVisible();
     const tile = n => page.locator(`${g.grid} .lv`).nth(n - 1);
+    await pickLevel(page, g.grid, 15);
     await expect(tile(15).locator('.peaktag')).toHaveText('thử thách');
     await expect(tile(14).locator('.peaktag')).toHaveCount(0);
     await expect(tile(15)).toHaveAttribute('aria-label', /màn thử thách/);
-    await tile(15).click();
     await expect(page.locator(g.start)).toHaveText(/Level 15 · thử thách/);
-    await tile(14).click();
+    await pickLevel(page, g.grid, 14);
     await expect(page.locator(g.start)).not.toHaveText(/thử thách/);
   });
 }

@@ -28,7 +28,7 @@ export const CANVAS_H = 430;
 // The generator, loaded exactly as the browser loads it (classic script, no DOM needed).
 const ctx = vm.createContext({});
 vm.runInContext(readFileSync(join(ROOT, 'js/levels/rain.js'), 'utf8'), ctx, { filename: 'js/levels/rain.js' });
-export const { makeEq, spawnGap, dropFall } = ctx.BBRain;
+export const { makeEq, makeTwinEq, sunCap, SUN_P, TWIN_P, spawnGap, dropFall } = ctx.BBRain;
 
 // ---------- cost model (seconds, for the median player before the per-player speed factor) ----------
 const MEAN_RT = 0.451 + 0.147;                  // median ex-Gaussian mean [EXG]
@@ -108,8 +108,9 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
   const lives = levelSpec.lives ?? LIVES;   // js/rain.js livesOf(): the row's lives, else 3
   const player = opts.player || samplePlayer(profile, rng, opts);
   const pm = playerMath(player, rng, opts.speedSd);
-  let t = 0, spawnAt = SPAWN0, solved = 0, misses = 0, wrong = 0, attempts = 0, lastBurst = false;
-  const drops = [];                       // { t0, fall, ans, meta }
+  const cap = sunCap(ops, target);
+  let t = 0, spawnAt = SPAWN0, solved = 0, misses = 0, wrong = 0, attempts = 0, lastBurst = false, sunSpawned = 0;
+  const drops = [];                       // { t0, fall, ans, meta, eq, sun }
   let work = null;                        // { drop, doneAt }
   const pOf = (d, at) => (at - d.t0) / d.fall;
   for (let guard = 0; guard < 10000; guard++) {
@@ -117,18 +118,41 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
     if (spawnAt <= t + 1e-9 && solved + drops.length < target + 2) {
       if (drops.length >= MAX_DROPS) spawnAt = t + 0.5;
       else {
-        const [, ans, meta] = makeEq(ops, rng);
-        if (drops.some(d => d.ans === ans)) spawnAt = t + 0.1;
-        else {
-          drops.push({ t0: t, fall: dropFall(fall, rng), ans, meta });
-          const g = spawnGap(every, lastBurst, rng);
-          lastBurst = g.burst; spawnAt = t + g.gap;
+        const reg = drops.filter(d => !d.sun);
+        const wantSun = cap > 0 && sunSpawned < cap && solved < target - 1 && drops.length >= 2 && !drops.some(d => d.sun) && rng() < SUN_P;
+        if (wantSun) {
+          const [eq, ans, meta] = makeEq(Math.max(1, ops - 3), rng);
+          if (drops.some(d => d.ans === ans)) spawnAt = t + 0.1;
+          else {
+            sunSpawned++;
+            drops.push({ t0: t, fall: dropFall(fall, rng), eq, ans, meta, sun: true });
+            const g = spawnGap(every, lastBurst, rng);
+            lastBurst = g.burst; spawnAt = t + g.gap;
+          }
+        } else {
+          let made = null;
+          const hasPair = reg.some((a, i) => reg.some((b, j) => j > i && a.ans === b.ans));
+          if (ops >= 6 && reg.length >= 1 && !hasPair && rng() < TWIN_P) {
+            const base = reg[(rng() * reg.length) | 0];
+            made = makeTwinEq(ops, base.ans, base.eq, rng);
+          }
+          if (!made) made = makeEq(ops, rng);
+          const [eq, ans, meta] = made;
+          const dup = ops < 6 ? drops.some(d => d.ans === ans) : drops.some(d => d.eq === eq || (d.sun && d.ans === ans));
+          if (dup) spawnAt = t + 0.1;
+          else {
+            drops.push({ t0: t, fall: dropFall(fall, rng), eq, ans, meta, sun: false });
+            const g = spawnGap(every, lastBurst, rng);
+            lastBurst = g.burst; spawnAt = t + g.gap;
+          }
         }
       }
     }
-    // player picks the lowest drop when idle
+    // player picks the sun drop when pond is busy (3+ drops) or sun is lowest; otherwise lowest drop
     if (!work && drops.length) {
-      const d = drops.reduce((m, x) => (pOf(x, t) > pOf(m, t) ? x : m));
+      const sunD = drops.find(d => d.sun);
+      const lowest = drops.reduce((m, x) => (pOf(x, t) > pOf(m, t) ? x : m));
+      const d = (sunD && (drops.length >= 3 || sunD === lowest)) ? sunD : lowest;
       const s = solveTime(d.meta, d.ans, player, pm, rng);
       attempts++; if (s.wrong) wrong++;
       work = { drop: d, doneAt: t + s.t };
@@ -144,10 +168,19 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
     if (tn === Infinity) break;
     t = tn;
     if (tw === tn && work) {                               // the answer lands first on a tie
-      drops.splice(drops.indexOf(work.drop), 1); work = null; solved++;
+      const w = work.drop; work = null;
+      if (w.sun) {
+        drops.length = 0;
+        solved = Math.min(target, solved + 1);
+      } else {
+        const same = drops.filter(d => !d.sun && d.ans === w.ans);
+        for (const s of same) drops.splice(drops.indexOf(s), 1);
+        solved = Math.min(target, solved + same.length);
+      }
       if (solved >= target) break;
     } else if (next === tn) {
-      drops.splice(drops.indexOf(hitDrop), 1); misses++;
+      drops.splice(drops.indexOf(hitDrop), 1);
+      if (!hitDrop.sun) misses++;
       if (work && work.drop === hitDrop) work = null;    // the drop the player was solving is gone
       if (misses >= lives) break;
     }

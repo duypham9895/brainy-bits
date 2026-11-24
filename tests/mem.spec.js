@@ -1,6 +1,6 @@
 // Ô Sáng Ghi Nhớ: regression tests for MEM-1..MEM-4, the missed-list items and the reward layer.
 // Uses Playwright's fake clock so the multi-second "show" phases run instantly.
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel as pickTile } from './fixtures.js';
 
 async function open(page, { lv } = {}) {
   await page.clock.install();
@@ -35,7 +35,7 @@ async function loseRound(page) {
   await page.clock.runFor(1700);
 }
 async function pickLevel(page, L) {
-  await page.locator('#mlvgrid .lv').nth(L - 1).click();
+  await pickTile(page, '#mlvgrid', L);
   await page.click('#mStart');
 }
 
@@ -144,7 +144,7 @@ test('daily challenge hand-off starts the requested level directly', async ({ pa
 test('tiles stay >= 44px on a 320px screen at the 6x6 grid', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await open(page);
-  await page.locator('#mlvgrid .lv').nth(12).click();
+  await pickTile(page, '#mlvgrid', 13);
   const w = await page.locator('#mGrid .mtile').first().evaluate(e => e.getBoundingClientRect().width);
   expect(w).toBeGreaterThanOrEqual(44);
 });

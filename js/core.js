@@ -347,12 +347,71 @@ function shareText() {
   lines.push(location.origin + location.pathname);
   return lines.join('\n');
 }
+async function copyText(text) {
+  if (!text) return false;
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) {}
+  const prevFocus = document.activeElement;
+  const field = Object.assign(document.createElement('textarea'), { value: text });
+  field.setAttribute('readonly', '');
+  field.style.cssText = 'position:fixed;inset-block-start:0;opacity:0';
+  document.body.append(field);
+  field.select();
+  try { return document.execCommand('copy'); }
+  catch (e) { return false; }
+  finally {
+    field.remove();
+    if (prevFocus && typeof prevFocus.focus === 'function') {
+      try { prevFocus.focus({ preventScroll: true }); } catch (e) {}
+    }
+  }
+}
 async function share() {
   const text = shareText();
   try { if (navigator.share) { await navigator.share({ text }); return 'shared'; } }
   catch (e) { if (e && e.name === 'AbortError') return 'cancel'; }
-  try { await navigator.clipboard.writeText(text); toast('Đã chép kết quả vào khay nhớ tạm'); return 'copied'; } catch (e) {}
+  if (await copyText(text)) { toast('Đã chép kết quả vào khay nhớ tạm'); return 'copied'; }
   return 'failed';
+}
+
+// Collapsible 5-level chapter groups inside .lvgrid (M-META-ZEIGARNIK): keeps scrolling short while preserving level tiles.
+function renderLevelChapters(grid, { maxLevel, chosen, isDone, buildTile, resetOpen = false, chapterSize = 5 }) {
+  const prevOpen = new Set([...grid.querySelectorAll('details.lvchap[open]')].map(d => +d.dataset.chap));
+  const prevScroll = grid.scrollTop;
+  const activeChap = Math.floor((Math.max(1, chosen) - 1) / chapterSize);
+  const openSet = resetOpen ? new Set([activeChap]) : new Set([...prevOpen, activeChap]);
+  grid.classList.add('lvgrid-chaps');
+  grid.innerHTML = '';
+  for (let start = 1, ci = 0; start <= maxLevel; start += chapterSize, ci++) {
+    const end = Math.min(maxLevel, start + chapterSize - 1);
+    const det = document.createElement('details');
+    det.className = 'lvchap';
+    det.dataset.chap = String(ci);
+    det.open = openSet.has(ci);
+    let doneN = 0;
+    const len = end - start + 1;
+    for (let L = start; L <= end; L++) if (isDone(L)) doneN++;
+    const sum = document.createElement('summary');
+    sum.className = 'lvchap-sum';
+    sum.setAttribute('aria-label', `Chặng ${ci + 1}, Level ${start} đến ${end}, đã qua ${doneN} trên ${len}`);
+    sum.innerHTML = `<span class="lvchap-title">Chặng ${ci + 1}: L${start}–${end}</span>`
+      + `<span class="lvchap-prog${doneN === len ? ' all' : ''}">${doneN}/${len}</span>`;
+    const inner = document.createElement('div');
+    inner.className = 'lvchap-grid';
+    for (let L = start; L <= end; L++) inner.appendChild(buildTile(L));
+    det.append(sum, inner);
+    grid.appendChild(det);
+  }
+  if (resetOpen) {
+    const openDet = grid.querySelector('details.lvchap[open]');
+    if (openDet) grid.scrollTop = Math.max(0, openDet.offsetTop - 6);
+  } else {
+    grid.scrollTop = prevScroll;
+  }
 }
 
 // Wipe every Brainy Bits key, the old per-game ones included.
@@ -472,7 +531,7 @@ const PEAK_TAG = '<span class="peaktag" aria-hidden="true">thử thách</span>';
 
 window.BB = {
   store, settings, motion, EASE, tone, sfx, haptic, countUp, shake, pop, trauma, hitStop, frozen,
-  celebrate, toast, record, gameStats, stats, starsAt, levelKey, migrateProgress, setProgress, progressOf, totalStars, dayStreak, daily, shareText, share, resetAll,
+  celebrate, toast, record, gameStats, stats, starsAt, levelKey, migrateProgress, setProgress, progressOf, totalStars, dayStreak, daily, shareText, copyText, share, renderLevelChapters, resetAll,
   dayKey, mulberry32, onLeave, leave, request, takeRequest, LV_MAX, setLvMax, GAME_NAME, GAMES, wireOverlays,
   softLoss, isPeak, lossAid, clearLoss, peakCue, PEAK_TAG,
   get pendingSfx() { return sfxTimers.size; },

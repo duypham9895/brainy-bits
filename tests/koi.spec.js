@@ -1,6 +1,6 @@
 // Cá Koi: lỗi đã sửa theo audit 2026-11-20 (KOI-01..07, OPS-4, OPS-6) và phần thưởng (sao, kỷ lục).
 // window.__koi chỉ tồn tại khi init script đặt window.__BB_TEST__.
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 import { tapFish, skipCooldown } from './koi-helpers.js';
 
 async function openKoi(page, storage = {}) {
@@ -21,7 +21,7 @@ async function openKoi(page, storage = {}) {
 }
 
 async function start(page, lv) {
-  await page.locator('#klvgrid .lv').nth(lv - 1).click();
+  await pickLevel(page, '#klvgrid', lv);
   await page.click('#kStartBtn');
   await expect(page.locator('#kmenu')).toBeHidden();
 }
@@ -114,7 +114,8 @@ test('tapping during cooldown costs the third star, not a mistake', async ({ pag
 test('OPS-6/KOI-04: passing level 10 (old last level) now leads on to Level 11; L30 end is covered in koi-levels.spec', async ({ page }) => {
   const errors = await openKoi(page, { koi_lv2: '10' });
   await start(page, 10);
-  for (let i = 0; i < 13; i++) { await skipCooldown(page); expect(await tapFish(page, 'fresh')).toBe(true); }
+  const n = await page.evaluate(() => window.__koi.params(10).koi);
+  for (let i = 0; i < n; i++) { await skipCooldown(page); expect(await tapFish(page, 'fresh')).toBe(true); }
   await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
   await expect(page.locator('#krNext')).toHaveText(/^Level 11 · \d+ cá →$/);
   expect(await page.evaluate(() => localStorage.getItem('koi_lv2'))).toBe('11');
@@ -178,7 +179,7 @@ test('review: HUD behind the menu shows the chosen level, not the last pond', as
   await page.click('#kPauseBtn');
   await page.click('#kQuitBtn');
   await expect(page.locator('#kmenu')).toBeVisible();
-  await page.locator('#klvgrid .lv').nth(2).click();
+  await pickLevel(page, '#klvgrid', 3);
   await expect(page.locator('#kPond')).toHaveText('Level 3 · 11 cá');
   await expect(page.locator('#kScore')).toHaveText('✓ 0/11');
 });
@@ -264,10 +265,10 @@ test('review 2026-11-21: menu copy matches the level table (fish at L1, first gr
   const how = page.locator('#kmenu .how');
   await expect(how).toContainText(`Level 1 có ${want.koi1} cá koi.`);
   await expect(how).toContainText(`Từ level ${want.grey} có cá xám`);
-  // First peak is L15 since 2026-11-22 (Duy B; L10 from 2026-11-21 before that): the copy names it instead of "every 5 levels" from L1.
+  // Early decoy (2026-11-24, M-KISHO-KOI-EARLY-DECOY): 1st grey fish appears at L7; first peak stays L15.
   await expect(how).toContainText('Từ level 15, cứ 5 level có một màn khó, ngay sau là một màn nhẹ.');
   await expect(how).not.toContainText('mỗi level tăng thêm 1 con');
-  expect(want).toEqual({ koi1: 10, grey: 15 });
+  expect(want).toEqual({ koi1: 10, grey: 7 });
   expect(errors).toEqual([]);
 });
 

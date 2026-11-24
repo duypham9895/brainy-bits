@@ -98,10 +98,14 @@ function label(b, state){
 }
 function setTile(b, cls, state){ b.className = cls ? 'mtile ' + cls : 'mtile'; label(b, state); }
 
+const isDeciding = () => round === 2 && perfect === 1 && phase !== 'idle';
 function hud(){
-  const s = spec(level);
+  const s = spec(level), dec = isDeciding();
   $('mLevel').textContent = `Level ${level} · ${s.t} ô`;
   $('mRound').textContent = `Lượt ${Math.min(round+1, ROUNDS)}/${ROUNDS}`;
+  $('mRound').classList.toggle('decide', dec);
+  if (dec) $('mRound').setAttribute('aria-label', 'Lượt quyết định, lượt 3 trên 3');
+  else $('mRound').removeAttribute('aria-label');
   $('mScore').textContent = `✓ ${perfect}`;
   $('mScore').setAttribute('aria-label', `Đúng ${perfect} lượt`);
 }
@@ -150,7 +154,8 @@ function nextRound(){
   found = 0;
   phase = 'show';
   hud();
-  hint(`Ghi nhớ ${s.t} ô sáng`);
+  const decTxt = () => isDeciding() ? 'Lượt quyết định (3/3) · ' : '';
+  hint(`${decTxt()}Ghi nhớ ${s.t} ô sáng`);
   const all = tiles(), step = RM() ? 0 : 25;
   [...targets].forEach((i, k) => {
     all[i].style.setProperty('--d', `${k * step}ms`);
@@ -161,7 +166,7 @@ function nextRound(){
   after(s.show + (s.t * step) / 1000, () => {
     tiles().forEach(t => { if (t.classList.contains('lit')) setTile(t, '', ''); });
     phase = 'input';
-    hint(`Chạm lại các ô vừa sáng (0/${s.t})`);
+    hint(`${decTxt()}Chạm lại các ô vừa sáng (0/${s.t})`);
   });
 }
 
@@ -173,7 +178,7 @@ function tap(i, el){
     setTile(el, 'ok', 'đúng');
     BB.sfx('correct', { combo: found - 1 });
     BB.haptic('tap');
-    hint(`Chạm lại các ô vừa sáng (${found}/${s.t})`);
+    hint(`${isDeciding() ? 'Lượt quyết định (3/3) · ' : ''}Chạm lại các ô vừa sáng (${found}/${s.t})`);
     if (found === s.t) {
       perfect++; totalOk++; phase = 'wait';
       hint('Chính xác! 🎉');
@@ -289,10 +294,9 @@ function showStars(k){
 }
 
 // ---------- menu ----------
-function renderLevels(){
+function renderLevels(resetOpen = false){
   const done = getLv() - 1, grid = $('mlvgrid');
-  grid.innerHTML = '';
-  for (let L=1; L<=LV_MAX; L++){
+  const buildTile = L => {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'lv' + (L <= done ? ' done' : '') + (L === chosen ? ' on' : '');
@@ -301,9 +305,10 @@ function renderLevels(){
     if (L <= done && k) el.dataset.st = '★'.repeat(k);
     el.setAttribute('aria-label', `Level ${L}, ${spec(L).t} ô${L <= done ? ', đã qua' : ''}${k ? `, ${k} sao` : ''}${BB.isPeak(L, 'mem') ? ', màn thử thách' : ''}`);
     el.setAttribute('aria-pressed', L === chosen ? 'true' : 'false');
-    el.onclick = () => { chosen = L; previewLevel(); renderLevels(); BB.sfx('tap'); grid.children[L-1].focus({ preventScroll: true }); };
-    grid.appendChild(el);
-  }
+    el.onclick = () => { chosen = L; previewLevel(); renderLevels(false); BB.sfx('tap'); grid.querySelector('.lv.on')?.focus({ preventScroll: true }); };
+    return el;
+  };
+  BB.renderLevelChapters(grid, { maxLevel: LV_MAX, chosen, isDone: L => L <= done, buildTile, resetOpen });
   const s = spec(chosen);
   $('mLvTxt').textContent = `Lưới ${s.size}×${s.size} · ${s.t} ô sáng · nhìn ${secTxt(s.show)} giây${s.disp >= DISP_SHOWN ? ' · ô rải xa' : ''}`;
   $('mStart').textContent = `Chơi Level ${chosen} · ${BB.isPeak(chosen, 'mem') ? 'thử thách' : `${s.t} ô`}`;
@@ -314,7 +319,7 @@ function previewLevel(){ level = chosen; round = 0; perfect = 0; n = spec(level)
 function toMenu(){
   phase = 'idle'; timers = []; replayShow = false; clearStars();
   chosen = Math.min(getLv(), LV_MAX);
-  renderLevels();
+  renderLevels(true);
   const done = Math.min(getLv() - 1, LV_MAX);
   $('mBestTxt').textContent = done >= LV_MAX ? `Đã qua hết ${LV_MAX} level` : done ? `Đã qua tới Level ${done}` : '';
   ['mresult','mpaused'].forEach(id => $(id).classList.add('hidden'));

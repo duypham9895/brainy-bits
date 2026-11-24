@@ -216,6 +216,28 @@
   .lv.on{border-color:var(--accent);background:rgba(255,176,46,.2);box-shadow:0 0 0 1px rgba(255,176,46,.35),inset 0 1px 0 rgba(255,255,255,.15)}
   .lv.on small{color:#ffe7b8}
   .lv:active{transform:scale(.97)}
+  .lvgrid.lvgrid-chaps{display:flex;flex-direction:column;gap:6px}
+  .lvchap{border-radius:12px;background:rgba(255,255,255,.04)}
+  .lvchap-sum{list-style:none;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 10px;border-radius:12px;
+    color:var(--note);font-size:.88rem;font-weight:700;cursor:pointer;text-align:left;
+    transition:background-color .15s var(--ease)}
+  .lvchap-sum::-webkit-details-marker{display:none}
+  .lvchap-sum::before{content:"";inline-size:16px;block-size:16px;flex:none;background-color:currentColor;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat center / contain;
+    rotate:-90deg}
+  .lvchap[open] > .lvchap-sum::before{rotate:0deg}
+  .lvchap-title{flex:1;min-width:0}
+  .lvchap-prog{flex:none;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.09);color:var(--note);
+    font-size:.78rem;font-weight:700;font-variant-numeric:tabular-nums}
+  .lvchap-prog.all{background:rgba(126,224,129,.18);color:#9cf09f}
+  .lvchap-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:2px 6px 8px}
+  .lvchap::details-content{interpolate-size:allow-keywords;overflow:clip;contain:layout}
+  .lvchap:not([open])::details-content{block-size:0}
+  @media (prefers-reduced-motion: no-preference){
+    .lvchap-sum::before{transition:rotate .2s var(--ease)}
+    .lvchap::details-content{transition-property:block-size,content-visibility,display;transition-duration:.22s;transition-timing-function:var(--ease);transition-behavior:allow-discrete}
+  }
 
   /* khung chung cho game mới */
   .gwrap{position:fixed;inset:0;display:flex;flex-direction:column}
@@ -316,7 +338,14 @@
   .card{animation:pop .26s var(--ease)}
   #hStreak{transition:transform .15s var(--ease)}
   :focus{outline:none}
-  :focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+  @media (min-width:390px){
+    .lvchap-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  }
+  @media (max-width:359px){
+    .lvchap-grid{gap:5px;padding:2px 4px 6px}
+  }
+  :focus-visible,.lvchap-sum:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+  .lvchap-sum:focus-visible{outline-offset:2px}
   #hub :focus-visible,#settings :focus-visible,dialog.qr-dialog :focus-visible{outline:3px solid var(--bb-focus);outline-offset:3px}
   .gamecard:focus-visible,.dailycard:focus-visible{outline-offset:3px}
   .btn:not(.alt):not(.danger):focus-visible,.btn.danger:focus-visible,
@@ -529,6 +558,7 @@
     .btn.alt.danger:not(:disabled):hover{background:rgba(255,93,108,.2);border-color:rgba(255,156,168,.48)}
     .lv:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.4)}
     .lv.on:hover{background:rgba(255,176,46,.24);border-color:var(--accent)}
+    .lvchap-sum:hover{background:rgba(255,255,255,.08)}
     .roundbtn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.24)}
     .mtile:hover{filter:brightness(1.12)}
     .rpad button:hover,#wKeys button:hover{filter:brightness(1.12)}
@@ -538,7 +568,7 @@
   /* ---- Forced Colors Mode (Windows High Contrast) ---- */
   @media (forced-colors: active){
     .card h1,.hubtitle,.koih,.mem-h,.rain-h,.word-h{background:none;color:CanvasText;-webkit-background-clip:border-box;background-clip:border-box}
-    .card,.hubshelf,.gamecard,.dailycard,.pill,.btn,.iconbtn,.lv,.mtile,.wcell,.switch i,.hstat,.how div,dialog.qr-dialog,.qr-targets button,.seg button,.qr-btn-main,.qr-btn-sub,.card .tip,.card .cue,.lv .peaktag{border:1px solid CanvasText}
+    .card,.hubshelf,.gamecard,.dailycard,.pill,.btn,.iconbtn,.lv,.lvchap-sum,.mtile,.wcell,.switch i,.hstat,.how div,dialog.qr-dialog,.qr-targets button,.seg button,.qr-btn-main,.qr-btn-sub,.card .tip,.card .cue,.lv .peaktag{border:1px solid CanvasText}
     .lv.on,:focus-visible{outline:2px solid Highlight}
   }
 

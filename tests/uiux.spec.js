@@ -1,7 +1,7 @@
 // UI/UX craft and accessibility gate: contrast (WCAG AA + 1.4.11), touch targets,
 // zero horizontal overflow, focus rings, reduced motion, OS text-scale opt-in,
 // and regression checks for the fixed menu/result/display bugs.
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 import { feedAll } from './koi-helpers.js';
 
 const PROGRESS_FIXTURE = {
@@ -297,7 +297,7 @@ test('Result cards place stars above the big hero number across Train, Koi, Rain
 
   await page.goto('/#chu');
   const baNoiIdx = await page.evaluate(() => window.__word.LEVELS.findIndex(p => p.i === 0));
-  await page.locator('#wlvgrid .lv').nth(baNoiIdx).click();
+  await pickLevel(page, '#wlvgrid', baNoiIdx + 1);
   await page.click('#wStart');
   for (const ch of 'ba2noi65') await page.keyboard.press(ch);
   await page.keyboard.press('Enter');

@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 import { feedAll, skipCooldown, tapFish } from './koi-helpers.js';
 import { loadBBD, ROOT } from '../scripts/sim/load-bbd.mjs';
 import { rngFor } from '../scripts/sim/human.mjs';
@@ -83,19 +83,19 @@ test('G7 parity mem: 3 seeds at L1/L15/L30 pickTargets + pass/clutch/fail match 
   };
 
   // L1 2-1 clutch win (round 3 = pass), L15 2-0 sweep (round 2 = pass), L1 0-2 fail.
-  await page.locator('#mlvgrid .lv').nth(0).click(); await page.click('#mStart');
+  await pickLevel(page, '#mlvgrid', 1); await page.click('#mStart');
   await playRound(false); await playRound(true); await playRound(true);
   await expect(page.locator('#mresult')).toBeVisible();
   await expect(page.locator('#mrBig')).toHaveText('2/3');
   await page.click('#mrMenu');
 
-  await page.locator('#mlvgrid .lv').nth(14).click(); await page.click('#mStart');
+  await pickLevel(page, '#mlvgrid', 15); await page.click('#mStart');
   await playRound(true); await playRound(true);
   await expect(page.locator('#mrBig')).toHaveText('2/2');
   expect(await page.evaluate(() => window.__mem.starsFor())).toBe(3);
   await page.click('#mrMenu');
 
-  await page.locator('#mlvgrid .lv').nth(0).click(); await page.click('#mStart');
+  await pickLevel(page, '#mlvgrid', 1); await page.click('#mStart');
   await playRound(false); await playRound(false);
   await expect(page.locator('#mrBig')).toHaveText('0/2');
   expect(await page.evaluate(() => window.__mem.starsFor())).toBe(0);
@@ -131,9 +131,26 @@ test('G7 parity rain: 3 seeds at L1/L15/L30 BBRain streams + lives/pass boundary
     }
   }
 
+  // Sun drop cap + makeTwinEq parity across 3 seeds at L6/L15/L30.
+  for (const L of [6, 15, 30]) {
+    const spec = B.level('rain', L);
+    expect(await page.evaluate(([ops, tgt]) => window.BBRain.sunCap(ops, tgt), [spec.ops, spec.target])).toBe(rainAd.sunCap(spec.ops, spec.target));
+    for (let seed = 0; seed < 3; seed++) {
+      const nr = rngFor('g7-twin', L, seed);
+      const base = rainAd.makeEq(spec.ops, nr);
+      const wantTwin = rainAd.makeTwinEq(spec.ops, base[1], base[0], nr);
+      const gotTwin = await page.evaluate(([prng, ops, seedIdx, L]) => {
+        eval(prng);
+        const r = mulberry32(cyrb53(['camp', 'g7-twin', L, seedIdx].join('|')) >>> 0);
+        const b = window.BBRain.makeEq(ops, r);
+        return window.BBRain.makeTwinEq(ops, b[1], b[0], r);
+      }, [PRNG_SRC, spec.ops, seed, L]);
+      expect(gotTwin, `rain twin L${L} seed ${seed}`).toEqual(wantTwin);
+    }
+  }
+
   // L15 has 3 lives (3rd miss loses), L16 breather has 4 lives (3rd miss survives, 4th loses).
-  await page.locator('#rlvgrid .lv').nth(14).scrollIntoViewIfNeeded();
-  await page.locator('#rlvgrid .lv').nth(14).click();
+  await pickLevel(page, '#rlvgrid', 15);
   await page.click('#rStart');
   await page.evaluate(() => { for (const a of [991, 992, 993]) window.__rainTest.spawnDrop(a, 0.99); });
   await expect(page.locator('#rresult')).toBeVisible({ timeout: 3000 });
@@ -206,13 +223,12 @@ test('G7 parity koi: fishLen parity, 3 seeds at L1/L15/L30, KOI-02 decoy rule & 
   await page.goto('/#koi');
   await expect(page.locator('#kmenu')).toBeVisible();
 
-  for (const L of [1, 15, 30]) {
+  for (const L of [1, 7, 15, 30]) {
     const spec = B.level('koi', L);
     expect(await page.evaluate(lv => window.__koi.params(lv), L)).toMatchObject({
       koi: spec.koi, decoys: spec.decoys, cd: spec.cd, spdMul: spec.spdMul, turnMul: spec.turnMul,
     });
-    await page.locator('#klvgrid .lv').nth(L - 1).scrollIntoViewIfNeeded();
-    await page.locator('#klvgrid .lv').nth(L - 1).click();
+    await pickLevel(page, '#klvgrid', L);
     await page.click('#kStartBtn');
     const geom = await page.evaluate(() => {
       const r = document.getElementById('kcv').getBoundingClientRect();
@@ -224,8 +240,7 @@ test('G7 parity koi: fishLen parity, 3 seeds at L1/L15/L30, KOI-02 decoy rule & 
   }
 
   // L15: 1 grey decoy mistake costs 0 pellets & locks cd, 2nd mistake fails; 1 mistake + all koi passes.
-  await page.locator('#klvgrid .lv').nth(14).scrollIntoViewIfNeeded();
-  await page.locator('#klvgrid .lv').nth(14).click();
+  await pickLevel(page, '#klvgrid', 15);
   await page.click('#kStartBtn');
   await skipCooldown(page);
   expect(await tapFish(page, 'decoy')).toBe(true);

@@ -1,7 +1,7 @@
 // Ô Sáng 30 màn: the game reads its levels from BBD (js/difficulty.js + js/levels/mem.js).
 // index.html gets those two script tags from the integrator; until then this file adds them to the
 // served page (before core.js) so the test runs against the integrated game either way.
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel as pickTile } from './fixtures.js';
 
 async function withEngine(page) {
   await page.route(url => url.pathname === '/' || url.pathname === '/index.html', async route => {
@@ -40,7 +40,7 @@ async function winRound(page) {
   await page.clock.runFor(1100);
 }
 async function pickLevel(page, L) {
-  await page.locator('#mlvgrid .lv').nth(L - 1).click();
+  await pickTile(page, '#mlvgrid', L);
   await page.click('#mStart');
 }
 
@@ -69,7 +69,7 @@ test('menu copy states a rule that holds for table v2 (no "mỗi level thêm 1 �
 test('level grid shows 33 levels; L33 (step) is startable and plays with its BBD parameters', async ({ page }) => {
   await open(page, { mem_lv: '33' });
   await expect(page.locator('#mlvgrid .lv')).toHaveCount(33);
-  await page.locator('#mlvgrid .lv').nth(32).click();
+  await pickTile(page, '#mlvgrid', 33);
   await expect(page.locator('#mlvgrid .lv').nth(32)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#mlvgrid .lv').nth(32)).toHaveAttribute('aria-label', 'Level 33, 6 ô');
   await expect(page.locator('#mLvTxt')).toHaveText('Lưới 6×6 · 6 ô sáng · nhìn 2,8 giây');

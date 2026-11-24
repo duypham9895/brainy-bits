@@ -1,6 +1,6 @@
 // Đường Ray Tư Duy: regression tests for audit findings RTD-01..12, OPS-6, OPS-10, SHELL-08/17
 // and the package C reward flow. Uses window.__rtd (read-only test hook in js/train.js).
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 
 async function openTrain(page, init) {
   const errors = [];
@@ -19,7 +19,7 @@ test('RTD-01 / SHELL-17: HUD and overlays use "Level" and real defaults', async 
   await expect(page.locator('#hTime')).toHaveText('90s');
   await expect(page.locator('#rNext')).not.toContainText('Màn');
   await expect(page.locator('#restartBtn')).toHaveText('Chơi lại level này');
-  await page.locator('#lvgrid .lv').nth(6).click();
+  await pickLevel(page, '#lvgrid', 7);
   await expect(page.locator('#hLevel')).toHaveText('Level 7 · 9 ga');
   expect(errors).toEqual([]);
 });
@@ -150,7 +150,7 @@ test('daily hand-off: BB.request starts the requested level directly', async ({ 
 test('RTD-12: full HUD fits at 320px and Pause is a 44px target', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await openTrain(page);
-  await page.locator('#lvgrid .lv').nth(10).click();
+  await pickLevel(page, '#lvgrid', 11);
   await page.click('#startBtn');
   await page.click('#pauseBtn');
   const m = await page.evaluate(() => {
@@ -225,7 +225,7 @@ for (const width of [320, 375, 390]) for (const font of ['app', 'Verdana']) {
   test(`Neon #5: HUD pills fit at ${width}px (${font} font), Pause fully visible`, async ({ page }) => {
     await page.setViewportSize({ width, height: 700 });
     await openTrain(page);
-    await page.locator('#lvgrid .lv').nth(10).click();
+    await pickLevel(page, '#lvgrid', 11);
     await page.click('#startBtn');
     await page.click('#pauseBtn');
     const m = await page.evaluate(async (font) => {
@@ -261,7 +261,7 @@ for (const width of [320, 375, 390]) for (const font of ['app', 'Verdana']) {
 test('Neon #5: drain pill is "⏳ 3" on a phone (one HUD row) and "Chờ 3 tàu" for screen readers and wide screens', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 700 });
   await openTrain(page);
-  await page.locator('#lvgrid .lv').nth(10).click();
+  await pickLevel(page, '#lvgrid', 11);
   await page.click('#startBtn');
   await page.click('#pauseBtn');
   const phone = await page.evaluate(async () => {

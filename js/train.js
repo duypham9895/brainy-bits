@@ -37,7 +37,7 @@ const DISC_MIN_R = 22;
 const discR = () => Math.max(TR + 1, DISC_MIN_R);
 let trains = [], particles = [], popups = [], rings = [];
 let timeLeft = 0, spawnTimer = 0, correct = 0, total = 0, streak = 0, bestStreak = 0, playS = 0;
-let speed = 60, lastT = 0, cdT = 0, shakeLeft = 0;
+let speed = 60, lastT = 0, cdT = 0, shakeLeft = 0, clutchCount = 0, tunnelGlow = 0;
 let spec = specFor(1);     // tham số của level đang chơi: stations, base, speedF, burstP
 let colorBag = [], lastKey = -1, prevKey = -1, lastBurst = false;
 const shake = BB.trauma(7);
@@ -82,7 +82,7 @@ function setupLevel(){
   assignColors(map.stations);
   trains = []; particles = []; popups = []; rings = [];
   colorBag = []; lastKey = -1; prevKey = -1; lastBurst = false;
-  timeLeft = LEVEL_TIME; correct = 0; total = 0; streak = 0; bestStreak = 0; playS = 0;
+  timeLeft = LEVEL_TIME; correct = 0; total = 0; streak = 0; bestStreak = 0; playS = 0; clutchCount = 0; tunnelGlow = 0;
   spawnTimer = 1.0;
   shake.reset();
   layout();
@@ -276,6 +276,7 @@ if (window.ResizeObserver) new ResizeObserver(onResize).observe(cv);
 else window.addEventListener('resize', onResize);
 
 // ================== ĐIỀU KHIỂN ==================
+function leadsTo(e, key){ return e.to.type === 'station' ? e.to.key === key : e.to.childEdges.some(c => leadsTo(c, key)); }
 cv.setAttribute('role', 'img');
 cv.setAttribute('aria-label', 'Bản đồ đường ray. Chạm ô tròn ở ngã rẽ để đổi hướng tàu.');
 cv.addEventListener('pointerdown', ev => {
@@ -292,7 +293,11 @@ cv.addEventListener('pointerdown', ev => {
     trains.forEach(t => {
       if (t.prev && t.prev.to === best && t.edge.from === best && t.d <= t.edge.tileLen + grace) {
         const ne = best.childEdges[best.sel];
-        if (ne !== t.edge) { t.d = Math.min(t.d, ne.tileLen); t.edge = ne; }
+        if (ne !== t.edge) {
+          const saved = !leadsTo(t.edge, t.key) && leadsTo(ne, t.key);
+          t.d = Math.min(t.d, ne.tileLen); t.edge = ne;
+          if (saved) { clutchCount++; popups.push({ x: Math.max(48, Math.min(W - 48, best.px.x)), y: Math.max(24, best.px.y - discR() - 8), text: 'Kịp lúc!', color: '#ffe066', t: 0, small: true }); }
+        }
       }
     });
     BB.sfx('tap'); BB.haptic('tap');
@@ -326,6 +331,7 @@ function update(dt){
     spawnTimer -= dt;
     if (spawnTimer <= 0 && timeLeft > 1.5) spawn();
   }
+  tunnelGlow = (timeLeft > 1.5 && lastBurst && spawnTimer > 0 && spawnTimer <= 0.6) ? (reduced() ? 0.75 : 1 - spawnTimer / 0.6) : 0;
   const gap = Math.max(46, cell * 0.95);
   for (let i=0;i<trains.length;){
     const t = trains[i];
@@ -471,7 +477,7 @@ function draw(dt){
   ctx.globalAlpha = 1;
 
   trains.forEach(drawTrain);
-  M.drawTunnel(ctx, map.tunnel);
+  M.drawTunnel(ctx, map.tunnel, state === 'play' ? tunnelGlow : 0);
 
   particles.forEach(p => {
     ctx.globalAlpha = Math.max(0, 1 - p.t/p.life);
@@ -481,9 +487,9 @@ function draw(dt){
   ctx.globalAlpha = 1;
   const rise = reduced() ? 0 : 26;
   popups.forEach(p => {
-    const k = p.t/0.9;
+    const k = p.t/0.9, sz = p.small ? (reduced() ? 16 : 15 + (1 - k) * 2) : (reduced() ? 28 : 24 + (1 - k) * 6);
     ctx.globalAlpha = 1 - k*k;
-    ctx.font = `800 ${reduced() ? 28 : 24 + (1-k)*6}px "Baloo 2", system-ui, sans-serif`;
+    ctx.font = `800 ${sz}px "Baloo 2", system-ui, sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.55)';
     ctx.strokeText(p.text, p.x, p.y - k*rise);
@@ -658,24 +664,21 @@ function nextHint(lv){
 }
 
 let chosenLv = 1;
-function renderLevels(){
+function renderLevels(resetOpen = false){
   const grid = $('lvgrid'), st = BB.gameStats('train').stars;
-  grid.innerHTML = '';
-  for (let lv = 1; lv <= LV_MAX; lv++){
-    const n = (BB.starsAt ? BB.starsAt('train', lv) : st[lv]) || 0, done = n > 0 || lv <= legacyDone;
-    const el = document.createElement('button');
-    el.type = 'button';
+  const isDone = lv => (((BB.starsAt ? BB.starsAt('train', lv) : st[lv]) || 0) > 0) || lv <= legacyDone;
+  const buildTile = lv => {
+    const n = (BB.starsAt ? BB.starsAt('train', lv) : st[lv]) || 0, done = isDone(lv);
+    const el = document.createElement('button'); el.type = 'button';
     // "done" chỉ cho level đã thật sự qua, không suy từ level cao nhất (RTD-09); dữ liệu cũ thì giữ như bản cũ
     el.className = 'lv' + (done ? ' done' : '') + (lv === chosenLv ? ' on' : '');
     el.setAttribute('aria-pressed', lv === chosenLv ? 'true' : 'false');
-    el.setAttribute('aria-label', `Level ${lv}, ${gaOf(lv)} ga` + (n ? `, ${n} sao` : done ? ', đã qua' : ''));
-    el.innerHTML = `${lv}<small>${gaOf(lv)} ga</small>` +
-      (n ? `<span class="lvst" aria-hidden="true">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</span>` : '') +
-      (BB.isPeak(lv, 'train') ? BB.PEAK_TAG : '');
-    if (BB.isPeak(lv, 'train')) el.setAttribute('aria-label', el.getAttribute('aria-label') + ', màn thử thách');
-    el.onclick = () => { chosenLv = lv; renderLevels(); menuHud(lv); BB.sfx('key'); };
-    grid.appendChild(el);
-  }
+    el.setAttribute('aria-label', `Level ${lv}, ${gaOf(lv)} ga` + (n ? `, ${n} sao` : done ? ', đã qua' : '') + (BB.isPeak(lv, 'train') ? ', màn thử thách' : ''));
+    el.innerHTML = `${lv}<small>${gaOf(lv)} ga</small>` + (n ? `<span class="lvst" aria-hidden="true">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</span>` : '') + (BB.isPeak(lv, 'train') ? BB.PEAK_TAG : '');
+    el.onclick = () => { chosenLv = lv; renderLevels(false); menuHud(lv); grid.querySelector('.lv.on')?.focus({ preventScroll: true }); BB.sfx('key'); };
+    return el;
+  };
+  BB.renderLevelChapters(grid, { maxLevel: LV_MAX, chosen: chosenLv, isDone, buildTile, resetOpen });
   $('startBtn').textContent = `Chơi Level ${chosenLv} · ${BB.isPeak(chosenLv, 'train') ? 'thử thách' : `${gaOf(chosenLv)} ga`}`;
 }
 function toMenu(){
@@ -685,7 +688,7 @@ function toMenu(){
   const b = getBest();
   chosenLv = Math.min(b + 1, LV_MAX);
   $('bestTxt').textContent = b >= LV_MAX ? `Đã qua cả ${LV_MAX} level` : b ? `Đã qua tới Level ${b}` : '';
-  renderLevels();
+  renderLevels(true);
   menuHud(chosenLv);
   show('result', false); show('paused', false); show('menu', true);
   kick();
@@ -748,6 +751,9 @@ if (navigator.webdriver || /[?&]test\b/.test(location.search)) window.__rtd = {
   get map(){ return map; }, get cell(){ return cell; }, get W(){ return W; }, get H(){ return H; },
   get passed(){ return passed; }, get finished(){ return finished; },
   get spec(){ return spec; }, specFor, LV_MAX, usesTable: !!BBD, discR,
+  get clutchCount(){ return clutchCount; }, get tunnelGlow(){ return tunnelGlow; },
+  get trains(){ return trains.map(t => ({ key: t.key, d: t.d, tileLen: t.edge.tileLen, wrong: !leadsTo(t.edge, t.key), swId: t.prev && t.prev.to === t.edge.from ? map.switches.indexOf(t.edge.from) : -1, nextSwSel: t.edge.to?.type === 'switch' ? t.edge.to.sel : -1, nextSwRight: t.edge.to?.type === 'switch' ? leadsTo(t.edge.to.childEdges[t.edge.to.sel], t.key) : false })); },
+  setBurstWait(s){ lastBurst = true; spawnTimer = s; tunnelGlow = s > 0 && s <= 0.6 ? (reduced() ? 0.75 : 1 - s / 0.6) : 0; },
   // jump to the result screen with a given score, for the finished-state test
   // render the HUD as if `n` trains were still out after time ran out (drain pill), then restore
   hudDrain(n){ const t = timeLeft, tr = trains; timeLeft = 0; trains = Array(n).fill(null); updateHud(); timeLeft = t; trains = tr; },

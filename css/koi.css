@@ -8,6 +8,7 @@
 #klvgrid .kst{display:block;font-size:10.5px;letter-spacing:1px;color:#ffd54a;line-height:1;margin-top:2px}
 #krStars .s,#kdStars .s{display:inline-block;transition:color .3s cubic-bezier(0.22,1,0.36,1),filter .3s cubic-bezier(0.22,1,0.36,1)}
 #krRule:empty{display:none}
+#kDecoyNote{margin:6px 0 0;color:#ffd54a;font-size:.85rem;font-weight:700}
 @media (prefers-reduced-motion: reduce){
   #krStars .s,#kdStars .s{transition:none}
 }
