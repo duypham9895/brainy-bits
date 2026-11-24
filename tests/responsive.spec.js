@@ -64,6 +64,10 @@ function audit(touch) {
   for (const cv of [...document.querySelectorAll('canvas')].filter(shown)) {
     const r = cv.getBoundingClientRect();
     if (r.height < 120 && !cv.closest('[aria-hidden="true"]') && cv.id) out.push(`canvas too short: #${cv.id} ${Math.round(r.width)}x${Math.round(r.height)}`);
+    if (cv.width > 0 && cv.height > 0 && r.width > 0 && r.height > 0 && !cv.closest('[aria-hidden="true"]')) {
+      const ratioDiff = Math.abs((cv.width / cv.height) - (r.width / r.height));
+      if (ratioDiff > 0.03) out.push(`canvas aspect distorted: #${cv.id} buf=${cv.width}x${cv.height} css=${Math.round(r.width)}x${Math.round(r.height)}`);
+    }
   }
   // A playing surface hidden under its own keyboard is unplayable even when nothing overflows.
   const board = document.getElementById('wBoard'), keys = document.getElementById('wKeys');

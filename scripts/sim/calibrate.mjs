@@ -18,6 +18,26 @@ export const G1_WEAK = G1_TIERS[0].min;   // kept for callers that read the L1�
 export const G9_FIRST_PEAK_WEAK = 0.70;   // weak ≥ 70% at the first peak (L15): mild, not a wall
 export const G4_WEAK = 0.60;     // weak ≥ 60% on every breather (A, R:simulation proposal)
 export const TOUCH_PX = 44;      // Parhi 2006 ≈ 9.2–9.6 mm
+export const G6_VIEWPORTS = Object.freeze([[320, 568, '320p'], [390, 844, '390p'], [667, 375, '667l']]);
+export const G6_SWITCH_GAP_MIN = 6;
+export const G6_KOI_FILL_MAX = 0.30;
+export const G6_KOI_OVERLAP_TIGHT = 0.65;
+export const G6_KOI_OVERLAP_STD = 0.50;
+export const G6_KEY_W_MIN = 28;
+export const G6_TILE_MIN = 20;
+export const G10_BLOWOUT_MAX = 0.85;
+export const G11_SPREAD_MIN = 0.05;
+export const PROVENANCE = 'UNVERIFIED [NEW] PRIORS in human.mjs — engagement/difficulty gates are one-sided structural red flags, not human-fun guarantees';
+
+export function classifyOutcome(game, spec, r) {
+  if (!r || !r.pass) return { blowout: false, clutch: false };
+  if (game === 'train') return { blowout: r.accuracy >= 0.999, clutch: r.margin <= 5 };
+  if (game === 'koi') return { blowout: r.detail?.mistakes === 0, clutch: r.detail?.mistakes === 1 };
+  if (game === 'mem') return { blowout: r.detail?.round === 2, clutch: r.detail?.round === 3 };
+  if (game === 'rain') return { blowout: r.detail?.misses === 0, clutch: r.margin === 1 };
+  if (game === 'word') return { blowout: r.detail?.rows <= 2, clutch: r.detail?.rows >= (spec.maxTries || 6) - 1 };
+  return { blowout: false, clutch: false };
+}
 
 // Wilson 95% interval (R:simulation, Wilson 1927).
 export function wilson(k, n, z = 1.96) {
@@ -71,17 +91,22 @@ export async function loadAdapter(game) {
 // where the same sampled player retries with learning on.
 export function measure(adapter, BBD, game, L, profileName, n, aopts = {}) {
   const spec = BBD.level(game, L), profile = PROFILES[profileName];
-  let pass = 0, pass3 = 0, acc = 0; const ms = [];
+  let pass = 0, pass3 = 0, acc = 0, blow = 0, clutch = 0; const ms = [];
   for (let i = 0; i < n; i++) {
     const r = adapter.simulate(spec, profile, rngFor(game, L, profileName, i), aopts);
-    if (r.pass) pass++;
+    if (r.pass) {
+      pass++;
+      const c = classifyOutcome(game, spec, r);
+      if (c.blowout) blow++;
+      if (c.clutch) clutch++;
+    }
     acc += r.accuracy; ms.push(r.ms);
     for (let a = 0; a < 3; a++) {
       const player = samplePlayer(profile, rngFor(game, L, profileName, i, 'player'), { attempt: a, learning: true });
       if (adapter.simulate(spec, profile, rngFor(game, L, profileName, i, 'retry', a), { ...aopts, player }).pass) { pass3++; break; }
     }
   }
-  return { p: +(pass / n).toFixed(4), ci: wilson(pass, n), acc: +(acc / n).toFixed(4), msMedian: Math.round(median(ms)), p3: +(pass3 / n).toFixed(4) };
+  return { p: +(pass / n).toFixed(4), ci: wilson(pass, n), acc: +(acc / n).toFixed(4), msMedian: Math.round(median(ms)), p3: +(pass3 / n).toFixed(4), blowout: +(blow / n).toFixed(4), clutch: +(clutch / n).toFixed(4) };
 }
 
 export function checkGates(rows, BBD, game, adapter, n) {
@@ -133,27 +158,76 @@ export function checkGates(rows, BBD, game, adapter, n) {
   if (!r30) skip('G5', g5Name, 'L30 not in range');
   else gate('G5', g5Name, r30.profiles.skilled.p < skilledMin ? [`L30 skilled ${r30.profiles.skilled.p}`] : []);
   const spec = BBD.spec(game);
-  gate('G6', `knobs within hardCap; targets ≥ ${TOUCH_PX} px at 320 and 390 px`,
+  const g6Diag = [];
+  let maxOverlapDiag = 0, maxOverlapTag = '', cellUnderDiscCount = 0;
+  gate('G6', `knobs within hardCap; targets ≥ ${TOUCH_PX} px & crowding checks (320p, 390p, 667l)`,
     rows.flatMap(r => {
       const f = [];
       spec.knobs.forEach(k => {
         const v = r.knobs[k.name];
         if (typeof v === 'number' && (k.dir > 0 ? v > k.hardCap + 1e-9 : v < k.hardCap - 1e-9)) f.push(`L${r.L} ${k.name}=${v} past cap ${k.hardCap}`);
       });
-      if (adapter.geometry) [320, 390].forEach(w => {
-        const px = adapter.geometry(BBD.level(game, r.L), w).minTargetPx;
-        if (px < TOUCH_PX) f.push(`L${r.L} ${px.toFixed(1)} px at ${w}`);
-      });
+      if (adapter.geometry) {
+        const lvl = BBD.level(game, r.L);
+        let discSmall = false;
+        for (const [w, h, tag] of G6_VIEWPORTS) {
+          const g = adapter.geometry(lvl, w, h);
+          if (g.minTargetPx < TOUCH_PX) f.push(`L${r.L} ${g.minTargetPx.toFixed(1)} px at ${tag}`);
+          if (g.minKeyW !== undefined && g.minKeyW < G6_KEY_W_MIN) f.push(`L${r.L} minKeyW=${g.minKeyW} < ${G6_KEY_W_MIN} at ${tag}`);
+          if (g.tilePx !== undefined && g.tilePx < G6_TILE_MIN) f.push(`L${r.L} tilePx=${g.tilePx} < ${G6_TILE_MIN} at ${tag}`);
+          if (g.switchGapPx !== undefined && g.switchGapPx < G6_SWITCH_GAP_MIN) f.push(`L${r.L} switchGap=${g.switchGapPx} < ${G6_SWITCH_GAP_MIN} at ${tag}`);
+          if (g.hitAreaFill !== undefined && g.hitAreaFill > G6_KOI_FILL_MAX) f.push(`L${r.L} fill=${g.hitAreaFill} > ${G6_KOI_FILL_MAX} at ${tag}`);
+          if (g.pOverlapNeighbor !== undefined) {
+            const ovCap = w <= 320 || h <= 400 ? G6_KOI_OVERLAP_TIGHT : G6_KOI_OVERLAP_STD;
+            if (g.pOverlapNeighbor > ovCap) f.push(`L${r.L} overlap=${(g.pOverlapNeighbor * 100).toFixed(1)}% > ${(ovCap * 100).toFixed(0)}% at ${tag}`);
+            if (g.pOverlapNeighbor > maxOverlapDiag) { maxOverlapDiag = g.pOverlapNeighbor; maxOverlapTag = `L${r.L}@${tag}`; }
+          }
+          if (g.cell !== undefined && g.visualDiscPx !== undefined && g.cell < g.visualDiscPx) discSmall = true;
+        }
+        if (discSmall) cellUnderDiscCount++;
+      }
       return f;
-    }), adapter.geometry ? '' : 'adapter has no geometry(): px part not checked');
+    }), (() => {
+      if (!adapter.geometry) return 'adapter has no geometry(): px part not checked';
+      if (cellUnderDiscCount) g6Diag.push(`cell < disc on ${cellUnderDiscCount} levels`);
+      if (maxOverlapDiag > 0) g6Diag.push(`max overlap ${(maxOverlapDiag * 100).toFixed(1)}% (${maxOverlapTag})`);
+      return g6Diag.join('; ');
+    })());
   const firstPeak = bOneSidedBelow(BBD), rPk = byL.get(firstPeak);
   const g9Name = `weak ≥ ${G9_FIRST_PEAK_WEAK * 100}% at the first peak (L${firstPeak})`;
   if (!rPk) skip('G9', g9Name, `L${firstPeak} not in range`);
   else gate('G9', g9Name, rPk.profiles.weak.p < G9_FIRST_PEAK_WEAK ? [`L${firstPeak} weak ${rPk.profiles.weak.p}`] : []);
   out.push({ id: 'G7', name: 'Playwright parity, 3 seeds at L1/L15/L30', pass: null, fails: [],
-    note: 'SKIPPED: needs the game to read BBD.level() (per-game integration step)' });
+    note: 'SKIPPED in Node: verified by Playwright (tests/sim-parity.spec.js + tests/word-levels.spec.js)' });
   gate('G8', 'first-attempt and ≤3-attempt pass reported; ≤3 never below first attempt',
     rows.flatMap(r => PROFILE_NAMES.filter(pn => r.profiles[pn].p3 + 0.02 < r.profiles[pn].p).map(pn => `L${r.L} ${pn} p3 ${r.profiles[pn].p3} < p ${r.profiles[pn].p}`)));
+  const g10Name = `post-onboarding non-breathers: median blowout ≤ ${G10_BLOWOUT_MAX * 100}% and clutch > 0`;
+  const hasG10Data = rows.some(r => typeof r.profiles.median.blowout === 'number' && typeof r.profiles.median.clutch === 'number');
+  const g10Rows = rows.filter(r => r.L >= 15 && r.kind !== 'breather' && typeof r.profiles.median.blowout === 'number' && typeof r.profiles.median.clutch === 'number');
+  if (!hasG10Data || !g10Rows.length) {
+    skip('G10', g10Name, 'no L15+ non-breather blowout telemetry in range');
+  } else {
+    const g10Early = rows.filter(r => r.L < 15 && typeof r.profiles.median.blowout === 'number' && (r.profiles.median.blowout > G10_BLOWOUT_MAX || r.profiles.median.clutch <= 0));
+    gate('G10', g10Name,
+      g10Rows.flatMap(r => {
+        const f = [];
+        if (r.profiles.median.blowout > G10_BLOWOUT_MAX) f.push(`L${r.L} blowout ${r.profiles.median.blowout} > ${G10_BLOWOUT_MAX}`);
+        if (r.profiles.median.clutch <= 0) f.push(`L${r.L} clutch 0`);
+        return f;
+      }),
+      g10Early.length ? `L1–14 warn-only (${g10Early.length} flat onboarding levels: ${g10Early.slice(0, 4).map(r => `L${r.L}`).join(',')}${g10Early.length > 4 ? '…' : ''})` : '');
+  }
+  gate('G11', `skill monotonicity + spread ≥ ${G11_SPREAD_MIN * 100}% off-ceiling (L15+, med ≤ 85%)`,
+    rows.flatMap(r => {
+      const f = [], wk = r.profiles.weak, med = r.profiles.median, sk = r.profiles.skilled;
+      if (sk.p + tolFor(sk.p, med.p, n) < med.p) f.push(`L${r.L} skilled ${sk.p} < median ${med.p}`);
+      if (med.p + tolFor(med.p, wk.p, n) < wk.p) f.push(`L${r.L} median ${med.p} < weak ${wk.p}`);
+      if (r.L >= 15 && med.p <= 0.85 && sk.p - wk.p < G11_SPREAD_MIN) f.push(`L${r.L} spread ${(sk.p - wk.p).toFixed(3)} < ${G11_SPREAD_MIN}`);
+      if (r.L < 15 && med.p > 0.85 && typeof sk.msMedian === 'number' && typeof wk.msMedian === 'number' && typeof sk.acc === 'number' && typeof wk.acc === 'number') {
+        if (sk.msMedian > wk.msMedian && sk.acc < wk.acc - 0.01) f.push(`L${r.L} ceiling inversion: sk ms ${sk.msMedian} > wk ${wk.msMedian} and acc ${sk.acc} < ${wk.acc}`);
+      }
+      return f;
+    }));
   return applyWaivers(out, spec.gateWaivers, game).map(g => ({ ...g, status: gateStatus(g) }));
 }
 
@@ -182,6 +256,7 @@ export async function calibrate(game, { n = 400, from = 1, to, write = true, qui
     game, n, from, to, simVersion: 1, generatedOn: new Date().toISOString().slice(0, 10),
     config: { E1: BBD.CONFIG.E1, breatherEasyOk: !!BBD.CONFIG.BREATHER_EASY_OK, bEasyOkBelow: BBD.CONFIG.B_EASY_OK_BEFORE_SAW ? bOneSidedBelow(BBD) : null, E3: BBD.CONFIG.E3_FREEZE_LEGACY, E5: BBD.CONFIG.E5_KNOBS_ONLY, tableVersion: BBD.version(game), ...BBD.e1() },
     seed: 'mulberry32(cyrb53("camp|game|L|profile|i"))', note: 'bL = logit(1 − p_median) with θ_median = 0, a = 1; 2PL fit not run yet',
+    provenance: PROVENANCE,
     adapterOpts, ok, waived, gates, levels: rows,
   };
   if (write) writeFileSync(join(ROOT, 'docs', 'difficulty', `calibration-${game}.json`), JSON.stringify(report, null, 1) + '\n');
@@ -189,7 +264,7 @@ export async function calibrate(game, { n = 400, from = 1, to, write = true, qui
   return report;
 }
 
-function print({ game, n, levels, gates, ok, waived }, BBD) {
+function print({ game, n, levels, gates, ok, waived, provenance }, BBD) {
   const pct = x => (x * 100).toFixed(0).padStart(3);
   console.log(`\n${game} · N=${n} per profile · first-attempt pass % (≤3 attempts in brackets)`);
   console.log('  L kind  leg   p*  | weak       median     skilled    | Δmed');
@@ -205,6 +280,7 @@ function print({ game, n, levels, gates, ok, waived }, BBD) {
     g.fails.slice(0, 6).forEach(f => console.log(`         · ${f}`));
     if (g.fails.length > 6) console.log(`         · … ${g.fails.length - 6} more`);
   }
+  if (provenance) console.log(`\n[${provenance}]`);
   const w = waived && waived.length ? `; WAIVED: ${waived.join(', ')} (not passed)` : '';
   console.log(ok ? `\nRESULT: no gate failed (G7 skipped${w})` : `\nRESULT: FAIL${w}`);
 }

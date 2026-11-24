@@ -79,10 +79,11 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
   return { pass, accuracy: tapsAll ? tapsOk / tapsAll : 0, ms: Math.round(ms), margin: perfect - NEED, detail: { perfect, round } };
 }
 
-// css/app.css:101 .mgrid width = min(92vw, 62vh, 520px); css/mem.css gap 4 px when n ≥ 6, else 8 px.
+// css/app.css:101 .mgrid width = min(92vw, 62vh, 520px); css/mem.css:32-37 landscape width = min(62vw, vh - 68, 520px), gap 3/4/8 px.
 export function geometry(levelSpec, viewportW, viewportH = 700) {
   const n = levelSpec.size;
-  const w = Math.min(0.92 * viewportW, 0.62 * viewportH, 520);
-  const gap = n >= 6 ? 4 : 8;
+  const land = viewportW > viewportH && viewportH <= 500;
+  const w = land ? Math.min(0.62 * viewportW, viewportH - 68, 520) : Math.min(0.92 * viewportW, 0.62 * viewportH, 520);
+  const gap = n >= 6 ? (land ? 3 : 4) : 8;
   return { minTargetPx: (w - gap * (n - 1)) / n };
 }

@@ -212,4 +212,15 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
   return { pass, accuracy: greens / n, ms: Math.round(ms), margin: pass ? tries - row : -1,
     detail: { rows: Math.min(row, tries), knows, slips, dropped } };
 }
-// No geometry(): the tap targets are the keyboard keys, whose size does not change with the level.
+// Board tile width and on-screen key width matching js/word.js cellSize() and css/word.css #wKeys.
+export function geometry(levelSpec, viewportW, viewportH = Math.round(viewportW * 1.7)) {
+  const n = levelSpec.letters || 7;
+  const availW = Math.min(viewportW, 900) - 24;
+  const land = viewportH < viewportW && viewportH <= 420;
+  const availH = land ? Math.max(120, viewportH - 220) : Math.max(180, viewportH - 340);
+  const gap = (availW < 330 && n >= 10) || availH < 220 ? 3 : availH > 420 ? 6 : 5;
+  const tilePx = Math.max(16, Math.min(76, Math.floor((availW - n * gap) / (n + 0.55)), Math.floor((availH - 5 * gap) / 6)));
+  const keyRowW = Math.min(viewportW, 640) - 8;
+  const minKeyW = +((keyRowW - 8 * 4) / 9).toFixed(1);
+  return { minTargetPx: 44, minKeyW, tilePx };
+}

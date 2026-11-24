@@ -647,6 +647,9 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
 // Tests live in difficulty.rain.test.mjs (file-size rule); registered here so test:sim keeps one entry point.
 (await import('./difficulty.rain.test.mjs')).registerRain({ loadCore, J, failsByGate });
 
+// ---------- engagement (G6 crowding/sizing, G10 drama, G11 skill depth, parity & zero-input guards). ----------
+(await import('./difficulty.engagement.test.mjs')).registerEngagement({ failsByGate });
+
 // ---------- train (owner: train). Table v2: L1..30 retuned to the sawtooth (E3 lifted 2026-11-21). ----------
 // js/train.js reads BBD.level('train', L) and RTD_MAP.spawnGap (js/train-map.js).
 describe('train: table v2, one template for every level', () => {
@@ -814,7 +817,7 @@ describe('train: table v2, one template for every level', () => {
     assert.deepEqual(r.waived, []);
     assert.equal(r.ok, true);
     assert.deepEqual(r.gates.map(g => [g.id, g.status]),
-      [['B', 'PASS'], ['G1', 'PASS'], ['G2', 'PASS'], ['G3', 'PASS'], ['G4', 'PASS'], ['G5', 'PASS'], ['G6', 'PASS'], ['G9', 'PASS'], ['G7', 'SKIP'], ['G8', 'PASS']]);
+      [['B', 'PASS'], ['G1', 'PASS'], ['G2', 'PASS'], ['G3', 'PASS'], ['G4', 'PASS'], ['G5', 'PASS'], ['G6', 'PASS'], ['G9', 'PASS'], ['G7', 'SKIP'], ['G8', 'PASS'], ['G10', 'PASS'], ['G11', 'PASS']]);
     assert.equal(r.gates.find(g => g.id === 'G7').pass, null);
   });
 });
