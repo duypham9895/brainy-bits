@@ -70,14 +70,19 @@ test('W4/W10: xanh dương gộp o/ô/ơ, phím nguyên âm có màu', async ({ 
   await expect(page.locator('#wKeys [data-k="c"]')).toHaveClass(/green/);
 });
 
-test('W6: lượt đoán vô nghĩa bị từ chối, không mất lượt; mọi đáp án hợp lệ', async ({ page }) => {
+test('W6: lượt đoán vô nghĩa và âm tiết giả bị từ chối, không mất lượt; mọi đáp án hợp lệ', async ({ page }) => {
   await open(page);
   const bad = await page.evaluate(() => window.__word.PHRASES.filter(p => !p.words.every(w => window.__word.validSyllable(w))).length);
   expect(bad).toBe(0);
-  await pickPhrase(page, 'bà nội'); await page.click('#wStart');   // 5 ô: 'aaaaaa' gõ đủ ô nhưng không phải tiếng Việt
-  await vni(page, 'aaaaaa'); await page.keyboard.press('Enter');
-  const s = await st(page);
-  expect(s.rows).toBe(0);
+  await pickPhrase(page, 'bà nội'); await page.click('#wStart');   // 5 ô: 'aaaaa' gõ qua phím ảo
+  for (let i = 0; i < 5; i++) await page.locator('#wKeys [data-k="a"]').dispatchEvent('pointerdown');
+  await page.keyboard.press('Enter');
+  expect((await st(page)).rows).toBe(0);
+  await expect(page.locator('#wToast')).toContainText('chưa phải tiếng Việt');
+  for (let i = 0; i < 5; i++) await page.keyboard.press('Backspace');
+  await page.evaluate(() => localStorage.setItem('bb_word_telex', '0'));
+  await vni(page, 'kacon'); await page.keyboard.press('Enter');
+  expect((await st(page)).rows).toBe(0);
   await expect(page.locator('#wToast')).toContainText('chưa phải tiếng Việt');
 });
 
@@ -136,9 +141,9 @@ test('W13 + tiến độ cũ: word_lv hỏng không làm sập, word_lv cũ vẫ
 test('Level cuối: không có Level N+1', async ({ page }) => {
   await open(page);
   const n = await page.evaluate(() => window.__word.LV_MAX);
-  expect(await levelOf(page, 'nước mía')).toBe(n);                  // bảng v2: cụm cuối là nước mía
+  expect(await levelOf(page, 'cầu vồng')).toBe(n);                 // bảng mới: cụm cuối là cầu vồng
   await pick(page, n); await page.click('#wStart');
-  await vni(page, 'nuo7c1mia1'); await page.keyboard.press('Enter');
+  await vni(page, 'ca6u2vo6ng2'); await page.keyboard.press('Enter');
   await expect(page.locator('#wresult')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('#wrNext')).not.toContainText(`Level ${n + 1}`);
   await expect(page.locator('#wrTitle')).toContainText('Phá đảo');
@@ -341,4 +346,184 @@ test('Neon #14: nút level có aria-pressed theo level đang chọn', async ({ p
   await pick(page, 7);
   await expect(pressed()).toHaveCount(1);
   await expect(page.locator('#wlvgrid .lv').nth(6)).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('PR2 modify(): cứu, lưu, thuở ngay lần đầu, nươi+mu → nuôi, xoong+mu ↔ xôông', async ({ page }) => {
+  await open(page);
+  const tap = sel => page.locator(sel).dispatchEvent('pointerdown');
+  await pickPhrase(page, 'con mèo'); await page.click('#wStart');   // 3+3
+  await tap('#wKeys [data-k="c"]'); await tap('#wKeys [data-k="u"]'); await tap('#wKeys [data-k="u"]');
+  await tap('#wKeys [data-a="moc"]');
+  expect((await st(page)).cur).toBe('cưu');
+  await tap('#wKeys [data-a="\u0301"]');
+  expect((await st(page)).cur).toBe('cứu');
+  await tap('#wKeys [data-k="l"]'); await tap('#wKeys [data-k="u"]'); await tap('#wKeys [data-k="u"]');
+  await tap('#wKeys [data-a="moc"]');
+  expect((await st(page)).cur).toBe('cứulưu');
+
+  await page.click('#wMenuBtn');
+  await pickPhrase(page, 'trái tim'); await page.click('#wStart');  // 4+3: Word 1 dài 4 ô
+  for (const k of ['t', 'h', 'u', 'o']) await tap(`#wKeys [data-k="${k}"]`);
+  await tap('#wKeys [data-a="moc"]');
+  expect((await st(page)).cur).toBe('thuơ');
+  await tap('#wKeys [data-a="\u0309"]');
+  expect((await st(page)).cur).toBe('thuở');
+
+  await page.click('#wMenuBtn');
+  await pickPhrase(page, 'trái tim'); await page.click('#wStart');
+  for (const k of ['n', 'u', 'o']) await tap(`#wKeys [data-k="${k}"]`);
+  await tap('#wKeys [data-a="moc"]'); await tap('#wKeys [data-a="moc"]'); // nuơ
+  await tap('#wKeys [data-k="i"]');                                      // coda → nươi
+  await tap('#wKeys [data-a="mu"]');                                     // → nuôi (không ra nưôi)
+  expect((await st(page)).cur).toBe('nuôi');
+
+  await page.click('#wMenuBtn');
+  await pickPhrase(page, 'truyền thống'); await page.click('#wStart');   // 6+5: Word 2 dài 5 ô
+  await vni(page, 'truye6n2');
+  for (const k of ['x', 'o', 'o', 'n', 'g']) await tap(`#wKeys [data-k="${k}"]`);
+  await tap('#wKeys [data-a="moc"]');
+  expect((await st(page)).cur).toBe('truyềnxoong');
+  await tap('#wKeys [data-a="mu"]');
+  expect((await st(page)).cur).toBe('truyềnxôông');
+  await tap('#wKeys [data-a="mu"]');
+  expect((await st(page)).cur).toBe('truyềnxoong');
+});
+
+test('PR2 Telex: gõ tự nhiên với Space và qua biên không Space, cả xoong undo và thuở', async ({ page }) => {
+  await open(page);
+  await pickPhrase(page, 'bà nội'); await page.click('#wStart');
+  await vni(page, 'baf nooij');
+  expect((await st(page)).cur).toBe('bànội');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#wresult')).toBeVisible({ timeout: 5000 });
+  await page.click('#wrMenu');
+
+  await pickPhrase(page, 'đồng hồ'); await page.click('#wStart');
+  await vni(page, 'ddoongf hoof');
+  expect((await st(page)).cur).toBe('đồnghồ');
+
+  await page.click('#wMenuBtn');
+  await pickPhrase(page, 'học sinh'); await page.click('#wStart');
+  await vni(page, 'hocjsinh');
+  expect((await st(page)).cur).toBe('họcsinh');
+
+  await page.click('#wMenuBtn');
+  await pickPhrase(page, 'thanh xuân'); await page.click('#wStart');
+  await vni(page, 'thanhxuaan');
+  expect((await st(page)).cur).toBe('thanhxuân');
+
+  await page.click('#wMenuBtn');
+  await pickPhrase(page, 'đại dương'); await page.click('#wStart');
+  await vni(page, 'ddaijduowng');
+  expect((await st(page)).cur).toBe('đạidương');
+
+  await page.click('#wMenuBtn');
+  await pickPhrase(page, 'truyền thống'); await page.click('#wStart');
+  await vni(page, 'truyeenfxooong');
+  expect((await st(page)).cur).toBe('truyềnxoong');
+
+  await page.click('#wMenuBtn');
+  await pickPhrase(page, 'nụ cười'); await page.click('#wStart');
+  await vni(page, 'baxcuuws');
+  expect((await st(page)).cur).toBe('bãcứu');
+
+  await page.click('#wMenuBtn');
+  await pickPhrase(page, 'trái tim'); await page.click('#wStart');
+  await vni(page, 'thuowr');
+  expect((await st(page)).cur).toBe('thuở');
+
+  await page.click('#wMenuBtn');
+  await pickPhrase(page, 'trái tim');
+  // Test 'hoawcj' inside Word 1 of length 4 ('trái tim')
+  await page.click('#wStart');
+  await vni(page, 'hoawcj');
+  expect((await st(page)).cur).toBe('hoặc');
+});
+
+test('PR2 desktop #wTelexToggle bật/tắt + lưu và #wIme OS IME + Safari keyCode 229; mobile ẩn nút', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, hasTouch: false, isMobile: false });
+  const page = await ctx.newPage();
+  await open(page);
+  await pickPhrase(page, 'bà nội'); await page.click('#wStart');
+  await expect(page.locator('#wTelexToggle')).toBeVisible();
+  await expect(page.locator('#wTelexToggle')).toHaveText('Telex: Bật');
+  await expect(page.locator('#wTelexToggle')).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => document.activeElement?.id)).toBe('wIme');
+
+  // OS IME compositionend commits Unicode + Space and triggers IME-safe Enter check
+  await page.evaluate(() => {
+    const el = document.getElementById('wIme');
+    el.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+    el.value = 'bà ';
+    el.dispatchEvent(new CompositionEvent('compositionend', { data: 'bà ', bubbles: true }));
+    el.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+    el.value = 'nội';
+    el.dispatchEvent(new CompositionEvent('compositionend', { data: 'nội', bubbles: true }));
+  });
+  expect((await st(page)).cur).toBe('bànội');
+  expect((await st(page)).word1Done).toBe(true);
+  await page.evaluate(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 229, bubbles: true, cancelable: true }));
+  });
+  expect((await st(page)).rows).toBe(0);
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#wresult')).toBeVisible({ timeout: 5000 });
+  await page.click('#wrMenu');
+
+  // Toggle Telex off + persist across reload
+  await pickPhrase(page, 'bà nội'); await page.click('#wStart');
+  await page.click('#wTelexToggle');
+  await expect(page.locator('#wTelexToggle')).toHaveText('Telex: Tắt');
+  await expect(page.locator('#wTelexToggle')).toHaveAttribute('aria-pressed', 'false');
+  await vni(page, 'baf');
+  expect((await st(page)).cur).toBe('ba');
+  await page.reload();
+  await page.waitForFunction(() => window.__word && window.APP);
+  if (await page.locator('#openWord').isVisible()) await page.click('#openWord');
+  if (await page.locator('#wmenu').isVisible()) await page.click('#wStart');
+  await expect(page.locator('#wTelexToggle')).toBeVisible();
+  await expect(page.locator('#wTelexToggle')).toHaveText('Telex: Tắt');
+  await expect(page.locator('#wTelexToggle')).toHaveAttribute('aria-pressed', 'false');
+  await ctx.close();
+
+  const mCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const mPage = await mCtx.newPage();
+  await open(mPage);
+  await pick(mPage, 1); await mPage.click('#wStart');
+  await expect(mPage.locator('#wTelexToggle')).toBeHidden();
+  await mCtx.close();
+});
+
+test('PR2 chuẩn hoá thanh cũ/mới: hoà khớp hòa và thuỷ khớp thủy', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, hasTouch: false, isMobile: false });
+  const page = await ctx.newPage();
+  await open(page);
+  await pickPhrase(page, 'hoa hồng'); await page.click('#wStart');
+  await page.evaluate(() => {
+    const el = document.getElementById('wIme');
+    el.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+    el.value = 'hoà ';
+    el.dispatchEvent(new CompositionEvent('compositionend', { data: 'hoà ', bubbles: true }));
+    el.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+    el.value = 'hồng';
+    el.dispatchEvent(new CompositionEvent('compositionend', { data: 'hồng', bubbles: true }));
+  });
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#wLive')).toContainText('HÒAHỒNG: 6 đúng chỗ, 0 sai chỗ, 1 khác dấu, 0 không có.');
+  await page.click('#wMenuBtn');
+
+  await pickPhrase(page, 'hoa hồng'); await page.click('#wStart');
+  const eqOk = await page.evaluate(() => {
+    const W = window.__word;
+    const hoa = { words: [[...'hòa'], [...'hồng']] };
+    const thuy = { words: [[...'thủy'], [...'tiên']] };
+    return W.validSyllable([...'hoà']) && W.validSyllable([...'thuỷ'])
+      && W.normalizeSyllable([...'hoà']).join('') === 'hòa'
+      && W.normalizeSyllable([...'thuỷ']).join('') === 'thủy'
+      && W.evaluateFor(hoa, W.normalizeSyllable([...'hoà']).concat([...'hồng'])).every(x => x === 'green')
+      && W.evaluateFor(thuy, W.normalizeSyllable([...'thuỷ']).concat([...'tiên'])).every(x => x === 'green');
+  });
+  expect(eqOk).toBe(true);
+  await ctx.close();
 });

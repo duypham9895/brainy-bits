@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-21",
+  "updated": "2026-11-24",
   "assets": [
     {
       "name": "Game code, layout and Vietnamese text (index.html)",
@@ -45,6 +45,11 @@
       "name": "App icons, favicon and share image (icons/ & favicon.ico)",
       "licence": "Original Tangram B mark and Sunlit Paper OG artwork made for this repo",
       "source": "icons/"
+    },
+    {
+      "name": "Vietnamese syllable inventory (js/word-dict.js)",
+      "licence": "Creative Commons Attribution 4.0 International (CC BY 4.0). Filtered word list derived from Leipzig Corpora Collection datasets (vie_mixed_2014_300K, vie_news_2022_300K); citation: D. Goldhahn, T. Eckart & U. Quasthoff (LREC 2012).",
+      "source": "https://downloads.wortschatz-leipzig.de/corpora/"
     }
   ]
 }

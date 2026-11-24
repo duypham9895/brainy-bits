@@ -27,8 +27,10 @@
   // and then L14 ↔ L19 (6 ↔ 44, review: p6 played like a peak right before the L15 peak; it now leads into the L20
   // peak). Stars follow the phrase id, so no table version bump; `best` stays a level number, so nobody loses an
   // unlocked level. The "next" and "highest" pointers can move with the phrases a player already cleared.
-  const PLAY = [18, 46, 48, 45, 36, 40, 20, 37, 41, 11, 32, 43, 42, 44, 19, 27, 17, 47, 6, 25, 39, 16, 31, 34, 26,
-    5, 2, 3, 21, 0, 24, 22, 35, 15, 33, 14, 13, 23, 7, 10, 38, 1, 4, 8, 29, 28, 30, 12, 9, 49];
+  // 2026-11-24: Re-ranked after switching validSyllable and adapters/word.mjs to real Vietnamese syllables
+  // (js/word-dict.js, 2,336 bases, LEX_BITS = 5), keeping every gate green at N = 1200 (stars stay on phrase id).
+  const PLAY = [46, 48, 45, 18, 47, 41, 37, 43, 36, 40, 44, 20, 42, 35, 27, 16, 32, 39, 11, 5, 34, 22, 38, 17, 23,
+    13, 21, 6, 25, 4, 24, 31, 3, 30, 1, 28, 33, 19, 49, 0, 15, 26, 2, 12, 10, 8, 7, 14, 9, 29];
   const row = src => ({ id: 'p' + src, phrase: src, letters: lettersOf(src), maxTries: 6 });
   if (BBD && BBD.register) BBD.register('word', {
     version: 2,
