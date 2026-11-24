@@ -306,7 +306,19 @@ function loop(ts){
 function startLoop(){ if (running) return; running = true; lastT = 0; requestAnimationFrame(loop); }
 
 const MIN_PLAY_H = 160;
-function resize(){
+const blurActive = () => { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); };
+const setPlayingClass = on => $('rainApp').classList.toggle('playing', !!on);
+const desktopPtr = window.matchMedia ? matchMedia('(hover: hover) and (pointer: fine)') : null;
+const padToggle = $('rPadToggle');
+function syncPadPref(){
+  const hidden = !!(desktopPtr && desktopPtr.matches && BB.store.get('bb_rain_pad', '1') === '0');
+  $('rainApp').classList.toggle('pad-off', hidden);
+  if (padToggle) {
+    padToggle.setAttribute('aria-pressed', String(hidden));
+    padToggle.textContent = hidden ? 'Hiện phím ảo' : 'Ẩn phím ảo';
+  }
+}
+function resize(opts = {}){
   const r = cv.getBoundingClientRect();
   if (!r.width || !r.height) return;
   const oldW = W, oldH = H;
@@ -329,12 +341,12 @@ function resize(){
   // Thêm: canvas vừa tụt xuống dưới MIN_PLAY_H (cửa sổ chia đôi, kéo nhỏ dần) cũng tạm dừng. Đo theo
   // ngưỡng tuyệt đối, không theo tỉ lệ: thanh công cụ Safari/Chrome hiện ra (~60-80 px) không làm dừng ván.
   const land = innerWidth > innerHeight, cl = W > H, shrunk = oldH >= MIN_PLAY_H && H < MIN_PLAY_H;
-  if (landscape !== null && (land !== landscape || cl !== cvLand || shrunk) && state === 'play') pause();
+  if (!opts.keepPlaying && landscape !== null && (land !== landscape || cl !== cvLand || shrunk) && state === 'play') pause();
   landscape = land; cvLand = cl;
   // Đổi cỡ canvas xoá trắng nó; khi vòng lặp đang dừng (tạm dừng) thì tự vẽ lại một khung.
   if (!running && W && window.APP && window.APP.active === 'rain') draw(0);
 }
-window.addEventListener('resize', resize);
+window.addEventListener('resize', () => resize());
 
 function hud(lost){
   const left = Math.max(0, lives - misses);
@@ -364,20 +376,23 @@ function startLevel(L){
   drops = []; fx = []; parts = []; solved = 0; misses = 0; combo = 0; playMs = 0;
   input = ''; pendT = 0; renderInput(); cam.reset();
   target = spec(level).target; lives = livesOf(level); spawnT = 0.6;
+  syncPadPref();
   showOnly(null);
+  blurActive();
   resize(); hud();
   state = 'play';
+  setPlayingClass(true);
   // The loop stops itself while paused; a round started from the menu after a pause must restart it.
   if (window.APP && window.APP.active === 'rain') startLoop();
 }
 
 function pause(){
   if (state !== 'play') return;
-  state = 'paused'; showOnly('rpaused');
+  state = 'paused'; setPlayingClass(false); showOnly('rpaused');
 }
 function resume(){
   if (state !== 'paused') return;
-  showOnly(null); state = 'play';
+  showOnly(null); blurActive(); state = 'play'; setPlayingClass(true);
   startLoop();
 }
 
@@ -413,7 +428,7 @@ function showStars(n, win){
 }
 
 function finish(win){
-  state = 'result'; passed = win;
+  state = 'result'; passed = win; setPlayingClass(false);
   const stars = starsFor(win, misses);
   const last = win && level >= lvMax();
   if (win && level + 1 > getLv()) setLv(level + 1);
@@ -473,7 +488,8 @@ function renderLevels(){
 function toMenu(){
   pendingStart = null;                                   // về menu là huỷ ván đang chờ bảng level
   clearStarTimers();
-  state = 'menu'; drops = []; fx = []; parts = []; input = ''; pendT = 0; renderInput();
+  state = 'menu'; setPlayingClass(false); drops = []; fx = []; parts = []; input = ''; pendT = 0; renderInput();
+  syncPadPref();
   chosen = Math.min(getLv(), lvMax());
   renderLevels();
   const done = getLv() - 1;
@@ -497,24 +513,49 @@ pad.querySelectorAll('button').forEach(b => {
   // Enter/Space trên nút đang focus sinh click với detail 0; chạm thì đã xử lý ở pointerdown.
   b.addEventListener('click', e => { if (e.detail === 0) press(b.dataset.k); });
 });
+let kbFlashT = 0;
 function flashKey(k){
+  const disp = $('rDisp');
+  if (disp) { disp.classList.add('kb'); clearTimeout(kbFlashT); kbFlashT = setTimeout(() => disp.classList.remove('kb'), 160); }
   const b = pad.querySelector(`[data-k="${k}"]`); if (!b) return;
   b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 110);
 }
+if (padToggle) {
+  padToggle.addEventListener('click', () => {
+    const next = BB.store.get('bb_rain_pad', '1') === '0' ? '1' : '0';
+    BB.store.set('bb_rain_pad', next);
+    syncPadPref();
+    blurActive();
+    BB.sfx('tap');
+    resize({ keepPlaying: true });
+  });
+}
+if (desktopPtr && desktopPtr.addEventListener) desktopPtr.addEventListener('change', () => { syncPadPref(); resize({ keepPlaying: true }); });
+$('rDisp').addEventListener('pointerdown', () => { if (state === 'play') blurActive(); });
+syncPadPref();
+
 document.addEventListener('keydown', e => {
   if (!window.APP || window.APP.active !== 'rain' || e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key === 'Escape') {
+    if (e.isComposing) return;
     if (state === 'play') { e.preventDefault(); pause(); }
     else if (state === 'paused') { e.preventDefault(); resume(); }
     return;
   }
   if (state !== 'play') return;
-  // Enter trên một nút đang focus (phím số, nút tạm dừng) để nút đó tự xử lý qua click.
-  if (e.key === 'Enter' && e.target instanceof HTMLButtonElement && e.target.closest('#rainApp')) return;
-  const m = /^Numpad(\d)$/.exec(e.code);
-  const k = /^[0-9]$/.test(e.key) ? e.key : m ? m[1]
+  const isEnter = e.key === 'Enter' || e.code === 'NumpadEnter';
+  if (isEnter) {
+    // Enter trên một nút đang hiện và focus (phím số, nút tạm dừng, nút ẩn phím) để nút đó tự xử lý qua click.
+    const btn = e.target && e.target.closest && e.target.closest('#rainApp button');
+    if (btn && btn.getClientRects().length > 0) return;
+    if (e.isComposing || e.keyCode === 229) return;
+  }
+  if (e.isComposing) return;
+  const mNum = /^Numpad(\d)$/.exec(e.code);
+  const mDig = !e.shiftKey ? /^Digit(\d)$/.exec(e.code) : null;
+  const k = /^[0-9]$/.test(e.key) ? e.key : mNum ? mNum[1] : mDig ? mDig[1]
     : (e.key === 'Backspace' || e.key === 'Delete') ? 'del'
-    : e.key === 'Enter' ? 'ok' : null;
+    : isEnter ? 'ok' : null;
   if (!k) return;
   e.preventDefault();
   if (e.repeat && k !== 'del') return;

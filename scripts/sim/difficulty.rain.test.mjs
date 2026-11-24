@@ -11,28 +11,17 @@ const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 export function registerRain({ loadCore, J, failsByGate }) {
 // ---------- rain (owner: rain). js/rain.js reads BBD.level('rain', L) and BBRain.makeEq (js/levels/rain.js). ----------
 describe('rain: game reads BBD, legacy unchanged, gates', () => {
-  // Verbatim copies of js/rain.js spec(L) and makeEq(L) before the BBD integration (main @ a124c2d),
-  // with Math.random replaced by an injected rng so both sides can be fed the same stream.
+  // Verbatim copy of the legacy mul/div generator (tiers 6..8) with injected rng,
+  // kept to verify those tiers stay bit-exact while add/sub were changed to uniform pair sampling.
   const oldSpec = L => ({ fall: Math.max(8, 13 - 0.55 * (L - 1)), every: Math.max(2.7, 4.6 - 0.2 * (L - 1)), target: 10 + L });
-  const oldMakeEq = (L, rnd) => {
+  const oldMulDiv = (L, rnd) => {
     const ri = (a, b) => a + (rnd() * (b - a + 1) | 0);
-    const add = m => { const a = ri(1, m - 1), b = ri(1, m - a); return [`${a} + ${b}`, a + b]; };
-    const sub = m => { const a = ri(2, m), b = ri(1, a); return [`${a} − ${b}`, a - b]; };
     const mul = (x0, x1, y1) => { const a = ri(x0, x1), b = ri(1, y1); return rnd() < 0.5 ? [`${a} × ${b}`, a * b] : [`${b} × ${a}`, a * b]; };
     const div = (x1, c0, c1) => { const b = ri(2, x1), c = ri(c0, c1); return [`${b * c} ÷ ${b}`, c]; };
     const pick = arr => arr[rnd() * arr.length | 0]();
-    switch (L) {
-      case 1: return add(10);
-      case 2: return pick([() => add(10), () => sub(10)]);
-      case 3: return pick([() => add(20), () => sub(20)]);
-      case 4: return pick([() => add(50), () => sub(50)]);
-      case 5: return pick([() => add(100), () => sub(100)]);
-      case 6: return mul(2, 5, 10);
-      case 7: return mul(2, 9, 9);
-      case 8: return pick([() => mul(2, 9, 9), () => div(9, 1, 9)]);
-      case 9: return pick([() => add(100), () => sub(100), () => mul(2, 9, 9), () => div(9, 1, 9)]);
-      default: return pick([() => add(200), () => sub(200), () => mul(2, 12, 12), () => div(12, 2, 12)]);
-    }
+    if (L === 6) return mul(2, 5, 10);
+    if (L === 7) return mul(2, 9, 9);
+    return pick([() => mul(2, 9, 9), () => div(9, 1, 9)]);
   };
   // Answer check for every equation shape the generator writes.
   const solve = eq => {
@@ -65,13 +54,38 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
     assert.equal(B.authoredCount('rain'), 30);
   });
 
-  test('shared generator, tiers 1..10 = old makeEq: same rng → same equations and same rng use', async () => {
+  test('shared generator: mul/div tiers 6..8 keep exact rng stream; add(m) and sub(m) sample uniformly without bias', async () => {
     const { makeEq } = await import('./adapters/rain.mjs');
-    for (let L = 1; L <= 10; L++) for (let seed = 1; seed <= 40; seed++) {
+    for (let L = 6; L <= 8; L++) for (let seed = 1; seed <= 40; seed++) {
       const a = mulberry32(seed), b = mulberry32(seed);
-      for (let i = 0; i < 25; i++) assert.deepEqual([...makeEq(L, a)].slice(0, 2), oldMakeEq(L, b), `L${L} seed ${seed} draw ${i}`);   // spread: vm-realm array
+      for (let i = 0; i < 25; i++) assert.deepEqual([...makeEq(L, a)].slice(0, 2), oldMulDiv(L, b), `L${L} seed ${seed} draw ${i}`);
       assert.equal(a(), b(), `L${L} seed ${seed}: rng streams drifted`);
     }
+    const rnd1 = mulberry32(101);
+    const addCounts = new Map();
+    for (let i = 0; i < 9000; i++) {
+      const [eq, ans] = makeEq(1, rnd1);
+      assert.ok(ans >= 2 && ans <= 10, `add(10): ${eq} = ${ans}`);
+      addCounts.set(eq, (addCounts.get(eq) || 0) + 1);
+    }
+    assert.equal(addCounts.size, 45, 'all 45 valid a+b<=10 pairs appear');
+    const counts = [...addCounts.values()];
+    assert.ok((addCounts.get('9 + 1') || 0) / 9000 < 0.04, `9 + 1 share should be ~2.2%, got ${(addCounts.get('9 + 1') || 0) / 9000}`);
+    assert.ok(Math.max(...counts) / Math.min(...counts) < 2.2, 'max/min pair ratio must stay bounded');
+
+    const rnd2 = mulberry32(202);
+    let subTotal = 0, subZero = 0;
+    const subAns = new Set();
+    for (let i = 0; i < 9000; i++) {
+      const [eq, ans, meta] = makeEq(2, rnd2);
+      if (meta.op === 'sub') {
+        subTotal++;
+        if (ans === 0) subZero++;
+        subAns.add(ans);
+      }
+    }
+    assert.equal(subZero, 0, `sub(10) should not repeat a−a=0 (${subZero}/${subTotal})`);
+    assert.equal(subAns.size, 9, 'sub(10) covers all answers 1..9');
   });
 
   test('every tier: answers are correct, whole, 0..999 (3-digit numpad); new tiers show their new operation', async () => {

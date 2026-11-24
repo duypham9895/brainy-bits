@@ -439,7 +439,11 @@
       <button type="button" class="roundbtn" id="rPause" aria-label="Tạm dừng"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg></button>
     </div>
     <canvas id="rcv"></canvas>
-    <div class="rbar"><div class="rdisp empty" id="rDisp">&nbsp;</div></div>
+    <div class="rbar">
+      <span class="rkbd-hint" aria-hidden="true">0–9 · Enter · ⌫</span>
+      <div class="rdisp empty" id="rDisp">&nbsp;</div>
+      <span class="rbar-act"><button type="button" class="rpad-toggle" id="rPadToggle" aria-controls="rPad" aria-pressed="false">Ẩn phím ảo</button></span>
+    </div>
     <div class="rpad" id="rPad">
       <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
       <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
@@ -454,7 +458,7 @@
       <p class="sub">Luyện tính nhẩm nhanh</p>
       <div class="how">
         <div><span class="i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 3.5c3.8 5.2 6.5 8.8 6.5 12.2a6.5 6.5 0 0 1-13 0c0-3.4 2.7-7 6.5-12.2z"/></svg></span><span>Giọt mưa mang <b>phép tính</b> rơi dần xuống hồ.</span></div>
-        <div><span class="i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 12h6M12 9v6"/></svg></span><span>Bấm <b>đáp án</b> trên bàn phím số. Gõ đúng là giọt tự vỡ, không cần bấm OK.</span></div>
+        <div><span class="i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 12h6M12 9v6"/></svg></span><span>Gõ <b>đáp án</b> bằng bàn phím máy tính hoặc bàn phím số trên màn hình. Gõ đúng là giọt tự vỡ, không cần bấm OK.</span></div>
         <div><span class="i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 4h10v5a5 5 0 0 1-10 0zM12 14v5M8 19h8M7 6H4a2 2 0 0 0 0 4h3M17 6h3a2 2 0 0 1 0 4h-3"/></svg></span><span>Giải đủ số phép của level trước khi <b>hết mạng</b>, mỗi giọt rơi xuống nước mất 1 mạng. Phép tính khó dần, thỉnh thoảng có màn nhẹ hơn.</span></div>
       </div>
       <div class="label">Chọn level</div>
