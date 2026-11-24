@@ -276,7 +276,7 @@ if (window.ResizeObserver) new ResizeObserver(onResize).observe(cv);
 else window.addEventListener('resize', onResize);
 
 // ================== ĐIỀU KHIỂN ==================
-function leadsTo(e, key){ return e.to.type === 'station' ? e.to.key === key : e.to.childEdges.some(c => leadsTo(c, key)); }
+function leadsTo(e, key){ if (!e) return false; return e.to.type === 'station' ? e.to.key === key : leadsTo(e.to.childEdges[e.to.sel], key); }
 cv.setAttribute('role', 'img');
 cv.setAttribute('aria-label', 'Bản đồ đường ray. Chạm ô tròn ở ngã rẽ để đổi hướng tàu.');
 cv.addEventListener('pointerdown', ev => {

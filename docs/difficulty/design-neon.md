@@ -13,7 +13,7 @@ Hệ thống chọn **một trục độ khó chung `BB-Curve`** điều phối 
 |---|---|---|---|
 | **1. Trục vô hướng `D(L)`** | Tĩnh / JS thuần | Căn bậc hai tịnh tiến (`abagames`, MIT) + sóng răng cưa chu kỳ 5 (`Oscillation Method`) | [abagames](https://abagames.github.io/joys-of-small-game-development-en/difficulty/curve.html), [Reid-Thomas](https://www.gamedeveloper.com/design/understanding-the-flow-channel-in-game-design) |
 | **2. Bảng knob khai báo** | `BB_SPEC[game]` | Nội suy theo `D(L)`, kẹp cứng ở `hardCap` nhận thức, giảm tải tạm (`reliefOnUnlock`) khi mở cơ chế mới | [Luck & Vogel](https://www.doi.org/10.1038/36846), [Alvarez & Franconeri](https://dash.harvard.edu/entities/publication/c5600f24-cfc6-4d53-aca2-d244ec64059f), [Parhi](https://dx.doi.org/10.1145/1152215.1152260) |
-| **3. Hiệu chỉnh offline** | Node (`scripts/sim/`) | Bot 3 persona (`novice`, `median`, `skilled`) chạy `1.200` seed/màn, khớp `p*(L)`, kiểm 6 cổng T0 và đóng băng `js/levels-data.js` | [Roohi 2020](https://arxiv.org/abs/2008.12937), [Gudmundsson 2018](https://www.Gwern.net/doc/reinforcement-learning/imitation-learning/2018-gudmundsson.pdf), [Wilson 1927](https://doi.org/10.1080/01621459.1927.10502953) |
+| **3. Hiệu chỉnh offline** | Node (`scripts/sim/`) | Bot 3 persona (`novice`, `median`, `skilled`) chạy `1.200` seed/màn, khớp `p*(L)`, kiểm 6 cổng T0 và đóng băng "js/levels-data.js" | [Roohi 2020](https://arxiv.org/abs/2008.12937), [Gudmundsson 2018](https://www.Gwern.net/doc/reinforcement-learning/imitation-learning/2018-gudmundsson.pdf), [Wilson 1927](https://doi.org/10.1080/01621459.1927.10502953) |
 | **4. Thích nghi cục bộ** | Client (`js/core.js`) | Elo/Rasch cục bộ tính lại từ `bb_log` để chọn Daily; nút tự chọn *"Thử bản nhẹ hơn (-15%)"* khi thua liên tiếp; tắt adapt ẩn trong ván | [Pelánek 2016](https://www.fi.muni.cz/~xpelanek/publications/CAE-elo.pdf), [Chen 2006](https://www.engadget.com/2006/09/18/joystiq-qanda-jenova-chen/), [Hunicke 2005](https://users.cs.northwestern.edu/~hunicke/pubs/Hamlet.pdf) |
 
 ---
@@ -98,7 +98,7 @@ Mỗi game không tự viết công thức `switch (L)` hay đường cong riên
 Vì `package.json` đặt `"type": "module"` còn `index.html` nạp `<script src="...">` trực tiếp trên GitHub Pages, repo dùng mô hình **lõi thuần IIFE + bảng đóng băng**:
 - `js/difficulty.js`: hàm `D(L)`, `evalGameSpec`, Elo cục bộ, PRNG `mulberry32` + `hashSeed`, gắn vào `globalThis.BB_DIFF`.
 - `js/levels/<game>-core.js`: chứa `BB_SPEC[game]` và các hàm sinh màn thuần không chạm DOM (`makeMap`, `makeEq`, `pickTargets`), gắn vào `globalThis.BB_CORE[game]`.
-- `js/levels-data.js`: bảng JSON đã hiệu chỉnh và đóng băng cho L1..L30 (`window.BB_LEVELS = { train: [...], koi: [...], ... }`, kèm `b_L, a_L` từ calibration), tổng dung lượng dưới 5 KB.
+- "js/levels-data.js" *(đề xuất thiết kế cũ → bản chốt hiện tại dùng các bảng theo game trong `js/levels/`)*: bảng JSON đã hiệu chỉnh và đóng băng cho L1..L30 (`window.BB_LEVELS = { train: [...], koi: [...], ... }`, kèm `b_L, a_L` từ calibration), tổng dung lượng dưới 5 KB.
 - Node (`scripts/sim/`) nạp đúng `js/difficulty.js` và `js/levels/<game>-core.js` qua `node:vm` (`vm.runInNewContext`), bảo đảm 100% logic sinh màn giống trình duyệt mà không thêm bundler hay npm dependency runtime nào.
 
 ---
@@ -431,7 +431,7 @@ Ngoài biến nhị phân `pass/fail`, mọi bot đều xuất thêm chỉ số 
 1. Sinh cấu hình ban đầu từ `evalGameSpec(BB_SPEC[g], L, dOffset = 0)`.
 2. Chạy `n = 1.200` seed (`mulberry32` sinh màn, `sfc32` sinh bot) cho mỗi cặp `(game, L, persona)`. Với `n = 1.200`, sai số chuẩn lớn nhất là `0.5 / sqrt(1200) = 1.44%`, tương ứng khoảng tin cậy **Wilson 95% CI** nửa bề rộng `≤ ±2.83 điểm %` ([Wilson 1927](https://doi.org/10.1080/01621459.1927.10502953)).
 3. Nếu `p_median(L)` lệch quá `±4 điểm %` so với `p*(L)`, chạy **stochastic bisection** (hoặc staircase 3-down-1-up tự viết `~20` dòng kiểu [Levitt 1971](https://link.springer.com/article/10.3758/BF03204988) để tìm nhanh ngưỡng `79.4%`) điều chỉnh `dOffset[L] ∈ [-0.08, +0.08]`, tuyệt đối không vượt `hardCap`.
-4. Chạy lưới 7 mức năng lực `θ ∈ {-2.4, -1.6, -0.8, 0.0, +0.8, +1.6, +2.4}` (`300` seed/mức) để fit tham số độ khó `b_L` và độ dốc phân biệt `a_L` theo mô hình **IRT 2PL** `p(θ) = 1 / (1 + exp(-a_L(θ - b_L)))` ([Wikipedia IRT](https://en.wikipedia.org/wiki/Item_response_theory)), sau đó ghi đóng băng vào `js/levels-data.js` (có thể kiểm chéo thứ tự `b_L` bằng [`mmai/glicko2js`](https://github.com/mmai/glicko2js) `MIT` theo mô hình Lichess coi mỗi màn là một player).
+4. Chạy lưới 7 mức năng lực `θ ∈ {-2.4, -1.6, -0.8, 0.0, +0.8, +1.6, +2.4}` (`300` seed/mức) để fit tham số độ khó `b_L` và độ dốc phân biệt `a_L` theo mô hình **IRT 2PL** `p(θ) = 1 / (1 + exp(-a_L(θ - b_L)))` ([Wikipedia IRT](https://en.wikipedia.org/wiki/Item_response_theory)), sau đó ghi đóng băng vào "js/levels-data.js" (có thể kiểm chéo thứ tự `b_L` bằng [`mmai/glicko2js`](https://github.com/mmai/glicko2js) `MIT` theo mô hình Lichess coi mỗi màn là một player).
 5. **Kiểm tra 6 cổng chấp nhận tự động (Gate T0):**
    - **G1:** `p_novice(L) ≥ 85%` trên toàn bộ `L = 1..5` (chặn churn đầu game).
    - **G2:** `|p_median(L) - p*(L)| ≤ 5 điểm %` cho L11..L30 (L1..L10 ưu tiên giữ đúng thông số hiện hành nếu `p_median ≥ 90%`).
@@ -468,7 +468,7 @@ Giả sử mỗi game đang có `L_max` màn (`30`), cần thêm `L_max + 1 .. L
    - `rain`: đẩy `twoStep` tới `45%`, `missingOp` tới `35%`, hoặc mở **giọt băng (cần giải 2 phép tính chồng nhau)** ở L36 (vẫn giữ `every ≥ 2.15 s`, đáp án `0..999`).
    - `word`: rút 10 cụm từ từ `SPARE_POOL` (hoặc tự biên soạn thêm cụm 2 từ thông dụng nguyên tác — tuyệt đối không cào từ điển có bản quyền), bật `blueCue = 'posOnly'` ở L31 và giảm `maxTries = 5` kèm cụm ngắn ở L36.
 3. **Chạy hiệu chỉnh Node:** chạy `node scripts/sim/calibrate.mjs --from=31 --to=40` nhắm đường `p*(L) = max(0.45, 0.94 - 0.36·D(L))` (`~55% → 45%` ở `median`).
-4. **Kiểm 6 cổng Gate T0 & cập nhật tĩnh:** toàn bộ G1–G6 đạt mới cập nhật `js/levels-data.js` (`BB.LV_MAX` tự cập nhật theo độ dài mảng), mở nhánh mới và tạo PR để Duy duyệt.
+4. **Kiểm 6 cổng Gate T0 & cập nhật tĩnh:** toàn bộ G1–G6 đạt mới cập nhật "js/levels-data.js" (`BB.LV_MAX` tự cập nhật theo độ dài mảng), mở nhánh mới và tạo PR để Duy duyệt.
 
 ### 4.2. Quy tắc B — Khi Duy đưa: *"Một ý tưởng game mới"*
 
@@ -507,4 +507,4 @@ Giả sử mỗi game đang có `L_max` màn (`30`), cần thêm `L_max + 1 .. L
 3. **Vòng hiệu chỉnh một buổi sau khi gom JSON:**
    - Fit `(β_0, β_1)` trong `ρ_người = σ(β_0 + β_1·logit(ρ_bot))` bằng hồi quy logistic ([King 2018](https://www.Gwern.net/doc/reinforcement-learning/imitation-learning/2018-gudmundsson.pdf)).
    - Fit lại `(μ, σ, τ)` từ `meanRT` thực tế, đo hệ số `b_hick` của `train`, ngưỡng mất dấu `K_mot` của `koi`, và số lượt đoán trung bình `E[tries]` của `word`.
-   - Chạy lại `node scripts/sim/calibrate.mjs` một lần duy nhất → xuất `js/levels-data.js` bản `v1.1` đã neo theo người chơi Việt Nam thật.
+   - Chạy lại `node scripts/sim/calibrate.mjs` một lần duy nhất → xuất "js/levels-data.js" bản `v1.1` đã neo theo người chơi Việt Nam thật.

@@ -226,39 +226,77 @@ test.describe('Track 2 Core & Meta Engagement Mechanics', () => {
     expect(midGlow).toBeGreaterThan(0);
     expect(midGlow).toBeLessThan(1);
 
-    // Restart clean Level 1 to capture the first train crossing switch 0 inside its grace distance.
-    await page.goto('/');
-    await page.goto('/#tau');
-    await page.click('#startBtn');
-    for (let i = 0; i < 65; i++) {
-      await page.clock.runFor(100);
-      const count = await page.evaluate(() => window.__rtd.trains.length);
-      if (count >= 1) break;
-    }
+    // 3. Honest vs dishonest 2-hop switch chains (leadsTo follows live .sel all the way to station).
+    const startWithFirstTrain = async () => {
+      for (let tries = 0; tries < 6; tries++) {
+        await page.goto('/');
+        await page.goto('/#tau');
+        await page.click('#startBtn');
+        for (let i = 0; i < 65; i++) {
+          await page.clock.runFor(100);
+          const count = await page.evaluate(() => window.__rtd.trains.length);
+          if (count >= 1) break;
+        }
+        const info = await page.evaluate(() => {
+          const r = window.__rtd, tr = r.trains[0], cv = document.getElementById('cv').getBoundingClientRect();
+          const walk = (e, acc) => {
+            if (e.to.type === 'station') return e.to.key === tr.key ? acc : null;
+            const sw = e.to;
+            for (let sel = 0; sel < sw.childEdges.length; sel++) {
+              const hit = walk(sw.childEdges[sel], acc.concat([{
+                idx: r.map.switches.indexOf(sw), wantSel: sel, curSel: sw.sel,
+                x: cv.left + sw.px.x, y: cv.top + sw.px.y,
+              }]));
+              if (hit) return hit;
+            }
+            return null;
+          };
+          return { key: tr.key, chain: walk(r.map.tunnel.edge, []) || [] };
+        });
+        if (info.chain.length >= 2) return info;
+      }
+      throw new Error('train did not spawn a 2-hop route within 6 tries');
+    };
 
-    const beforeSw = await page.evaluate(() => {
-      const r = window.__rtd;
-      const cv = document.getElementById('cv').getBoundingClientRect();
-      const sw = r.map.switches[0];
-      return { tr: r.trains[0], x: cv.left + sw.px.x, y: cv.top + sw.px.y };
-    });
-    expect(beforeSw.tr).toBeTruthy();
-    if (beforeSw.tr.nextSwRight) {
-      await page.mouse.click(beforeSw.x, beforeSw.y);
-    }
+    // Negative check: flipping switches[0] onto a subtree whose downstream switch points wrong gives 0 clutchCount.
+    const neg = await startWithFirstTrain();
+    if (neg.chain[1].curSel === neg.chain[1].wantSel) await page.mouse.click(neg.chain[1].x, neg.chain[1].y);
+    if (neg.chain[0].curSel === neg.chain[0].wantSel) await page.mouse.click(neg.chain[0].x, neg.chain[0].y);
 
-    let crossed = null;
+    let crossedNeg = null;
     for (let i = 0; i < 260; i++) {
       await page.clock.runFor(50);
-      crossed = await page.evaluate(() => window.__rtd.trains.find(t => t.swId === 0));
-      if (crossed) break;
+      crossedNeg = await page.evaluate(idx => window.__rtd.trains.find(t => t.swId === idx), neg.chain[0].idx);
+      if (crossedNeg) break;
     }
-    expect(crossed).toBeTruthy();
-    expect(crossed.wrong).toBe(true);
+    expect(crossedNeg).toBeTruthy();
+    expect(crossedNeg.wrong).toBe(true);
 
-    await page.mouse.click(beforeSw.x, beforeSw.y);
+    await page.mouse.click(neg.chain[0].x, neg.chain[0].y);
     await page.clock.runFor(32);
-    expect(await page.evaluate(() => window.__rtd.clutchCount)).toBeGreaterThanOrEqual(1);
+    expect(await page.evaluate(() => ({ clutch: window.__rtd.clutchCount, wrong: window.__rtd.trains[0].wrong })))
+      .toEqual({ clutch: 0, wrong: true });
+
+    // Positive check: when downstream switches point right, grace-flipping switch 0 completes live route & earns "Kịp lúc!".
+    const pos = await startWithFirstTrain();
+    for (const s of pos.chain.slice(1)) {
+      if (s.curSel !== s.wantSel) await page.mouse.click(s.x, s.y);
+    }
+    if (pos.chain[0].curSel === pos.chain[0].wantSel) await page.mouse.click(pos.chain[0].x, pos.chain[0].y);
+
+    let crossedPos = null;
+    for (let i = 0; i < 260; i++) {
+      await page.clock.runFor(50);
+      crossedPos = await page.evaluate(idx => window.__rtd.trains.find(t => t.swId === idx), pos.chain[0].idx);
+      if (crossedPos) break;
+    }
+    expect(crossedPos).toBeTruthy();
+    expect(crossedPos.wrong).toBe(true);
+
+    await page.mouse.click(pos.chain[0].x, pos.chain[0].y);
+    await page.clock.runFor(32);
+    expect(await page.evaluate(() => ({ clutch: window.__rtd.clutchCount, wrong: window.__rtd.trains[0].wrong })))
+      .toEqual({ clutch: 1, wrong: false });
   });
 
   test('M-FORGIVE (mem): 1-1 deciding round shows calm badge, aria-label, and zero overlap at 320x568', async ({ page }) => {

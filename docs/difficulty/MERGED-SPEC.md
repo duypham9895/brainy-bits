@@ -308,7 +308,7 @@ Bot từng game:
 - Daily giữ `best+1`: **chờ E5**.
 - Ẩn θ (A=B).
 
-### 4.6 Rule "thêm 10 màn" và "game mới" (lưu vào `gates/03-build/DIFFICULTY-RULE.md` sau khi Duy duyệt)
+### 4.6 Rule "thêm 10 màn" và "game mới" (lưu vào "gates/03-build/DIFFICULTY-RULE.md" — bản chốt hiện tại: `docs/DIFFICULTY-RULES.md` sau khi Duy duyệt)
 
 "Thêm 10 màn":
 1. Đọc `js/levels/<g>.js` và báo cáo calibrate gần nhất.

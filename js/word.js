@@ -196,7 +196,7 @@ function buildShareGrid(snap){
   const w1 = snap.puzzle.words[0].length;
   const head = [`Brainy Bits · Đoán Cụm Từ Lv ${snap.level} (${snap.tries}/${MAX_TRIES})`];
   if (!snap.hintShown) head.push('Đoán ra không cần gợi ý');
-  return head.concat(snap.rows.map(r => r.slice(0, w1).map(c => EMOJI[c]).join('') + ' ' + r.slice(w1).map(c => EMOJI[c]).join(''))).join('\n');
+  return head.concat(snap.rows.map(r => r.slice(0, w1).map(c => EMOJI[c]).join('') + (snap.puzzle.words.length > 1 ? ' ' + r.slice(w1).map(c => EMOJI[c]).join('') : ''))).join('\n');
 }
 
 // Tiến độ cũ: word_lv = "level cao nhất + 1" theo thứ tự cũ. Chỉ đọc, không ghi nữa; ✓ mới lấy từ sao trong BB.
