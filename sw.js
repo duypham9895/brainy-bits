@@ -1,6 +1,6 @@
 // Brainy Bits offline cache. Same-origin requests go to the network first, so stale files are
 // never served while online. Bump VERSION when the precache list changes; activate deletes old caches. Pattern after mdn/pwa-examples (CC0-1.0), own code.
-const VERSION = 'bb-v8';
+const VERSION = 'bb-v9';
 const FONT_CACHE = 'bb-fonts-v2';   // v2: the stylesheet is now a CORS request; v1 held opaque copies
 const PRECACHE = [
   './', 'index.html', 'manifest.webmanifest', 'favicon.ico',
@@ -9,7 +9,7 @@ const PRECACHE = [
   'js/core.js', 'js/qr.js', 'js/difficulty.js',
   'js/install-platform.js', 'js/install-copy.js', 'js/install-art.js', 'js/install.js',
   'js/levels/train.js', 'js/levels/koi.js', 'js/levels/mem.js', 'js/levels/rain.js', 'js/levels/word.js',
-  'js/train.js', 'js/train-map.js', 'js/koi.js', 'js/mem.js', 'js/rain.js', 'js/word.js', 'js/hub.js',
+  'js/train.js', 'js/train-map.js', 'js/koi.js', 'js/mem.js', 'js/rain.js', 'js/word-dict.js', 'js/word.js', 'js/hub.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
 ];
 

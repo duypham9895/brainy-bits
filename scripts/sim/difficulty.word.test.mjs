@@ -110,6 +110,22 @@ describe('word: 50 phrases ordered by measured difficulty, stars keyed by phrase
     }
     assert.ok(dropped / rows < 0.05, `answer dropped by the bases-only filter on ${dropped}/${rows} rows`);
   });
+  test('word dict & orthography: ~6k real syllables, 50 PHRASES valid, old/new tones match, bogus syllables rejected', async () => {
+    const { W } = await import('./adapters/word.mjs');
+    assert.ok(W.BBWordDict.count >= 5500 && W.BBWordDict.count <= 7500, `count=${W.BBWordDict.count}`);
+    for (const p of W.PHRASES) for (const w of p.words) assert.ok(W.validSyllable(w), `PHRASES invalid: ${w.join('')}`);
+    for (const [oldW, newW] of [['hòa','hoà'], ['thủy','thuỷ'], ['xóa','xoá'], ['khỏe','khoẻ'], ['tòa','toà']]) {
+      assert.equal(W.validSyllable([...oldW]), true, oldW);
+      assert.equal(W.validSyllable([...newW]), true, newW);
+      assert.equal(W.normalizeSyllable([...newW]).join(''), oldW);
+    }
+    for (const ok of ['quốc','cứu','lưu','thuở','xoong','gì','gìn','giêng','giềng','buýt','tuýp','mì','mỳ','ngoao','uỳnh']) {
+      assert.equal(W.validSyllable([...ok]), true, `expected valid: ${ok}`);
+    }
+    for (const bad of ['bănh','bônh','boch','piêch','ka','ko','ku','ci','ce','ge','gha','ngha','quu','gii','cuứ','luư','thưở','nưôi','xoông','aaaaaa','ddoong','moan','kym','coe','guêt','hóà','qùy']) {
+      assert.equal(W.validSyllable([...bad]), false, `expected invalid: ${bad}`);
+    }
+  });
   // Duy 2026-11-21 (3): word waives B (reported WAIVED, never PASS) and must pass G1–G6, G8 and G9. Duy (1) moved the
   // first peak to L10, so L5/L6 swapped phrases; Duy B (2026-11-22) moved it to L15 and raised G1 to weak ≥ 90% on
   // L1–5, so L5↔L11, L10↔L14 and then L14↔L19 swapped. L1–5 phrases sit at weak 0.90–0.94 (L5 at 0.9025, the first

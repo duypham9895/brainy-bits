@@ -32,7 +32,7 @@ import { samplePlayer, lapses, exGauss } from '../human.mjs';
 export const game = 'word';
 export const SLOPE = 1.5;                    // recognition steepness, per bit [NEW]
 // Real phrases still possible ≈ 1 (the answer) + pairs × 2^−(LEX_BITS + HINT_BITS):
-export const LEX_BITS = 7;                   // ~2^21 valid syllable pairs vs ~2^14 everyday 2-syllable words [NEW]
+export const LEX_BITS = 5;                   // ~2^18 real syllable pairs (2,336 bases in js/word-dict.js) vs ~2^14 everyday 2-syllable words [NEW]
 export const HINT_BITS = 4;                  // 17 categories in PHRASES ≈ 2^4; the hint is free, read from row 2 [NEW]
 export const C50_KNOWN = vocab => C50_BASE + C50_VOCAB * vocab;   // bits left at 50% recognition [NEW]
 export const C50_BASE = 0, C50_VOCAB = 2.5;  // weak 1.8 · median 2.25 · skilled 2.45 bits [NEW]
@@ -46,7 +46,10 @@ export function loadWordCore(src = readFileSync(join(ROOT, 'js', 'word.js'), 'ut
   if (a < 0 || b < a) throw new Error('adapter word: @pure-begin/@pure-end markers missing in js/word.js');
   const body = src.slice(src.indexOf('\n', a) + 1, src.lastIndexOf('\n', b));
   const ctx = vm.createContext({});
-  return vm.runInContext(`(() => { ${body}\n return { PHRASES, TONES, split, compose, noTone, isVowel, fam, validSyllable, evaluateAgainst, INITIALS, RHYMES }; })()`,
+  ctx.globalThis = ctx;
+  const dictSrc = readFileSync(join(ROOT, 'js', 'word-dict.js'), 'utf8');
+  vm.runInContext(dictSrc, ctx, { filename: 'js/word-dict.js' });
+  return vm.runInContext(`(() => { ${body}\n return { PHRASES, TONES, split, compose, noTone, isVowel, fam, tonePos, normalizeSyllable, validSyllable, evaluateAgainst, INITIALS, RHYMES, BBWordDict: globalThis.BBWordDict }; })()`,
     ctx, { filename: 'js/word.js#pure' });
 }
 export const W = loadWordCore();
@@ -55,19 +58,22 @@ const SORTED = [...W.PHRASES].sort((x, y) => x.n - y.n || x.i - y.i);   // word.
 export const phraseOf = levelSpec => W.PHRASES.find(p => p.i === levelSpec.phrase);
 export const legacyOrder = () => SORTED.map(p => p.i);
 
-// Valid toneless syllables by length, as exploring guesses. Checked rhymes (-c -ch -p -t) take a sắc tone,
-// since the game rejects them toneless.
+// Real Vietnamese syllable pool built directly from js/word-dict.js (passes the game's own validSyllable).
 const BY_LEN = new Map();
-for (const ini of W.INITIALS) for (const r of W.RHYMES) {
-  let s = [...(ini + r)];
-  if (/(c|ch|p|t)$/.test(r)) {
-    const v = s.map((c, i) => (W.isVowel(c) ? i : -1)).filter(i => i >= 0).pop();
-    s = s.map((c, i) => (i === v ? W.compose(c, W.TONES[0]) : c));
+for (const base of W.BBWordDict.bases()) {
+  const mask = W.BBWordDict.maskOf(base);
+  let tIdx = 0;
+  if (!(mask & 1)) {
+    for (let i = 1; i <= 5; i++) if (mask & (1 << i)) { tIdx = i; break; }
+  }
+  const s = [...base];
+  if (tIdx > 0) {
+    const p = W.tonePos(s);
+    s[p] = W.compose(s[p], W.TONES[tIdx - 1]);
   }
   if (!W.validSyllable(s)) continue;
   if (!BY_LEN.has(s.length)) BY_LEN.set(s.length, []);
-  const list = BY_LEN.get(s.length);
-  if (!list.some(x => x.join('') === s.join(''))) list.push(s);
+  BY_LEN.get(s.length).push(s);
 }
 
 // Same pool as toneless bases, packed for fast counting: per length the letter codes, a letter bitmask per

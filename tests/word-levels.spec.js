@@ -55,9 +55,9 @@ test('Level 30 chơi được, thắng thì sang Level 31', async ({ page }) => 
   await pick(page, 30);
   await expect(page.locator('#wStart')).toContainText('Level 30');
   await page.click('#wStart');
-  expect(await st(page)).toMatchObject({ state: 'play', level: 30, puzzle: 'bà nội' });
-  await vni(page, 'ba2noi65');
-  expect((await st(page)).cur).toBe('bànội');
+  expect(await st(page)).toMatchObject({ state: 'play', level: 30, puzzle: 'ước mơ' });
+  await vni(page, 'uo7c1mo7');
+  expect((await st(page)).cur).toBe('ướcmơ');
   await page.keyboard.press('Enter');
   await expect(page.locator('#wresult')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('#wrTitle')).toContainText('Chính xác');
@@ -118,13 +118,13 @@ test('màn 49 sang màn 50; màn cuối (50): ghi sao, phá đảo, không có L
   await expect(page.locator('#wresult')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('#wrNext')).toHaveText('Level 50 · thử thách →');
   await page.click('#wrNext');
-  await expect(page.locator('#wLevel')).toHaveText('Level 50 · 4+3 chữ');
-  expect(await st(page)).toMatchObject({ state: 'play', level: 50, puzzle: 'nước mía' });
-  await vni(page, 'nuo7c1mia1'); await page.keyboard.press('Enter');
+  await expect(page.locator('#wLevel')).toHaveText('Level 50 · 3+4 chữ');
+  expect(await st(page)).toMatchObject({ state: 'play', level: 50, puzzle: 'cầu vồng' });
+  await vni(page, 'ca6u2vo6ng2'); await page.keyboard.press('Enter');
   await expect(page.locator('#wresult')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('#wrTitle')).toContainText('Phá đảo');
   await expect(page.locator('#wrNext')).toHaveText('Chơi lại từ Level 1');
-  expect(await page.evaluate(() => window.BB.gameStats('word').stars.p49)).toBe(3);
+  expect(await page.evaluate(() => window.BB.gameStats('word').stars.p29)).toBe(3);
 });
 
 // G7 parity (MERGED-SPEC §4.4): the bot's own rows at L1/L15/L30, 3 seeds each, replayed through the real
@@ -138,6 +138,7 @@ for (const L of [1, 15, 30]) {
   test(`G7 parity L${L}: bot rows = game rows (3 seeds)`, async ({ page }) => {
     const B = loadBBD();
     await open(page);
+    await page.evaluate(() => localStorage.setItem('bb_word_telex', '0'));
     for (let seed = 0; seed < 3; seed++) {
       const log = [];
       const sim = simulate(B.level('word', L), PROFILES.median, rngFor('parity', L, 'median', seed), { log });

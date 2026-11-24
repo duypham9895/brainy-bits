@@ -296,7 +296,8 @@ test('Result cards place stars above the big hero number across Train, Koi, Rain
   expect(rPos.stars).toBeLessThan(rPos.big);
 
   await page.goto('/#chu');
-  await page.locator('#wlvgrid .lv').nth(29).click();   // "bà nội" moved L1 → L30 in table v2
+  const baNoiIdx = await page.evaluate(() => window.__word.LEVELS.findIndex(p => p.i === 0));
+  await page.locator('#wlvgrid .lv').nth(baNoiIdx).click();
   await page.click('#wStart');
   for (const ch of 'ba2noi65') await page.keyboard.press(ch);
   await page.keyboard.press('Enter');

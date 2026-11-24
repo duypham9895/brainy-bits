@@ -14,6 +14,8 @@
 }
 #wordApp .lv{min-height:52px}
 #wordApp .lv .wlvst{display:block;font-style:normal;font-size:10.5px;letter-spacing:1px;color:#ffd54a;line-height:1.15;margin-top:2px}
+#wordApp .wime-toggle{display:none}
+#wIme{position:fixed;left:0;top:0;width:44px;height:44px;padding:0;border:0;margin:0;opacity:0;pointer-events:none;font-size:16px}
 
 .wboard{gap:var(--wg,5px)}
 .wrow{gap:var(--wg,5px)}
@@ -116,9 +118,21 @@
   .wkrow:nth-child(4){grid-area:3/2}
   .wkrow:nth-child(5) button{max-width:none}
 }
+/* Desktop/laptop đủ rộng có chuột + bàn phím thật: hiện nút bật/tắt Telex. */
+@media (hover: hover) and (pointer: fine) and (min-width: 680px) and (min-height: 561px){
+  #wordApp .wime-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;border:0;border-radius:12px;
+    background:rgba(255,207,138,.12);color:var(--note);font:700 13px/1 inherit;white-space:nowrap;cursor:pointer;
+    transition:background-color .14s ease,transform .12s cubic-bezier(0.22,1,0.36,1)}
+}
 @media (prefers-reduced-motion: reduce){
   .wcell.flip,.wcell.caret,.wcell.caret::after{animation:none}
   #wKeys button:active{transform:none}
+  #wordApp .wime-toggle{transition:none}
+}
+/* Đặt :focus-visible và @media (hover: hover) sau cùng để không bị responsive layout rules ghi đè (LUẬT 13b). */
+#wordApp .wime-toggle:focus-visible{outline:3px solid #ffcf8a;outline-offset:2px}
+@media (hover: hover){
+  #wordApp .wime-toggle:hover{background:rgba(255,207,138,.20)}
 }
 /* vùng chỉ cho trình đọc màn hình */
 .wsr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
