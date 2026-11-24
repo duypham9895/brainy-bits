@@ -666,8 +666,9 @@ describe('train: table v2, one template for every level', () => {
     if (r < 0.33) return m * (1.5 + rnd() * 0.6);
     return m * (0.75 + rnd() * 0.6);
   };
-  const loadMap = () => {
-    const ctx = vm.createContext({ window: {} });
+  const loadMap = rng => {
+    const ctx = vm.createContext({ window: {}, __rng: rng });
+    if (rng) vm.runInContext('Math.random = __rng;', ctx);
     vm.runInContext(readFileSync(join(ROOT, 'js/train-map.js'), 'utf8'), ctx);
     return ctx.window.RTD_MAP;
   };
@@ -727,7 +728,7 @@ describe('train: table v2, one template for every level', () => {
   });
 
   test('train randomness: 2-bag allows natural doubles (0 triples), speedVar varies, bursts occur, Top-K maps vary', () => {
-    const M = loadMap(), rng = mulberry32(42);
+    const M = loadMap(mulberry32(42)), rng = mulberry32(42);
     for (const n of [5, 11, 15]) {
       const bag = [], seq = [];
       let last = -1, prev = -1, same = 0, triples = 0;
