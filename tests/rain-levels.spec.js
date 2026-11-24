@@ -2,7 +2,7 @@
 // L1..9 keep the old rows (decision 2, 2026-11-21: tiers 7–9 back at L7–9), L10..30 retuned, breathers carry the E4 safety net), old progress keys still count
 // and migrate once, and the next-level flow runs to a finished state after L30.
 // Run: PW_PORT=8964 npx playwright test tests/rain-levels.spec.js
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 import { loadBBD } from '../scripts/sim/load-bbd.mjs';
 import { CANVAS_H } from '../scripts/sim/adapters/rain.mjs';
 
@@ -15,9 +15,7 @@ async function openRain(page, setup) {
 const dbg = page => page.evaluate(() => window.__rainDebug());
 
 async function startAt(page, L) {
-  const b = page.locator('#rlvgrid .lv').nth(L - 1);
-  await b.scrollIntoViewIfNeeded();
-  await b.click();
+  await pickLevel(page, '#rlvgrid', L);
   await page.click('#rStart');
   await expect(page.locator('#rmenu')).toBeHidden();
 }
@@ -70,12 +68,11 @@ test('v2: L1..6 play the old formula with 3 lives, L7..10 keep their tier at one
 // First breather is L16 since the early ramp (Duy 2026-11-22, B: first peak L15); it was L11.
 test('breather safety net: L16 has 10 drops and 4 lives in menu, HUD and play; 4th miss loses, 3 misses do not', async ({ page }) => {
   await openRain(page, () => { localStorage.setItem('rain_lv', '17'); });
-  const b = page.locator('#rlvgrid .lv').nth(15);
-  await b.scrollIntoViewIfNeeded(); await b.click();
+  await pickLevel(page, '#rlvgrid', 16);
   await expect(page.locator('#rLvTxt')).toHaveText('Thêm tìm số còn thiếu · giải 10 phép · 4 mạng');
-  await page.locator('#rlvgrid .lv').nth(16).click();
+  await pickLevel(page, '#rlvgrid', 17);
   await expect(page.locator('#rLvTxt')).toContainText('· 3 mạng');
-  await page.locator('#rlvgrid .lv').nth(15).click();
+  await pickLevel(page, '#rlvgrid', 16);
   await page.click('#rStart');
   expect(await dbg(page)).toMatchObject({ state: 'play', level: 16, target: 10, lives: 4 });
   await expect(page.locator('#rLives')).toHaveAttribute('aria-label', 'Còn 4 mạng');
@@ -158,9 +155,8 @@ test('level names: tiers 1..10 keep the old text, v2 levels show their tier, new
 
 test('level 33 (step) is selectable, starts with 25 drops and 3 lives, HUD shows Level 33', async ({ page }) => {
   await openRain(page);
+  await pickLevel(page, '#rlvgrid', 33);
   const b = page.locator('#rlvgrid .lv').nth(32);
-  await b.scrollIntoViewIfNeeded();
-  await b.click();
   await expect(b).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#rLvTxt')).toHaveText('Thêm nhân số có hai chữ số · giải 25 phép · 3 mạng');
   await page.click('#rStart');
@@ -222,7 +218,7 @@ test('next-level flow: L10 leads to L11; L30 → L31 → L32 → L33; passing L3
   await expect(page.locator('#rrNext')).toHaveText('Level 11 →');
   // the "next level" line names every change: tier, faster rain, chain, lives (review NIT 9)
   const info = await page.evaluate(() => [6, 11, 15, 16, 29].map(L => window.__rainTest.nextInfo(L)));
-  expect(info).toEqual(['bảng nhân 2–9', 'mưa nhanh hơn', 'thêm tìm số còn thiếu, giải 10 phép, 4 mạng', 'mưa nhanh hơn, giải 18 phép, còn 3 mạng', 'mưa nhanh hơn']);
+  expect(info).toEqual(['bảng nhân 2–9', 'mưa nhanh hơn', 'thêm tìm số còn thiếu, 4 mạng', 'mưa nhanh hơn, giải 18 phép, còn 3 mạng', 'mưa nhanh hơn']);
   await page.click('#rrNext');
   expect(await dbg(page)).toMatchObject({ state: 'play', level: 11, target: 16, lives: 3 });   // early ramp: L11 is a step
 

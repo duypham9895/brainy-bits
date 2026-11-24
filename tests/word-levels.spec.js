@@ -2,7 +2,7 @@
 // bằng bot, sao lưu theo mã cụm "p<chỉ số>". Tiến độ cũ (word_lv, sao theo số level của thứ tự cũ) được dời sang đúng
 // cụm đã chơi, số level đã qua không giảm. Màn 30 chơi được và đi tiếp được, màn cuối là phá đảo.
 // index.html đã có thẻ <script>; withBBD chỉ chèn khi một bản index cũ thiếu chúng (không sửa index.html).
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 
 async function withBBD(page) {
   await page.route(u => u.pathname === '/' || u.pathname === '/index.html', async route => {
@@ -23,7 +23,7 @@ async function open(page, { lv } = {}) {
   await page.click('#openWord');
   await expect(page.locator('#wmenu')).toBeVisible();
 }
-const pick = (page, L) => page.locator('#wlvgrid .lv').nth(L - 1).click();
+const pick = (page, L) => pickLevel(page, '#wlvgrid', L);
 const vni = async (page, s) => { for (const ch of s) await page.keyboard.press(ch); };
 const st = page => page.evaluate(() => window.__word.state());
 const levelOf = (page, ans) => page.evaluate(a => window.__word.LEVELS.findIndex(p => p.words.map(w => w.join('')).join(' ') === a) + 1, ans);

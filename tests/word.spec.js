@@ -1,5 +1,5 @@
 // Đoán Cụm Từ: các lỗi đã sửa (W1–W13, SHELL-04, SHELL-07) và phần thưởng mới.
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 
 async function open(page, { lv, reduced = true } = {}) {
   if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -9,7 +9,7 @@ async function open(page, { lv, reduced = true } = {}) {
   await page.click('#openWord');
   await expect(page.locator('#wmenu')).toBeVisible();
 }
-const pick = (page, L) => page.locator('#wlvgrid .lv').nth(L - 1).click();
+const pick = (page, L) => pickLevel(page, '#wlvgrid', L);
 // Bảng v2 xếp cụm theo độ khó, nên test chọn level theo cụm (đáp án), không theo số level cố định.
 const levelOf = (page, ans) => page.evaluate(a => window.__word.LEVELS.findIndex(p => p.words.map(w => w.join('')).join(' ') === a) + 1, ans);
 const pickPhrase = async (page, ans) => { const L = await levelOf(page, ans); expect(L, ans).toBeGreaterThan(0); await pick(page, L); return L; };

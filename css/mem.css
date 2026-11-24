@@ -1,5 +1,6 @@
 /* mem: game-specific styles. Loaded after app.css, so rules here may override it. */
 #memApp{--sub:#cfc7f7;--muted:#b4aae6;--note:#e3defc;--focus:#ffd54a}
+#memApp #mRound.decide{border-color:rgba(255,213,74,.55);color:#ffd54a;background:rgba(255,213,74,.14)}
 /* 6x6 grid: smaller gap keeps every tile >= 44px at 320px wide. */
 .mgrid{perspective:700px}
 .mgrid.dense{gap:4px}

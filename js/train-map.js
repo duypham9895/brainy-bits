@@ -401,7 +401,7 @@ function drawDeco(g, d){
   }
 }
 
-function drawTunnel(ctx, T){
+function drawTunnel(ctx, T, glow = 0){
   const d = DIRS[T.dir], k = T.k;
   ctx.save();
   ctx.translate(T.origin.x, T.origin.y);
@@ -421,6 +421,12 @@ function drawTunnel(ctx, T){
   ctx.closePath(); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,.08)';
   ctx.beginPath(); ctx.moveTo(-40, -12); ctx.quadraticCurveTo(-18, -34, 6, -34); ctx.quadraticCurveTo(-16, -26, -40, -12); ctx.fill();
+  if (glow > 0) {
+    const gg = ctx.createRadialGradient(0, 4, 2, 0, 4, 30);
+    gg.addColorStop(0, `rgba(255,212,110,${(0.38*glow).toFixed(3)})`);
+    gg.addColorStop(1, 'rgba(255,212,110,0)');
+    ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(0, 4, 30, Math.PI, 0); ctx.fill();
+  }
   ctx.fillStyle = '#6b7068';
   ctx.beginPath(); ctx.moveTo(-21, base); ctx.lineTo(-21, 2); ctx.arc(0, 2, 21, Math.PI, 0); ctx.lineTo(21, base); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1;
@@ -429,6 +435,10 @@ function drawTunnel(ctx, T){
   ig.addColorStop(0, '#000'); ig.addColorStop(1, '#1c211e');
   ctx.fillStyle = ig;
   ctx.beginPath(); ctx.moveTo(-15, base); ctx.lineTo(-15, 2); ctx.arc(0, 2, 15, Math.PI, 0); ctx.lineTo(15, base); ctx.closePath(); ctx.fill();
+  if (glow > 0) {
+    ctx.strokeStyle = `rgba(255,224,130,${(0.7*glow).toFixed(3)})`; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0, 2, 16.5, Math.PI, 0); ctx.stroke();
+  }
   ctx.restore();
 }
 

@@ -1,5 +1,5 @@
 // Mưa Phép Tính: regression tests for RAIN-1..4, the missed items and the reward layer.
-import { test, expect, muteAudio } from './fixtures.js';
+import { test, expect, muteAudio, pickLevel } from './fixtures.js';
 
 async function openRain(page, setup) {
   if (setup) await page.addInitScript(setup);
@@ -9,7 +9,7 @@ async function openRain(page, setup) {
 const dbg = page => page.evaluate(() => window.__rainDebug());
 
 async function startAt(page, L) {
-  await page.locator('#rlvgrid .lv').nth(L - 1).click();
+  await pickLevel(page, '#rlvgrid', L);
   await page.click('#rStart');
   await expect(page.locator('#rmenu')).toBeHidden();
 }

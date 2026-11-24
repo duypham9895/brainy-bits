@@ -23,4 +23,17 @@ export function muteAudio() {
 export const test = base.extend({
   context: async ({ context }, use) => { await context.addInitScript(muteAudio); await use(context); },
 });
+
+export async function pickLevel(page, gridSel, L) {
+  const det = page.locator(`${gridSel} details.lvchap`).nth(Math.floor((L - 1) / 5));
+  if (await det.count()) {
+    if (!(await det.evaluate(d => d.open))) {
+      await det.locator('> summary.lvchap-sum').scrollIntoViewIfNeeded();
+      await det.locator('> summary.lvchap-sum').click();
+    }
+  }
+  const btn = page.locator(`${gridSel} .lv`).nth(L - 1);
+  await btn.scrollIntoViewIfNeeded();
+  await btn.click();
+}
 export { expect };

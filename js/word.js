@@ -190,8 +190,14 @@ if (BB.migrateProgress) BB.migrateProgress('word');
 // ---------- trạng thái ----------
 // state: menu | play | reveal (đang lật ô, khoá nhập) | result
 let level = 1, chosen = 1, puzzle = null, rows = [], cur = [], word1Done = false, state = 'menu', passed = false, hintShown = false;
-let inGame = false, flipRow = -1, popAt = -1, revealT = 0, startedAt = 0, starT = [], tickT = [];
-const keyState = {};
+let inGame = false, flipRow = -1, popAt = -1, revealT = 0, startedAt = 0, starT = [], tickT = [], lastShareText = '', lastShareMsg = '', shareStatusT = 0;
+const keyState = {}, EMOJI = { green: '🟩', yellow: '🟨', blue: '🟦', gray: '⬜' };
+function buildShareGrid(snap){
+  const w1 = snap.puzzle.words[0].length;
+  const head = [`Brainy Bits · Đoán Cụm Từ Lv ${snap.level} (${snap.tries}/${MAX_TRIES})`];
+  if (!snap.hintShown) head.push('Đoán ra không cần gợi ý');
+  return head.concat(snap.rows.map(r => r.slice(0, w1).map(c => EMOJI[c]).join('') + ' ' + r.slice(w1).map(c => EMOJI[c]).join(''))).join('\n');
+}
 
 // Tiến độ cũ: word_lv = "level cao nhất + 1" theo thứ tự cũ. Chỉ đọc, không ghi nữa; ✓ mới lấy từ sao trong BB.
 // Không seed vào bb_stats ở đây: hub.js seed một lần (cờ bb_seeded_v2), còn game đọc thẳng word_lv.
@@ -413,7 +419,7 @@ function submit(){
   cur = []; word1Done = false;
   const win = res.every(r => r === 'green');
   const lose = !win && rows.length >= MAX_TRIES;
-  const snap = { level, puzzle, tries: rows.length, ms: performance.now() - startedAt };
+  const snap = { level, puzzle, tries: rows.length, ms: performance.now() - startedAt, hintShown, rows: rows.map(r => r.res.slice()) };
   state = 'reveal'; lockMenu(true);
   flipRow = rows.length - 1;
   renderBoard(); hud();
@@ -487,6 +493,9 @@ function finish(win, snap, quiet = false){
   const cue = BB.peakCue($('wrNext'), { game: 'word', level, won: win, last, maxLevel: LV_MAX, peak: isPeakW });
   $('wrNext').textContent = win ? (last ? 'Chơi lại từ Level 1' : `Level ${level + 1}${cue ? ' · thử thách' : ''} →`) : `Chơi lại Level ${level}`;
   $('wrReveal').classList.toggle('hidden', win);
+  $('wrNoHint').classList.toggle('hidden', !(win && !snap.hintShown));
+  lastShareText = win && snap.rows ? buildShareGrid(snap) : '';
+  $('wrShare').classList.toggle('hidden', !win);
   showStars(win ? stars : -1);
   $('wresult').classList.remove('hidden');
   if (win) {
@@ -519,17 +528,18 @@ function starsEl(){
   }
   return el;
 }
-function renderLevels(){
-  const grid = $('wlvgrid'); grid.innerHTML = '';
-  for (let L = 1; L <= LV_MAX; L++){
+function renderLevels(resetOpen = false){
+  const grid = $('wlvgrid');
+  const buildTile = L => {
     const el = document.createElement('button'), st = starsOf(L);
     el.className = 'lv' + (isDone(L) ? ' done' : '') + (L === chosen ? ' on' : '');
     el.innerHTML = `${L}<small>${LEVELS[L-1].n} chữ</small>` + (st ? `<i class="wlvst" aria-hidden="true">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</i>` : '') + (isPeakW(L) ? BB.PEAK_TAG : '');
     el.setAttribute('aria-label', `Level ${L}, ${LEVELS[L-1].n} chữ` + (st ? `, ${st} sao` : isDone(L) ? ', đã qua' : '') + (isPeakW(L) ? ', màn thử thách' : ''));
     el.setAttribute('aria-pressed', L === chosen ? 'true' : 'false');
-    el.onclick = () => { chosen = L; renderLevels(); BB.sfx('tap'); };
-    grid.appendChild(el);
-  }
+    el.onclick = () => { chosen = L; renderLevels(false); BB.sfx('tap'); grid.querySelector('.lv.on')?.focus({ preventScroll: true }); };
+    return el;
+  };
+  BB.renderLevelChapters(grid, { maxLevel: LV_MAX, chosen, isDone, buildTile, resetOpen });
   $('wStart').textContent = `Chơi Level ${chosen} · ${isPeakW(chosen) ? 'thử thách' : `${LEVELS[chosen-1].n} chữ cái`}`;
 }
 function resumeBtn(){
@@ -548,7 +558,7 @@ function toMenu(){
   // Gợi ý level đầu tiên chưa qua: sau khi xếp lại, các cụm đã qua không còn nằm liền nhau từ Level 1.
   const next = nextOpen();
   chosen = inGame ? level : next;
-  renderLevels();
+  renderLevels(true);
   const done = doneCount();
   $('wBestTxt').textContent = done ? (done >= LV_MAX ? `Đã qua hết ${LV_MAX} level` : `Đã qua ${done}/${LV_MAX} level`) : '';
   const rb = resumeBtn();
@@ -576,7 +586,7 @@ BB.onLeave('word', () => {
   if (state !== 'reveal') return;
   const last = rows[rows.length - 1];
   renderKeys();
-  const snap = { level, puzzle, tries: rows.length, ms: performance.now() - startedAt };
+  const snap = { level, puzzle, tries: rows.length, ms: performance.now() - startedAt, hintShown, rows: rows.map(r => r.res.slice()) };
   if (last && last.res.every(r => r === 'green')) finish(true, snap, true);
   else if (rows.length >= MAX_TRIES) finish(false, snap, true);
   else { state = 'play'; lockMenu(false); }
@@ -789,6 +799,16 @@ $('wrReveal').onclick = () => {
   $('wrNext').textContent = level < LV_MAX ? `Level ${level+1} →` : 'Về Level 1';
   passed = true;   // cho đi tiếp, nhưng level này không có sao nên không có ✓
 };
+$('wrShare').onclick = async () => {
+  const ok = await BB.copyText(lastShareText), live = $('wrShareStatus');
+  let msg = ok ? 'Đã chép lưới lượt đoán' : 'Không chép được kết quả';
+  if (msg === lastShareMsg) msg += '\u00A0';
+  lastShareMsg = msg;
+  clearTimeout(shareStatusT); live.textContent = '';
+  requestAnimationFrame(() => { live.textContent = msg; });
+  shareStatusT = setTimeout(() => { live.textContent = ''; }, 2000);
+  BB.toast(ok ? 'Đã chép lưới lượt đoán' : 'Không chép được kết quả');
+};
 $('wrMenu').onclick = toMenu;
 $('wMenuBtn').onclick = toMenu;
 let rz = 0;
@@ -798,5 +818,6 @@ window.wordBest = bestLv;
 // Cho test: đọc đáp án và chạy các hàm thuần, không đụng tới trạng thái ván.
 // Chỉ mở cho trình duyệt tự động hoặc URL ?test, giống bốn game kia: người chơi thường không đọc được đáp án.
 if (navigator.webdriver || /[?&]test\b/.test(location.search)) window.__word = { PHRASES, LEVELS, LV_MAX, viaBBD: LEVELS === rowsBBD, tonePos, normalizeSyllable, validSyllable, evaluateFor: (p, g) => { const s = puzzle; puzzle = p; const r = evaluate(g); puzzle = s; return r; },
-  state: () => ({ state, level, rows: rows.length, cur: cur.join(''), puzzle: answer(puzzle), inGame, word1Done }) };
+  shareText: () => lastShareText,
+  state: () => ({ state, level, rows: rows.length, cur: cur.join(''), puzzle: answer(puzzle), inGame, word1Done, hintShown }) };
 })();

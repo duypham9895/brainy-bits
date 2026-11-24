@@ -9,7 +9,7 @@ let W = 0, H = 0, dpr = 1, landscape = null, cvLand = null;
 let state = 'menu';            // menu | play | paused | result
 let level = 1, chosen = 1, passed = false;
 let drops = [], fx = [], parts = [], solved = 0, target = 10, misses = 0, spawnT = 0, lastBurst = false, input = '', pendT = 0;
-let combo = 0, playMs = 0, lastT = 0, lives = LIVES;
+let combo = 0, playMs = 0, lastT = 0, lives = LIVES, sunSpawned = 0, clutchCount = 0;
 const cam = BB.trauma(7);
 
 // Thông số level đọc từ engine chung: BBD.level('rain', L) (js/difficulty.js + js/levels/rain.js).
@@ -107,23 +107,39 @@ const dropY = d => -30 + d.p*(waterY() + 30);
 function spawn(){
   if (drops.length >= 5) { spawnT = 0.5; return; }
   if (!ready()) { spawnT = 0.1; return; }
-  const [eq, ans] = makeEq(level);
-  // không cho 2 giọt cùng đáp án rơi cùng lúc
-  if (drops.some(d => d.ans === ans)) { spawnT = 0.1; return; }
+  const s = spec(level), R = window.BBRain;
+  const reg = drops.filter(d => !d.sun);
+  const cap = R.sunCap ? R.sunCap(s.ops, target) : 0;
+  const wantSun = cap > 0 && sunSpawned < cap && solved < target - 1 && drops.length >= 2 && !drops.some(d => d.sun) && Math.random() < (R.SUN_P || 0);
+  let eq, ans, isSun = false;
+  if (wantSun) {
+    [eq, ans] = R.makeEq(Math.max(1, s.ops - 3), Math.random);
+    if (drops.some(d => d.ans === ans)) { spawnT = 0.1; return; }
+    isSun = true; sunSpawned++;
+  } else {
+    let made = null;
+    const hasPair = reg.some((a, i) => reg.some((b, j) => j > i && a.ans === b.ans));
+    if (s.ops >= 6 && reg.length >= 1 && !hasPair && R.makeTwinEq && Math.random() < (R.TWIN_P || 0)) {
+      const base = reg[(Math.random() * reg.length) | 0];
+      made = R.makeTwinEq(s.ops, base.ans, base.eq, Math.random);
+    }
+    [eq, ans] = made || makeEq(level);
+    const dup = s.ops < 6 ? drops.some(d => d.ans === ans) : drops.some(d => d.eq === eq || (d.sun && d.ans === ans));
+    if (dup) { spawnT = 0.1; return; }
+  }
   ctx.font = DROP_FONT;
-  const w = Math.max(78, Math.ceil(ctx.measureText(eq).width) + 26);
-  const margin = 8, dw = w + 2;
+  const w = Math.max(isSun ? 84 : 78, Math.ceil(ctx.measureText(eq).width) + (isSun ? 32 : 26));
+  const margin = isSun ? 14 : 8, dw = w + 2;
   let bestX = W/2, bestD = -1;
   for (let k=0;k<10;k++){
     const x = margin + dw/2 + Math.random()*Math.max(0, W - 2*margin - dw);
     const dmin = drops.filter(d => dropY(d) < H*0.4).reduce((m, d) => Math.min(m, Math.abs(d.x - x)), 1e9);
     if (dmin > bestD) { bestD = dmin; bestX = x; }
   }
-  const s = spec(level);
-  const fall = window.BBRain && window.BBRain.dropFall ? window.BBRain.dropFall(s.fall, Math.random) : s.fall;
-  drops.push({ x: bestX, p: 0, fall, eq, ans, w });
-  if (window.BBRain && window.BBRain.spawnGap) {
-    const g = window.BBRain.spawnGap(s.every, lastBurst, Math.random);
+  const fall = R.dropFall ? R.dropFall(s.fall, Math.random) : s.fall;
+  drops.push({ x: bestX, p: 0, fall, eq, ans, w, sun: isSun });
+  if (R.spawnGap) {
+    const g = R.spawnGap(s.every, lastBurst, Math.random);
     lastBurst = g.burst; spawnT = g.gap;
   } else {
     spawnT = s.every * (0.8 + Math.random()*0.4);
@@ -141,12 +157,32 @@ function burst(x, y, n, opts){
   }
 }
 
-function hit(d){
-  const y = dropY(d);
-  drops.splice(drops.indexOf(d), 1);
-  solved++; combo++;
-  fx.push({ x: d.x, y, t: 0, ok: true, combo });
-  burst(d.x, y, 14, { v0: 90, v1: 140, g: 260, colors: ['#8fd0ff', '#b9ff7a', '#ffffff'] });
+function hit(d, opts = {}){
+  const wy = waterY(), pWater = (wy - 12 + 30) / (wy + 30);
+  if (d.sun) {
+    const y = dropY(d);
+    const evap = drops.filter(x => x !== d);
+    drops = [];
+    solved = Math.min(target, solved + 1); combo++;
+    evap.forEach(x => burst(x.x, dropY(x), 8, { v0: 60, v1: 100, g: 120, colors: ['#fde047', '#fff5b8', '#8fd0ff'] }));
+    burst(d.x, y, 16, { v0: 90, v1: 150, g: 200, colors: ['#fde047', '#fff5b8', '#ffffff'] });
+    fx.push({ x: d.x, y, t: 0, ok: true, combo, label: '+1 ☀', sun: true });
+  } else {
+    const same = drops.filter(x => !x.sun && x.ans === d.ans);
+    const matches = same.includes(d) ? same : [d];
+    matches.forEach(m => { const idx = drops.indexOf(m); if (idx >= 0) drops.splice(idx, 1); });
+    const count = matches.length;
+    const isClutch = !!opts.clutch || matches.some(m => m.p >= pWater * 0.88);
+    if (isClutch) clutchCount++;
+    solved = Math.min(target, solved + count); combo += count;
+    const lead = matches.reduce((m, x) => (x.p > m.p ? x : m), matches[0]);
+    const y = dropY(lead);
+    const label = count >= 2
+      ? (isClutch ? `+${count} · Kịp lúc!` : `+${count}`)
+      : (isClutch ? 'Kịp lúc!' : (combo >= 3 ? `✓ ×${combo}` : '✓'));
+    matches.forEach(m => burst(m.x, dropY(m), count > 1 ? 10 : 14, { v0: 90, v1: 140, g: 260, colors: ['#8fd0ff', '#b9ff7a', '#ffffff'] }));
+    fx.push({ x: lead.x, y, t: 0, ok: true, combo, label });
+  }
   BB.hitStop(55);
   BB.sfx('correct', { combo: Math.min(combo - 1, 12) });
   BB.haptic('tap');
@@ -173,7 +209,7 @@ function submit(){
 // cho chữ số tiếp theo rồi mới vỡ. Số không còn là đầu của đáp án nào thì xoá ngay.
 function evalInput(typed){
   if (!input) { pendT = 0; return; }
-  const exact = drops.find(d => String(d.ans) === input);
+  const exact = drops.filter(d => String(d.ans) === input).sort((a, b) => b.p - a.p)[0];
   const longer = drops.some(d => { const s = String(d.ans); return s.length > input.length && s.startsWith(input); });
   if (exact && !longer) hit(exact);
   else if (exact) pendT = AUTO_WAIT;
@@ -209,18 +245,32 @@ function update(dt){
   }
   const wy = waterY();
   let recheck = false;
+  for (const d of drops) d.p += dt/d.fall;
+  // Ân hạn mặt nước (M-FORGIVE): đáp án đúng đang chờ AUTO_WAIT chạm vạch thì vỡ cứu mạng thay vì trừ tim.
+  if (pendT > 0 && input) {
+    const saved = drops.filter(x => String(x.ans) === input && dropY(x) >= wy - 12).sort((a, b) => b.p - a.p)[0];
+    if (saved) {
+      hit(saved, { clutch: true });
+      if (state !== 'play') return;
+      recheck = true;
+    }
+  }
   for (let i=drops.length-1;i>=0;i--){
     if (state !== 'play') return;
     const d = drops[i];
-    d.p += dt/d.fall;
     if (dropY(d) >= wy - 12) {
-      drops.splice(i, 1); misses++; combo = 0;
-      fx.push({ x: d.x, y: wy - 4, t: 0, ok: false });
-      burst(d.x, wy - 2, 12, { up: true, v0: 120, v1: 170, g: 620, colors: ['#8fd0ff', '#2a8fd6', '#ffffff'] });
-      cam.add(0.6);
-      BB.sfx('wrong'); BB.haptic('error');
-      hud(true);
-      if (misses >= lives) { finish(false); return; }
+      drops.splice(i, 1);
+      if (d.sun) {
+        fx.push({ x: d.x, y: wy - 8, t: 0, ok: true, sunFade: true, label: '' });
+      } else {
+        misses++; combo = 0;
+        fx.push({ x: d.x, y: wy - 4, t: 0, ok: false });
+        burst(d.x, wy - 2, 12, { up: true, v0: 120, v1: 170, g: 620, colors: ['#8fd0ff', '#2a8fd6', '#ffffff'] });
+        cam.add(0.6);
+        BB.sfx('wrong'); BB.haptic('error');
+        hud(true);
+        if (misses >= lives) { finish(false); return; }
+      }
       recheck = true;
     }
   }
@@ -236,6 +286,28 @@ function drawDrop(d){
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,.25)';
   ctx.beginPath(); ctx.ellipse(x + 2, y + 4, w/2, h/2, 0, 0, Math.PI*2); ctx.fill();
+  if (d.sun) {
+    // Giọt Mặt trời: 8 tia tĩnh, nền vàng sáng + chữ tối (>12:1 tương phản), đứng yên khi giảm chuyển động.
+    ctx.strokeStyle = 'rgba(255,236,140,.72)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4, r0x = w / 2 + 2, r0y = h / 2 + 2;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * r0x, y + Math.sin(a) * r0y);
+      ctx.lineTo(x + Math.cos(a) * (r0x + 4), y + Math.sin(a) * (r0y + 4));
+      ctx.stroke();
+    }
+    const g = ctx.createLinearGradient(0, y - h/2, 0, y + h/2);
+    g.addColorStop(0, '#fff3a8'); g.addColorStop(0.55, '#fde047'); g.addColorStop(1, '#fcd34d');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(x, y, w/2, h/2, 0, 0, Math.PI*2); ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = '#fff9d6'; ctx.stroke();
+    ctx.font = DROP_FONT;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#0b1220';
+    ctx.fillText(d.eq, x, y + 1);
+    ctx.restore();
+    return;
+  }
   // Chóp giọt còn sáng, phần thân chứa chữ đậm dần: chữ trắng đạt ≥ 5.5:1 trên mọi điểm của thân.
   const g = ctx.createLinearGradient(0, y - h/2 - 13, 0, y + h/2);
   g.addColorStop(0, '#8fd0ff'); g.addColorStop(0.4, '#1b69b8'); g.addColorStop(1, '#0f4482');
@@ -288,12 +360,16 @@ function draw(dt){
   fx.forEach(f => {
     const k = f.t/0.8;
     ctx.globalAlpha = 1 - k;
-    ctx.strokeStyle = f.ok ? '#b9ff7a' : '#ff6b6b'; ctx.lineWidth = 3;
-    if (!still) { ctx.beginPath(); ctx.arc(f.x, f.y, 14 + k*36, 0, Math.PI*2); ctx.stroke(); }
-    ctx.font = '800 22px "Baloo 2", system-ui, sans-serif'; ctx.textAlign = 'center';
-    ctx.fillStyle = f.ok ? '#b9ff7a' : '#ff6b6b';
-    const label = f.ok ? (f.combo >= 3 ? `✓ ×${f.combo}` : '✓') : '✗';
-    ctx.fillText(label, f.x, f.y - 20 - (still ? 0 : k*24));
+    ctx.strokeStyle = f.sun ? '#fde047' : f.ok ? '#b9ff7a' : '#ff6b6b'; ctx.lineWidth = 3;
+    if (!still && !f.sunFade) { ctx.beginPath(); ctx.arc(f.x, f.y, 14 + k*36, 0, Math.PI*2); ctx.stroke(); }
+    const label = f.label !== undefined ? f.label : (f.ok ? (f.combo >= 3 ? `✓ ×${f.combo}` : '✓') : '✗');
+    if (label) {
+      const wide = label.length > 5;
+      ctx.font = `800 ${wide ? 17 : 22}px "Baloo 2", system-ui, sans-serif`; ctx.textAlign = 'center';
+      ctx.fillStyle = f.sun || label.includes('Kịp') ? '#ffe066' : f.ok ? '#b9ff7a' : '#ff6b6b';
+      const lx = Math.max(54, Math.min(W - 54, f.x));
+      ctx.fillText(label, lx, f.y - 20 - (still ? 0 : k*24));
+    }
     ctx.globalAlpha = 1;
   });
 }
@@ -379,7 +455,7 @@ function startLevel(L){
   clearStarTimers();
   if (!ready()) { pendingStart = L; return; }      // bảng level chưa nạp xong (xem ensureLevels)
   level = Math.max(1, Math.min(lvMax(), L|0 || 1));
-  drops = []; fx = []; parts = []; solved = 0; misses = 0; combo = 0; playMs = 0; lastBurst = false;
+  drops = []; fx = []; parts = []; solved = 0; misses = 0; combo = 0; playMs = 0; lastBurst = false; sunSpawned = 0; clutchCount = 0;
   input = ''; pendT = 0; renderInput(); cam.reset();
   target = spec(level).target; lives = livesOf(level); spawnT = 0.6;
   syncPadPref();
@@ -469,13 +545,13 @@ function finish(win){
 }
 
 // ---------- menu ----------
-function renderLevels(){
+function renderLevels(resetOpen = false){
   const done = getLv() - 1, grid = $('rlvgrid'), stars = BB.gameStats('rain').stars;
   // Sao theo khoá ổn định của level (BB.levelKey), như bốn game kia: hôm nay là số level, mai có thể là id.
   const starsAt = L => stars[BB.levelKey ? BB.levelKey('rain', L) : L] || 0;
   grid.innerHTML = '';
   if (!ready()) { if (loadDone) $('rLvTxt').textContent = 'Chưa tải được level. Kiểm tra mạng rồi mở lại.'; return; }
-  for (let L=1; L<=lvMax(); L++){
+  const buildTile = L => {
     const el = document.createElement('button');
     const st = starsAt(L), isDone = L <= done;
     el.className = 'lv' + (isDone ? ' done' : '') + (L === chosen ? ' on' : '');
@@ -484,9 +560,10 @@ function renderLevels(){
       (BB.isPeak(L, 'rain') ? BB.PEAK_TAG : '');
     el.setAttribute('aria-label', `Level ${L}, ${spec(L).target} phép` + (isDone ? ', đã qua' : '') + (st ? `, ${st} sao` : '') + (BB.isPeak(L, 'rain') ? ', màn thử thách' : ''));
     el.setAttribute('aria-pressed', L === chosen ? 'true' : 'false');
-    el.onclick = () => { chosen = L; renderLevels(); BB.sfx('tap'); grid.children[L-1].focus({ preventScroll: true }); };
-    grid.appendChild(el);
-  }
+    el.onclick = () => { chosen = L; renderLevels(false); BB.sfx('tap'); grid.querySelector('.lv.on')?.focus({ preventScroll: true }); };
+    return el;
+  };
+  BB.renderLevelChapters(grid, { maxLevel: lvMax(), chosen, isDone: L => L <= done, buildTile, resetOpen });
   $('rLvTxt').textContent = `${levelName(chosen)} · giải ${spec(chosen).target} phép · ${livesOf(chosen)} mạng`;
   $('rStart').textContent = `Chơi Level ${chosen}${BB.isPeak(chosen, 'rain') ? ' · thử thách' : ''}`;
 }
@@ -494,10 +571,10 @@ function renderLevels(){
 function toMenu(){
   pendingStart = null;                                   // về menu là huỷ ván đang chờ bảng level
   clearStarTimers();
-  state = 'menu'; setPlayingClass(false); drops = []; fx = []; parts = []; input = ''; pendT = 0; renderInput();
+  state = 'menu'; setPlayingClass(false); drops = []; fx = []; parts = []; input = ''; pendT = 0; sunSpawned = 0; clutchCount = 0; renderInput();
   syncPadPref();
   chosen = Math.min(getLv(), lvMax());
-  renderLevels();
+  renderLevels(true);
   const done = getLv() - 1;
   $('rBestTxt').textContent = done >= lvMax() ? `Đã qua cả ${lvMax()} level` : done ? `Đã qua tới Level ${done}` : '';
   showOnly('rmenu');
@@ -591,11 +668,12 @@ window.rainBest = () => getLv() - 1;
 // Cửa cho test, chỉ gắn khi trình duyệt do máy điều khiển (Playwright) hoặc URL có ?test.
 if (navigator.webdriver || /[?&]test\b/.test(location.search)) {
 window.__rainDebug = () => ({ state, level, misses, lives, solved, target, input, combo, pendT, W, H,
-  drops: drops.map(d => ({ ans: d.ans, eq: d.eq, x: d.x, y: dropY(d), p: d.p, w: d.w })) });
+  sunSpawned, clutchCount, fxCount: fx.length, lastFx: fx.length ? (fx[fx.length - 1].label || '') : '',
+  drops: drops.map(d => ({ ans: d.ans, eq: d.eq, x: d.x, y: dropY(d), p: d.p, w: d.w, sun: !!d.sun })) });
 window.__rainTest = { makeEq: L => makeEq(L).slice(0, 2), spec, nextInfo, starsFor, livesOf, lvMax,
   get LVINFO(){ return Array.from({ length: lvMax() + 1 }, (_, L) => (L ? { name: levelName(L) } : null)); },
-  spawnDrop: (ans, p = 0.5, eq = `? = ${ans}`, w = 78) => {
-  drops.push({ x: W/2, p, fall: spec(level).fall, eq, ans, w }); }, starTimers: () => starTimers.length };
+  spawnDrop: (ans, p = 0.5, eq = `? = ${ans}`, w = 78, opts = {}) => {
+  drops.push({ x: W/2, p, fall: spec(level).fall, eq, ans, w, sun: !!opts.sun }); }, starTimers: () => starTimers.length };
 }
 ensureLevels();
 if (window.APP && window.APP.active === 'rain') startLoop();

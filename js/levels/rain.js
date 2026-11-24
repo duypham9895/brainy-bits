@@ -82,6 +82,51 @@
     },
   ];
 
+  // Bounded shared Sun drop & Twin multi-clear helpers (Track 2: M-OPT-RISK-RAIN-SUN + M-KISHO-RAIN-MULTICLEAR).
+  // Kept here so js/rain.js and scripts/sim/adapters/rain.mjs run the exact same rules.
+  const SUN_P = 0.15, TWIN_P = 0.15;
+  const sunCap = (ops, target) => (ops >= 6 ? (target >= 22 ? 2 : 1) : 0);
+  function makeTwinEq(ops, targetAns, avoidEq, rng) {
+    const ri = (a, b) => a + (rng() * (b - a + 1) | 0);
+    const cands = [];
+    const addC = (eq, meta) => { if (eq !== avoidEq && !cands.some(x => x[0] === eq)) cands.push([eq, targetAns, meta]); };
+    if (ops === 6 || ops === 7 || ops === 8) {
+      const aMax = ops === 6 ? 5 : 9, bMax = ops === 6 ? 10 : 9;
+      for (let a = 2; a <= aMax; a++) {
+        if (targetAns % a !== 0) continue;
+        const b = targetAns / a;
+        if (b >= 1 && b <= bMax) {
+          addC(`${a} × ${b}`, { op: 'mul', a, b });
+          addC(`${b} × ${a}`, { op: 'mul', a, b });
+        }
+      }
+      if (ops === 8 && targetAns >= 1 && targetAns <= 9) {
+        for (let b = 2; b <= 9; b++) addC(`${b * targetAns} ÷ ${b}`, { op: 'div', a: b * targetAns, b });
+      }
+    } else if (ops >= 9) {
+      const maxSum = ops === 9 ? 100 : 200;
+      if (targetAns >= 4 && targetAns <= maxSum) {
+        const lo = targetAns > 20 ? 11 : 2, hi = targetAns - lo;
+        if (hi >= lo) { const a = ri(lo, hi), b = targetAns - a; addC(`${a} + ${b}`, { op: 'add', a, b }); }
+      }
+      if (targetAns >= 2 && targetAns <= maxSum - 12) {
+        const b = ri(11, Math.min(maxSum - targetAns, 95)), a = targetAns + b;
+        addC(`${a} − ${b}`, { op: 'sub', a, b });
+      }
+      const mMax = ops === 9 ? 9 : 12;
+      for (let a = 2; a <= mMax; a++) {
+        if (targetAns % a !== 0) continue;
+        const b = targetAns / a;
+        if (b >= 2 && b <= mMax) { addC(`${a} × ${b}`, { op: 'mul', a, b }); break; }
+      }
+      if (targetAns >= 2 && targetAns <= mMax) {
+        const b = ri(2, mMax);
+        addC(`${b * targetAns} ÷ ${b}`, { op: 'div', a: b * targetAns, b });
+      }
+    }
+    return cands.length ? cands[(rng() * cands.length) | 0] : null;
+  }
+
   // Menu / result copy per tier. 1..10 are the old LVINFO names, unchanged.
   const TIER_NAME = [null,
     'Cộng trong phạm vi 10', 'Cộng, trừ trong phạm vi 10', 'Cộng, trừ trong phạm vi 20',
@@ -125,13 +170,14 @@
   //  · L17–19 climb back from the L16 breather one step at a time (chain 18 → 20 → 22, fall 8.20 → 7.85) instead of
   //    jumping from 10 to 22 drops in one level (review 2026-11-22).
   //  · Uniform add/sub pair sampling (2026-11-24): minor ease (+0.03..+0.10 s) on L20, L24, L27–29 to keep median on p*.
+  //  · Sun drop + twin multi-clear (2026-11-24): retuned L15..30 & L31+ cadence slightly faster so median stays on p*.
   const TABLE = {
     7: [7, 3.80, 10.25, 16, 3], 8: [8, 3.80, 10.25, 16, 3], 9: [9, 3.80, 10.25, 16, 3],
     10: [10, 3.80, 10.25, 16, 3],
-    11: [11, 3.80, 10.25, 16, 3], 12: [11, 3.40, 10.25, 16, 3], 13: [11, 3.00, 10.25, 16, 3], 14: [11, 3.00, 9.00, 16, 3], 15: [11, 2.30, 9.00, 8, 3],
-    16: [12, 3.20, 9.20, 10, 4], 17: [12, 2.90, 8.20, 18, 3], 18: [12, 2.90, 7.85, 20, 3], 19: [12, 2.85, 7.85, 22, 3], 20: [12, 2.75, 7.65, 24, 3],
-    21: [13, 3.20, 8.60, 10, 4], 22: [13, 2.80, 7.90, 24, 3], 23: [13, 2.80, 7.90, 25, 3], 24: [13, 2.80, 7.85, 25, 3], 25: [13, 2.65, 7.55, 25, 3],
-    26: [14, 3.30, 8.80, 10, 4], 27: [14, 2.70, 7.95, 25, 3], 28: [14, 2.70, 7.85, 25, 3], 29: [14, 2.68, 7.80, 25, 3], 30: [14, 2.55, 7.45, 25, 3],
+    11: [11, 3.80, 10.25, 16, 3], 12: [11, 3.40, 10.25, 16, 3], 13: [11, 3.00, 10.25, 16, 3], 14: [11, 3.00, 9.00, 16, 3], 15: [11, 2.20, 7.60, 12, 3],
+    16: [12, 3.20, 9.20, 10, 4], 17: [12, 2.70, 7.80, 18, 3], 18: [12, 2.65, 7.55, 20, 3], 19: [12, 2.60, 7.45, 22, 3], 20: [12, 2.44, 7.15, 24, 3],
+    21: [13, 3.20, 8.60, 10, 4], 22: [13, 2.58, 7.50, 24, 3], 23: [13, 2.56, 7.40, 25, 3], 24: [13, 2.54, 7.35, 25, 3], 25: [13, 2.42, 7.10, 25, 3],
+    26: [14, 3.30, 8.80, 10, 4], 27: [14, 2.50, 7.50, 25, 3], 28: [14, 2.48, 7.40, 25, 3], 29: [14, 2.46, 7.35, 25, 3], 30: [14, 2.32, 7.02, 25, 3],
   };
   const LIVES = 3;                                           // old game: 3 misses lose on every level
   const levels = legacyLevels.slice(0, 6).map(r => ({ ...r, lives: LIVES }));
@@ -156,10 +202,10 @@
         // L31+ (engine, not shipped): steps start at the L29 step value (startAt: 30 = written for a 30-row table;
         // append rows and it stops applying) and `max` is the step value at L40, so steps
         // follow the slow fall of p* (~0.03 per 10 levels); `peak` below adds most of the L29 → L30 gap on top.
-        { name: 'fall', start: 7.741, startAt: 30, max: 7.636, hardCap: 6.8, step: 0.01, notch: 0.5, curve: 'linear', source: 'A, cap is a guess; calibrated' },
+        { name: 'fall', start: 7.34, startAt: 30, max: 7.24, hardCap: 6.8, step: 0.01, notch: 0.5, curve: 'linear', source: 'A, cap is a guess; calibrated' },
         // 0.01 s grid on both: 0.05 s of every moves the median ~2.5 points, too coarse to follow p* level by level.
         // every reaches hardCap at L120, so BBD.exhausted(rain, 120) stops the +10 rule there.
-        { name: 'every', start: 2.652, startAt: 30, max: 2.602, hardCap: 2.2, step: 0.01, notch: 0.2, curve: 'linear', source: 'A, cap is a guess; calibrated' },
+        { name: 'every', start: 2.45, startAt: 30, max: 2.40, hardCap: 2.2, step: 0.01, notch: 0.2, curve: 'linear', source: 'A, cap is a guess; calibrated' },
         { name: 'target', int: true, max: 25, hardCap: 25, source: 'A' },
         // Misses allowed before losing. Fewer = harder (dir −1). Steps and peaks keep 3; breathers get +1 (E4 net).
         { name: 'lives', int: true, min: LIVES, max: LIVES, hardCap: LIVES, dir: -1, source: 'E4 safety net, 2026-11-21' },
@@ -167,8 +213,8 @@
       ],
       priority: ['every', 'fall', 'target', 'ops'],
       lighterKnobs: ['every', 'fall'],
-      // Peak = every −0.08 s, fall −0.30 s on top of the step: ~5 points of median pass, the p* peak dip (L35, L40, L45).
-      peak: [{ knob: 'every', by: 0.08 }, { knob: 'fall', by: 0.30 }],
+      // Peak = every −0.13 s, fall −0.30 s on top of the step: keeps median on the p* peak dip (L35, L40, L45).
+      peak: [{ knob: 'every', by: 0.13 }, { knob: 'fall', by: 0.30 }],
       // Breather = the E4 safety net, as at L16/21/26: short chain (25 → 10 drops), one extra life, slower rain.
       relief: [{ knob: 'target', by: 15 }, { knob: 'lives', by: 1 }, { knob: 'fall', by: 0.95 }, { knob: 'every', by: 0.6 }],
       meta: { table: 'js/levels/rain.js', game: 'js/rain.js', maxDrops: 5, maxAnswer: 999 },
@@ -187,6 +233,6 @@
   // Per-drop fall duration jitter (±8%, mean = fall) so drops drift at varied speeds.
   function dropFall(fall, rng) { return fall * (0.92 + rng() * 0.16); }
 
-  root.BBRain = Object.freeze({ makeEq, spawnGap, dropFall, TIER_NAME: Object.freeze(TIER_NAME), register });
+  root.BBRain = Object.freeze({ makeEq, makeTwinEq, sunCap, SUN_P, TWIN_P, spawnGap, dropFall, TIER_NAME: Object.freeze(TIER_NAME), register });
   register(root.BBD);                                        // no BBD yet: the generator alone still works
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -90,14 +90,30 @@ function setupPond(){
   seed = (Math.random()*1e9)|0;
   fish = []; fx = []; ripples = []; drops = [];
   const L = fishLen(), A = area();
-  const mk = (decoy) => ({
-    x: A.x0 + L + Math.random()*(A.x1 - A.x0 - 2*L),
-    y: A.y0 + L + Math.random()*(A.y1 - A.y0 - 2*L),
-    ang: Math.random()*Math.PI*2, turn: 0, turnTarget: 0, turnT: 0.3 + Math.random()*1.4,
-    spd: ((decoy ? 24 : 30) + Math.random()*12) * p.spdMul, boost: 0,
-    pace: 1, paceTarget: 1, paceT: 0.5 + Math.random()*1.8,
-    phase: Math.random()*10, decoy, fed: false, L: decoy ? L*1.05 : L,
-  });
+  // Mitchell best-candidate spawn spacing so fish don't stack on Frame 0 (flaky-test fix 2026-11-24).
+  const pickPos = () => {
+    const x0 = A.x0 + L, spanX = Math.max(1, A.x1 - A.x0 - 2*L);
+    const y0 = A.y0 + L, spanY = Math.max(1, A.y1 - A.y0 - 2*L);
+    let bx = x0 + Math.random()*spanX, by = y0 + Math.random()*spanY, bestD = -1;
+    for (let k = 0; k < 16; k++) {
+      const cx = x0 + Math.random()*spanX, cy = y0 + Math.random()*spanY;
+      let md = 1e9;
+      for (const f of fish) { const d = Math.hypot(cx - f.x, cy - f.y); if (d < md) md = d; }
+      if (md > bestD) { bestD = md; bx = cx; by = cy; }
+      if (md >= 48) break;
+    }
+    return [bx, by];
+  };
+  const mk = (decoy) => {
+    const [x, y] = pickPos();
+    return {
+      x, y,
+      ang: Math.random()*Math.PI*2, turn: 0, turnTarget: 0, turnT: 0.3 + Math.random()*1.4,
+      spd: ((decoy ? 24 : 30) + Math.random()*12) * p.spdMul, boost: 0,
+      pace: 1, paceTarget: 1, paceT: 0.5 + Math.random()*1.8,
+      phase: Math.random()*10, decoy, fed: false, L: decoy ? L*1.05 : L,
+    };
+  };
   for (let i=0;i<p.decoys;i++) fish.push(mk(true));
   for (let i=0;i<p.koi;i++) fish.push(mk(false));
   pondKoi = p.koi; pellets = pelletsMax = p.koi;
@@ -336,6 +352,7 @@ function mistake(f){
   if (pondMistakes > 1 && state === 'play') { state = 'pondEnd'; endTimer = 0.9; } // đã chắc trượt (KOI-03)
 }
 
+const CD_GRACE = 0.14;
 cv.addEventListener('pointerdown', ev => {
   if (state !== 'play') return;
   if (!ev.isPrimary || ev.button > 0) return;      // bỏ ngón thứ hai và chuột phải
@@ -344,7 +361,7 @@ cv.addEventListener('pointerdown', ev => {
   const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
   const hit = fishAt(x, y);
   if (!hit) { ripples.push({ x, y, t: 0, soft: true }); return; }  // chạm trượt: gợn nước mờ
-  if (cooldown > 0) { if (performance.now() - lastFeedAt > 300) earlyTaps++; dialShake = 0.3; beep(200, 0.08, 'square', 0.03); return; }
+  if (cooldown > CD_GRACE) { if (performance.now() - lastFeedAt > 300) earlyTaps++; dialShake = 0.3; beep(200, 0.08, 'square', 0.03); return; }
   cooldown = cdMax; lastFeedAt = performance.now(); // cá xám cũng khoá vòng như một lần cho ăn (KOI-02)
   if (hit.decoy) {
     hit.boost = 50;
@@ -491,13 +508,13 @@ function paintStars(box, n, animate){
 const KLV_COUNT = LV_MAX;      // level thường thêm cá hoặc tăng tốc, màn khó thêm cá xám, màn thở bớt cá
 // Sao của cả game: đọc bb_stats một lần rồi tra theo khoá level (thay vì BB.starsAt parse lại mỗi ô).
 function koiStars(){ const s = BB.gameStats('koi').stars; return lv => s[BB.levelKey('koi', lv)] || 0; }
+function firstDecoyLv(){ for (let lv = 1; lv <= LV_MAX; lv++) if (params(lv).decoys) return lv; return 0; }
 // Hướng dẫn ở menu đọc từ bảng level, nên đổi bảng thì chữ vẫn đúng. Không có engine (bảng v1) thì giữ chữ trong HTML.
 function renderKHow(){
   if (!BBD) return;
   const rows = document.querySelectorAll('#kmenu .how > div > span:last-child');
   if (rows.length < 3) return;
-  let grey = 0;
-  for (let lv = 1; lv <= LV_MAX && !grey; lv++) if (params(lv).decoys) grey = lv;
+  const grey = firstDecoyLv();
   rows[1].innerHTML = 'Chờ <b>vòng hẹn giờ</b> ở dưới đầy lại mới chạm tiếp.' +
     (grey ? ` Từ level ${grey} có <b>cá xám</b> bơi lẫn, đừng chạm vào.` : '');
   let peak = 0;                                    // màn khó đầu tiên (L15 từ 2026-11-22; L10 trước đó, L5 trước nữa)
@@ -506,11 +523,10 @@ function renderKHow(){
     (peak ? ` Từ level ${peak}, cứ 5 level có một màn khó, ngay sau là một màn nhẹ.` : '');
 }
 let chosenK = 1, kPassed = false;
-function renderKLevels(){
+function renderKLevels(resetOpen = false){
   const b = getLv() - 1, grid = $('klvgrid');   // koi_lv2 lưu level kế tiếp chưa qua
-  grid.innerHTML = '';
   const starsOf = koiStars();
-  for (let lv = 1; lv <= KLV_COUNT; lv++){
+  const buildTile = lv => {
     const el = document.createElement('button');
     const n = starsOf(lv), done = lv <= b;
     el.className = 'lv' + (done ? ' done' : '') + (lv === chosenK ? ' on' : '');
@@ -518,11 +534,23 @@ function renderKLevels(){
     el.setAttribute('aria-label', `Level ${lv}, ${params(lv).koi} cá${done ? ', đã qua' : ''}${n ? `, ${n} sao` : ''}`);
     el.innerHTML = `${lv}<small>${params(lv).koi} cá</small>` + (n ? `<span class="kst" aria-hidden="true">${starStr(n)}</span>` : '') + (BB.isPeak(lv, 'koi') ? BB.PEAK_TAG : '');
     if (BB.isPeak(lv, 'koi')) el.setAttribute('aria-label', el.getAttribute('aria-label') + ', màn thử thách');
-    el.onclick = () => { chosenK = lv; if (state === 'menu') { diff = lv; updateHud(); } renderKLevels(); BB.sfx('key'); };
-    grid.appendChild(el);
-  }
+    el.onclick = () => { chosenK = lv; if (state === 'menu') { diff = lv; updateHud(); } renderKLevels(false); grid.querySelector('.lv.on')?.focus({ preventScroll: true }); BB.sfx('key'); };
+    return el;
+  };
+  BB.renderLevelChapters(grid, { maxLevel: KLV_COUNT, chosen: chosenK, isDone: lv => lv <= b, buildTile, resetOpen });
   const p = params(chosenK);
   $('kLevelTxt').textContent = `${p.koi} cá koi${p.decoys ? ` + ${p.decoys} cá xám` : ''} · chờ ${cdTxt(p)} giây giữa 2 lần cho ăn${moveTxt(p)}`;
+  let dNote = $('kDecoyNote');
+  if (!dNote) {
+    dNote = document.createElement('p');
+    dNote.id = 'kDecoyNote';
+    dNote.className = 'k-decoy-note hidden';
+    $('kLevelTxt').after(dNote);
+  }
+  const fd = firstDecoyLv();
+  const showDecoyNote = !!(fd && chosenK === fd);
+  dNote.textContent = showDecoyNote ? `Từ Level ${fd} có cá xám — đừng cho ăn` : '';
+  dNote.classList.toggle('hidden', !showDecoyNote);
   $('kStartBtn').textContent = `Chơi Level ${chosenK} · ${BB.isPeak(chosenK, 'koi') ? 'thử thách' : `${p.koi} cá`}`;
 }
 
@@ -541,9 +569,12 @@ function startKoiLevel(lv){
   clearTimers();
   diff = Math.min(LV_MAX, Math.max(1, lv | 0));
   ['kmenu','kresult','kdone','kpaused'].forEach(id => show(id, false));
+  pondKoi = params(diff).koi; pondCorrect = 0; pondMistakes = 0;
+  updateHud();
+  const rc = cv.getBoundingClientRect();
+  if (rc.width && (Math.abs(rc.width - W) > 0.5 || Math.abs(rc.height - H) > 0.5)) resize();
   setupPond();
   state = 'play';
-  updateHud();
   if (window.APP && window.APP.active === 'koi') startLoop();
 }
 
@@ -567,6 +598,14 @@ function pondResult(){
     tip: 'Cho ăn theo một vòng quanh hồ, từ trái sang phải. Cá đã ăn trông y hệt cá chưa ăn, đi theo thứ tự thì dễ nhớ hơn.',
     onSkip: L => { if (state === 'result') startKoiLevel(L); } });
   const cue = BB.peakCue($('krNext'), { game: 'koi', level: diff, won: kPassed, last, maxLevel: LV_MAX });
+  const kCard = $('kresult').querySelector('.card');
+  kCard.querySelectorAll('.bb-koi-cue').forEach(n => n.remove());
+  if (kPassed && !last && params(diff).decoys === 0 && params(diff + 1).decoys > 0) {
+    const c = document.createElement('div');
+    c.className = 'cue bb-koi-cue';
+    c.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12c3.5-5 10.5-6 14.5-2l3-2.5v9l-3-2.5c-4 4-11 3-14.5-2z"/><circle cx="8" cy="11.2" r="1" fill="currentColor" stroke="none"/></svg><span><b>Từ Level ${diff + 1} có cá xám — đừng cho ăn.</b></span>`;
+    $('krNext').before(c);
+  }
   krStars.classList.toggle('hidden', !kPassed);
   paintStars(krStars, stars, true);
   krRule.textContent = kPassed ? STAR_HINT[stars] : '';
@@ -622,7 +661,7 @@ function toMenu(){
   state = 'menu';
   chosenK = Math.min(getLv(), KLV_COUNT);
   diff = chosenK;
-  renderKLevels();
+  renderKLevels(true);
   const b = getLv() - 1;
   $('kBestTxt').textContent = b >= LV_MAX ? `Đã qua cả ${LV_MAX} level` : b ? `Đã qua tới Level ${b}` : '';
   ['kresult','kdone','kpaused'].forEach(id => show(id, false));

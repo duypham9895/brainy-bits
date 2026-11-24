@@ -1,6 +1,6 @@
 // Đường Ray Tư Duy: 30 levels from the shared difficulty table (js/difficulty.js + js/levels/train.js).
 // Table v2 (2026-11-21, E3 lifted): L1..30 are authored on the shared sawtooth; old progress keys must still count.
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 
 async function openTrain(page, init) {
   const errors = [];
@@ -76,7 +76,7 @@ test('corrupt progress does not crash the game on boot', async ({ page }) => {
 
 test('level 33 (step) can be picked and started, with its table parameters', async ({ page }) => {
   const errors = await openTrain(page);
-  await page.locator('#lvgrid .lv').nth(32).click();
+  await pickLevel(page, '#lvgrid', 33);
   await expect(page.locator('#lvgrid .lv').nth(32)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#startBtn')).toHaveText('Chơi Level 33 · 15 ga');
   await expect(page.locator('#hLevel')).toHaveText('Level 33 · 15 ga');
@@ -171,7 +171,7 @@ test('320 px phone: 33 tiles fit without sideways scroll; switch tap targets sta
   await page.setViewportSize({ width: 320, height: 568 });
   await openTrain(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.locator('#lvgrid .lv').nth(32).click();
+  await pickLevel(page, '#lvgrid', 33);
   await page.click('#startBtn');
   const t = await page.evaluate(() => {
     const cell = __rtd.cell, TR = cell * 0.48;

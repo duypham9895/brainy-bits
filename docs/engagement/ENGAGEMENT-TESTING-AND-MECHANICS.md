@@ -139,4 +139,6 @@ Ba mũi `SWEEP` độc lập quét tài liệu học thuật, thực hành studi
 ## 8. Quyết định đã chốt
 
 - **2026-11-24 — Quyết định 1/1:** Duy chọn **Option A** (Đợt 1: dựng G7 parity, 3 cổng test/sizing zero-cost + sửa lỗi parity trước → Đợt 2: triển khai 7 cơ chế core/meta sống sót).
+- **2026-11-24 — Bài học sửa test chập chờn `koi L33` (`S-CROWD`):** `tests/sizing-stress.spec.js:78` (`avg hit overlap <= 0.80` ở `320×568`) từng trượt `2/6` lượt (`33%`) vì hai nguyên nhân gốc trong [`js/koi.js`](file:///Users/edwardpham/Documents/Programming/Vibe/brainy-bits/js/koi.js): (1) `setupPond()` rải `17` con cá bằng `Math.random()` đều không tách khoảng cách nên chồng ngay từ Frame 0; (2) `startKoiLevel()` đổi chữ `#kPond` qua `updateHud()` khiến `#khud` xuống dòng ở `320px` nhưng không gọi lại `resize()`, gây lệch tỉ lệ canvas `0.046`. Đã sửa gốc trong `setupPond()` bằng Mitchell best-candidate (`16` lần lấy mẫu tối đa, dừng khi khoảng cách tối thiểu `>= 48px`) và đồng bộ `resize()` sau `updateHud()` trước khi rải cá — xác minh chạy lại `10/10` lượt đều xanh mà không nới ngưỡng kiểm tra.
+
 

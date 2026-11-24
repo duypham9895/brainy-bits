@@ -1,7 +1,7 @@
 // High-level sizing & crowding stress gate (S-CROWD): tests dense late levels (L15 & maxLevel,
 // plus word's 11-letter "truyền thống") on narrow portrait (320x568) and short landscape (667x375)
 // touch viewports using deterministic seeded PRNG and read-only game debug hooks.
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 
 const VIEWPORTS = [
   { name: 'phone-320', width: 320, height: 568 },
@@ -52,8 +52,7 @@ for (const vp of VIEWPORTS) {
       await page.goto('/#tau');
       await expect(page.locator('#menu')).toBeVisible();
       for (const L of [15, 33]) {
-        const btn = page.locator('#lvgrid .lv').nth(L - 1);
-        await btn.scrollIntoViewIfNeeded(); await btn.click();
+        await pickLevel(page, '#lvgrid', L);
         await page.click('#startBtn');
         await page.waitForFunction(() => window.__rtd && window.__rtd.map && window.__rtd.map.switches.length >= 2);
         expect(await checkCanvasAndViewport(page, 'cv', '#hud')).toEqual([]);
@@ -81,8 +80,7 @@ for (const vp of VIEWPORTS) {
       await page.goto('/#koi');
       await expect(page.locator('#kmenu')).toBeVisible();
       for (const L of [15, 33]) {
-        const btn = page.locator('#klvgrid .lv').nth(L - 1);
-        await btn.scrollIntoViewIfNeeded(); await btn.click();
+        await pickLevel(page, '#klvgrid', L);
         await page.click('#kStartBtn');
         expect(await checkCanvasAndViewport(page, 'kcv', '#khud')).toEqual([]);
         let ovSum = 0;
@@ -120,8 +118,7 @@ for (const vp of VIEWPORTS) {
       await page.goto('/#nho');
       await expect(page.locator('#mmenu')).toBeVisible();
       for (const L of [15, 33]) {
-        const btn = page.locator('#mlvgrid .lv').nth(L - 1);
-        await btn.scrollIntoViewIfNeeded(); await btn.click();
+        await pickLevel(page, '#mlvgrid', L);
         await page.click('#mStart');
         await expect(page.locator('#mGrid .mtile')).toHaveCount(36);
         await page.waitForTimeout(100);
@@ -154,8 +151,7 @@ for (const vp of VIEWPORTS) {
       await page.goto('/#mua');
       await expect(page.locator('#rmenu')).toBeVisible();
       for (const L of [15, 33]) {
-        const btn = page.locator('#rlvgrid .lv').nth(L - 1);
-        await btn.scrollIntoViewIfNeeded(); await btn.click();
+        await pickLevel(page, '#rlvgrid', L);
         await page.click('#rStart');
         await page.clock.runFor(6500);
         expect(await checkCanvasAndViewport(page, 'rcv', '#rainApp .ghud')).toEqual([]);
@@ -190,8 +186,7 @@ for (const vp of VIEWPORTS) {
       expect(longLv).toBeGreaterThan(0);
 
       for (const L of [15, 50, longLv]) {
-        const btn = page.locator('#wlvgrid .lv').nth(L - 1);
-        await btn.scrollIntoViewIfNeeded(); await btn.click();
+        await pickLevel(page, '#wlvgrid', L);
         await page.click('#wStart');
         await page.waitForTimeout(120);
         const bad = await page.evaluate(() => {

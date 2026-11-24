@@ -2,7 +2,7 @@
 // index.html gets those script tags from the integrator; until then this file adds them to the
 // served page (before core.js) so the test runs against the integrated game either way.
 // window.__koi exists only when the init script sets window.__BB_TEST__.
-import { test, expect } from './fixtures.js';
+import { test, expect, pickLevel } from './fixtures.js';
 import { feedAll } from './koi-helpers.js';
 
 async function withEngine(page) {
@@ -37,7 +37,7 @@ async function openKoi(page, storage = {}) {
 }
 
 async function start(page, lv) {
-  await page.locator('#klvgrid .lv').nth(lv - 1).click();
+  await pickLevel(page, '#klvgrid', lv);
   await page.click('#kStartBtn');
   await expect(page.locator('#kmenu')).toBeHidden();
 }
@@ -71,33 +71,33 @@ test('level grid shows 33 levels; L11+ say how many fish and how fast', async ({
   const lv = page.locator('#klvgrid .lv');
   await expect(lv).toHaveCount(33);
   await expect(lv.nth(10)).toHaveClass(/\bon\b/);                       // next unpassed level is chosen
-  await expect(lv.nth(10).locator('small')).toHaveText('13 cá');         // L11 is a step since 2026-11-22 (first peak L15)
+  await expect(lv.nth(10).locator('small')).toHaveText('12 cá');         // L11 holds 12 koi with 1 early grey decoy
   await expect(lv.nth(15).locator('small')).toHaveText('12 cá');         // L16 breather drops to 12 fish
   await expect(lv.nth(29).locator('small')).toHaveText('13 cá');
   await expect(lv.nth(30).locator('small')).toHaveText('12 cá');
   await expect(lv.nth(31).locator('small')).toHaveText('12 cá');
   await expect(lv.nth(32).locator('small')).toHaveText('12 cá');
   await expect(lv.nth(32)).toHaveAttribute('aria-label', 'Level 33, 12 cá');
-  await lv.nth(29).click();
+  await pickLevel(page, '#klvgrid', 30);
   await expect(page.locator('#kLevelTxt')).toHaveText('13 cá koi + 5 cá xám · chờ 3,2 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,4, đổi hướng ×1,3');
   await expect(page.locator('#kStartBtn')).toHaveText('Chơi Level 30 · thử thách');
-  await lv.nth(30).click();
+  await pickLevel(page, '#klvgrid', 31);
   await expect(lv.nth(30)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#kLevelTxt')).toHaveText('12 cá koi + 5 cá xám · chờ 3,2 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,3, đổi hướng ×1,25');
   await expect(page.locator('#kStartBtn')).toHaveText('Chơi Level 31 · 12 cá');
-  await lv.nth(31).click();
+  await pickLevel(page, '#klvgrid', 32);
   await expect(lv.nth(31)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#kLevelTxt')).toHaveText('12 cá koi + 5 cá xám · chờ 3,2 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,4, đổi hướng ×1,25');
   await expect(page.locator('#kStartBtn')).toHaveText('Chơi Level 32 · 12 cá');
-  await lv.nth(32).click();
+  await pickLevel(page, '#klvgrid', 33);
   await expect(lv.nth(32)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#kLevelTxt')).toHaveText('12 cá koi + 5 cá xám · chờ 3,2 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,4, đổi hướng ×1,25');
   await expect(page.locator('#kStartBtn')).toHaveText('Chơi Level 33 · 12 cá');
-  await lv.nth(0).click();                                               // spdMul 1: no speed note
+  await pickLevel(page, '#klvgrid', 1);                                   // spdMul 1: no speed note
   await expect(page.locator('#kLevelTxt')).toHaveText('10 cá koi · chờ 1,45 giây giữa 2 lần cho ăn');
-  await lv.nth(4).click();                                               // L5 is a step: adds the 12th koi, holds the L4 pace
+  await pickLevel(page, '#klvgrid', 5);                                   // L5 is a step: adds the 12th koi, holds the L4 pace
   await expect(page.locator('#kLevelTxt')).toHaveText('12 cá koi · chờ 2,05 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,1');
-  await lv.nth(14).click();                                              // L15, first peak (Duy 2026-11-22 B): first grey fish, shorter pond
+  await pickLevel(page, '#klvgrid', 15);                                  // L15, first peak (Duy 2026-11-22 B): 2nd grey fish, faster
   await expect(page.locator('#kLevelTxt')).toHaveText('12 cá koi + 2 cá xám · chờ 3 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,35, đổi hướng ×1,15');
   await expect(lv.nth(0).locator('small')).toHaveText('10 cá');
   // L1–30 (authored) + L31–32 all differ from the level before; generated L33+ steps may share quantized knobs
@@ -105,7 +105,7 @@ test('level grid shows 33 levels; L11+ say how many fish and how fast', async ({
   const same = [];
   let prev = null;
   for (let L = 1; L <= 32; L++) {
-    await lv.nth(L - 1).click();
+    await pickLevel(page, '#klvgrid', L);
     const t = await page.locator('#kLevelTxt').textContent();
     if (prev !== null && t === prev) same.push(`L${L}`);
     prev = t;
@@ -180,11 +180,11 @@ test('real progress past L11 is kept (best recorded by BB.record)', async ({ pag
 test('next-level flow: pass L10 → L11, pass L30 → L31 → L32 → L33, pass L33 → finished screen', async ({ page }) => {
   const errors = await openKoi(page, { koi_lv2: '10' });
   await start(page, 10);
-  expect(await feedAll(page)).toBe(13);
+  expect(await feedAll(page)).toBe(12);
   await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
-  await expect(page.locator('#krNext')).toHaveText('Level 11 · 13 cá →');   // old game ended here
+  await expect(page.locator('#krNext')).toHaveText('Level 11 · 12 cá →');   // old game ended here
   await page.click('#krNext');
-  await expect(page.locator('#kPond')).toHaveText('Level 11 · 13 cá');
+  await expect(page.locator('#kPond')).toHaveText('Level 11 · 12 cá');
   expect(await page.evaluate(() => localStorage.getItem('koi_lv2'))).toBe('11');
 
   await page.click('#kPauseBtn');

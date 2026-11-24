@@ -24,10 +24,12 @@
   // first grey fish (2) on a shorter pond (12 koi) at the L14 pace: mild, shorter rather than denser.
   // Breathers (L16, L21) slow the fish and stop the extra turning. L20 adds a grey fish and turning; L25–30 are
   // the rows from before 2026-11-22, unchanged, so the engine still continues from L30 for L31+.
+  // Early grey decoy (2026-11-24, M-KISHO-KOI-EARLY-DECOY): introduces 1 grey decoy at L7 (capped at 1 through L14)
+  // while keeping L1–6 pure koi and easing L9–14 koi/pace one notch so G1 & B hold at N=2000. L15 still steps up to 2 decoys.
   const ROWS = [
     [10, 0, 1, 1, 1.45], [10, 0, 1.05, 1, 1.6], [11, 0, 1.05, 1, 1.75], [11, 0, 1.1, 1, 1.9], [12, 0, 1.1, 1, 2.05],
-    [12, 0, 1.15, 1, 2.2], [12, 0, 1.15, 1.1, 2.35], [12, 0, 1.2, 1.1, 2.5], [13, 0, 1.2, 1.1, 2.65], [13, 0, 1.25, 1.1, 2.8],
-    [13, 0, 1.3, 1.1, 2.9], [14, 0, 1.3, 1.1, 2.95], [14, 0, 1.3, 1.15, 3], [14, 0, 1.35, 1.15, 3], [12, 2, 1.35, 1.15, 3],
+    [12, 0, 1.15, 1, 2.2], [12, 1, 1.15, 1, 2.35], [12, 1, 1.15, 1.05, 2.5], [12, 1, 1.2, 1.05, 2.65], [12, 1, 1.2, 1.1, 2.8],
+    [12, 1, 1.25, 1.1, 2.9], [12, 1, 1.25, 1.15, 2.95], [12, 1, 1.3, 1.15, 3], [12, 1, 1.35, 1.15, 3], [12, 2, 1.35, 1.15, 3],
     [12, 2, 1.1, 1, 3.05], [12, 2, 1.2, 1, 3.05], [13, 2, 1.2, 1, 3.05], [13, 2, 1.25, 1, 3.1], [13, 3, 1.25, 1.1, 3.1],
     [12, 4, 1.15, 1, 3.1], [12, 4, 1.2, 1, 3.15], [13, 4, 1.2, 1, 3.15], [13, 4, 1.25, 1, 3.15], [13, 5, 1.35, 1.1, 3.15],  // L21 breather adds the 4th grey fish so L24→L25 is no cliff (review)
     [12, 5, 1.3, 1.1, 3.15], [12, 5, 1.35, 1.1, 3.2], [12, 5, 1.35, 1.2, 3.2], [12, 5, 1.4, 1.2, 3.2], [13, 5, 1.4, 1.3, 3.2],
