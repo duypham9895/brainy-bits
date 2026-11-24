@@ -133,3 +133,10 @@ Ba mũi `SWEEP` độc lập quét tài liệu học thuật, thực hành studi
    - Các liên kết đích cuối phía sau URL chuyển hướng `vertexaisearch.cloud.google.com/grounding-api-redirect/...` chưa được tải trực tiếp.
    - Các truy vấn về Ubisoft playtesting, Unity ML-Agents, Go-Explore, Novelty Search (Lehman & Stanley), hệ số tương quan định lượng của Roohi et al., giá trị chuẩn Shannon choice entropy từng lượt, hành vi bàn phím ảo riêng của Zalo WebView, cũng như chi tiết cơ chế dual-color train (*Train of Thought*) và bonus tile riêng lẻ (*Memory Matrix*) của Lumosity không trả về bằng chứng xác thực trong tập kết quả `search_web`.
 4. **Kiểm tra thủ công trên thiết bị thật (iPhone/Android/Zalo WebView & laptop macOS/Windows):** Chưa chạy thực tế ngoài trình duyệt Chromium giả lập của Playwright.
+
+---
+
+## 8. Quyết định đã chốt
+
+- **2026-11-24 — Quyết định 1/1:** Duy chọn **Option A** (Đợt 1: dựng G7 parity, 3 cổng test/sizing zero-cost + sửa lỗi parity trước → Đợt 2: triển khai 7 cơ chế core/meta sống sót).
+
