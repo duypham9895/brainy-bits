@@ -28,7 +28,7 @@ export const CANVAS_H = 430;
 // The generator, loaded exactly as the browser loads it (classic script, no DOM needed).
 const ctx = vm.createContext({});
 vm.runInContext(readFileSync(join(ROOT, 'js/levels/rain.js'), 'utf8'), ctx, { filename: 'js/levels/rain.js' });
-export const { makeEq } = ctx.BBRain;
+export const { makeEq, spawnGap, dropFall } = ctx.BBRain;
 
 // ---------- cost model (seconds, for the median player before the per-player speed factor) ----------
 const MEAN_RT = 0.451 + 0.147;                  // median ex-Gaussian mean [EXG]
@@ -108,10 +108,10 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
   const lives = levelSpec.lives ?? LIVES;   // js/rain.js livesOf(): the row's lives, else 3
   const player = opts.player || samplePlayer(profile, rng, opts);
   const pm = playerMath(player, rng, opts.speedSd);
-  let t = 0, spawnAt = SPAWN0, solved = 0, misses = 0, wrong = 0, attempts = 0;
-  const drops = [];                       // { t0, ans, meta }
+  let t = 0, spawnAt = SPAWN0, solved = 0, misses = 0, wrong = 0, attempts = 0, lastBurst = false;
+  const drops = [];                       // { t0, fall, ans, meta }
   let work = null;                        // { drop, doneAt }
-  const pOf = (d, at) => (at - d.t0) / fall;
+  const pOf = (d, at) => (at - d.t0) / d.fall;
   for (let guard = 0; guard < 10000; guard++) {
     // spawn (rain.js update: spawnT ≤ 0 and solved + drops < target + 2)
     if (spawnAt <= t + 1e-9 && solved + drops.length < target + 2) {
@@ -119,7 +119,11 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
       else {
         const [, ans, meta] = makeEq(ops, rng);
         if (drops.some(d => d.ans === ans)) spawnAt = t + 0.1;
-        else { drops.push({ t0: t, ans, meta }); spawnAt = t + every * (0.8 + rng() * 0.4); }
+        else {
+          drops.push({ t0: t, fall: dropFall(fall, rng), ans, meta });
+          const g = spawnGap(every, lastBurst, rng);
+          lastBurst = g.burst; spawnAt = t + g.gap;
+        }
       }
     }
     // player picks the lowest drop when idle
@@ -132,7 +136,7 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
     // next event: a drop reaching the water, the player finishing, or a spawn becoming due
     const thr = hitP(misses);
     let next = Infinity, hitDrop = null;
-    for (const d of drops) { const at = d.t0 + thr * fall; if (at < next) { next = at; hitDrop = d; } }
+    for (const d of drops) { const at = d.t0 + thr * d.fall; if (at < next) { next = at; hitDrop = d; } }
     const tw = work ? work.doneAt : Infinity;
     const canSpawn = solved + drops.length < target + 2;
     const ts = canSpawn ? Math.max(spawnAt, t) : Infinity;

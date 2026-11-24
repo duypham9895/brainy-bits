@@ -176,6 +176,17 @@
     return true;
   }
 
-  root.BBRain = Object.freeze({ makeEq, TIER_NAME: Object.freeze(TIER_NAME), register });
+  // Bounded wave spawn gap (mean ≈ 1.02·every, CV ≈ 0.23 vs old 0.115 metronome):
+  // mild burst (0.62..0.76×) never fires twice in a row and increases chance of a breather (1.35..1.68×).
+  function spawnGap(every, lastBurst, rng) {
+    const r = rng();
+    if (r < 0.15 && !lastBurst) return { gap: every * (0.62 + rng() * 0.14), burst: true };
+    if (r < (lastBurst ? 0.44 : 0.22)) return { gap: every * (1.35 + rng() * 0.33), burst: false };
+    return { gap: every * (0.80 + rng() * 0.40), burst: false };
+  }
+  // Per-drop fall duration jitter (±8%, mean = fall) so drops drift at varied speeds.
+  function dropFall(fall, rng) { return fall * (0.92 + rng() * 0.16); }
+
+  root.BBRain = Object.freeze({ makeEq, spawnGap, dropFall, TIER_NAME: Object.freeze(TIER_NAME), register });
   register(root.BBD);                                        // no BBD yet: the generator alone still works
 })(typeof globalThis !== 'undefined' ? globalThis : this);

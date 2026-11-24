@@ -12,7 +12,7 @@ const ROUNDS = 3, NEED = 2, LV_MAX = BBD ? BB.setLvMax('mem', BBD.maxLevel('mem'
 if (BB.migrateProgress) BB.migrateProgress('mem');
 let level = 1, round = 0, perfect = 0, totalOk = 0;
 let phase = 'idle';            // idle | show | input | wait | paused
-let targets = new Set(), found = 0, n = 3;
+let targets = new Set(), prevTargets = null, found = 0, n = 3;
 let timers = [], pausedPhase = null, chosen = 1, passed = false;
 let replayShow = false;        // paused while tiles were lit: replay the round with new tiles
 let bestMiss = 0;              // tiles found before the wrong tap in a failed round (for stars)
@@ -109,7 +109,7 @@ function hint(text){ $('mHint').textContent = text; }
 
 function startLevel(L){
   level = Math.min(LV_MAX, Math.max(1, L | 0));
-  round = 0; perfect = 0; bestMiss = 0; timers = []; replayShow = false;
+  round = 0; perfect = 0; bestMiss = 0; timers = []; replayShow = false; prevTargets = null;
   t0 = performance.now(); pausedMs = 0;
   clearStars();
   const s = spec(level); n = s.size;
@@ -137,6 +137,16 @@ function nextRound(){
   const s = spec(level);
   tiles().forEach(t => setTile(t, '', ''));
   targets = pickTargets(s.t, s.disp);
+  if (prevTargets && n * n >= 2 * s.t) {
+    const maxShared = Math.floor(s.t / 2);
+    for (let tries = 0; tries < 3; tries++) {
+      let shared = 0;
+      targets.forEach(c => { if (prevTargets.has(c)) shared++; });
+      if (shared <= maxShared) break;
+      targets = pickTargets(s.t, s.disp);
+    }
+  }
+  prevTargets = targets;
   found = 0;
   phase = 'show';
   hud();

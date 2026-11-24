@@ -31,7 +31,7 @@ export const RECALL_MS = 200;  // [NEW] a station already sent to this round: ro
 export const MOVE_MS = 250;    // [NEW] a planned tap on a switch already chosen (Fitts movement, no new stimulus)
 export const GRACE_CELLS = 1.16;   // train.js: tileLen ≈ 2·TR = 0.96 cell, + grace 0.2 cell
 export const VIEW = { W: 390, H: 700 };   // train-map.js default viewport; the map pool is generated at this size
-export const POOL = 10;        // maps per station count
+export const POOL = 16;        // maps per station count
 
 // ---------- real game code in a vm ----------
 let RTD = null, rngBox = { r: Math.random };
@@ -73,20 +73,17 @@ export function mapPool(n) {
   return list;
 }
 
-// Spawn schedule with the shipped mix and colour bag. Returns [{ t, route }].
+// Spawn schedule with the shipped mix, 2-bag station draw and per-train speed variance. Returns [{ t, route, sm }].
 function schedule(spec, entry, rng) {
   const M = loadMap();
   const out = [];
-  let t = FIRST_SPAWN, lastBurst = false, bag = [], lastKey = -1;
-  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = (rng() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const speedVar = spec.speedVar || 0;
+  let t = FIRST_SPAWN, lastBurst = false, bag = [], lastKey = -1, prevKey = -1;
   const T = spec.time || LEVEL_TIME;
   while (T - t > SPAWN_STOP) {
-    if (!bag.length) {
-      bag = shuffle(entry.routes.map((_, i) => i));
-      if (bag.length > 1 && bag[bag.length - 1] === lastKey) bag.unshift(bag.pop());
-    }
-    const k = bag.pop(); lastKey = k;
-    out.push({ t, route: entry.routes[k] });
+    const k = M.drawStationIdx(bag, entry.routes.length, lastKey, prevKey, rng);
+    prevKey = lastKey; lastKey = k;
+    out.push({ t, route: entry.routes[k], sm: M.trainSpeedMul(speedVar, rng) });
     const g = M.spawnGap(spec.base, spec.burstP, lastBurst, rng);
     lastBurst = g.burst; t += g.gap;
   }
@@ -105,10 +102,16 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
   // capacity this attempt = K + 0.5·N(0,1), the same trial noise holdsPattern() uses (human.mjs)
   const seen = new Set(), cap = Math.max(1, Math.floor(player.K + 0.5 * normal(rng)));
 
-  // per train: when it clears each switch on its path (seconds)
+  // per train: when it clears each switch on its path (seconds), obeying bumper headway floor
+  const lastSwClear = new Array(nSw).fill(-1e9), headwayS = 0.95 / v;
   trains.forEach((tr, i) => {
     tr.i = i;
-    tr.clear = tr.route.steps.map(s => tr.t + (s.at + GRACE_CELLS) / v);
+    tr.clear = tr.route.steps.map(s => {
+      const raw = tr.t + (s.at + GRACE_CELLS) / (v * tr.sm);
+      const cl = Math.max(raw, lastSwClear[s.sw.id] + headwayS);
+      lastSwClear[s.sw.id] = cl;
+      return cl;
+    });
     tr.lapse = lapses(player, rng);
   });
   // per switch: trains passing it in time order (same speed + shared prefix ⇒ spawn order)
@@ -165,7 +168,7 @@ export function simulate(levelSpec, profile, rng, opts = {}) {
   trains.forEach(tr => {
     const ok = !tr.lapse && tr.route.steps.every((s, k) => sideAt(s.sw.id, tr.clear[k]) === s.side);
     if (ok) correct++;
-    ms = Math.max(ms, (tr.t + (tr.route.len + 0.45) / v) * 1000);
+    ms = Math.max(ms, (tr.t + (tr.route.len + 0.45) / (v * tr.sm)) * 1000);
   });
   const total = trains.length, pct = total ? Math.round(correct / total * 100) : 0;
   return { pass: total > 0 && pct >= PASS_PCT, accuracy: total ? correct / total : 0, ms: Math.round(ms + 3600),
