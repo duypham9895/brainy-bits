@@ -35,15 +35,15 @@ describe('koi: table v2, one template for every level', () => {
     assert.equal(B.level('koi', 31).authored, undefined);
     assert.equal(B.exhausted('koi', 40), false, '+10 levels still have knobs left');
   });
-  test('koi: L1..42 follow one template and stay inside the tracking limits', () => {
+  test('koi: L1..43 follow one template and stay inside the tracking limits', () => {
     const B = loadBBD();
-    assert.equal(B.maxLevel('koi'), 32);
-    for (let L = 1; L <= 42; L++) {
+    assert.equal(B.maxLevel('koi'), 33);
+    for (let L = 1; L <= 43; L++) {
       const r = B.level('koi', L);
       // Duy 2026-11-22 (B): the opening starts at 10 koi (L1–2) and reaches 12 at L5; from L5 on the pond keeps ≥ 12.
       assert.ok(r.koi >= (L < 5 ? 10 : 12) && r.koi <= 15, `L${L} koi ${r.koi}`);
       if (r.kind === 'breather') assert.equal(r.koi, 12, `L${L} breather plays 12 fish`);
-      assert.ok(r.spdMul <= 1.4 && r.turnMul <= 1.5 && r.decoys <= 6, `L${L} ${JSON.stringify(r)}`);
+      assert.ok(r.spdMul <= (L <= 42 ? 1.4 : 1.5) && r.turnMul <= 1.5 && r.decoys <= 6, `L${L} ${JSON.stringify(r)}`);
       if (r.spdMul > 1.25) assert.ok(r.koi <= 14, `L${L}: fast fish never come with a full pond`);
       if (L < 15) assert.equal(r.decoys, 0, `L${L}: no grey fish before the first peak (L15)`);
       if (L === 1) continue;
@@ -102,8 +102,8 @@ describe('koi: table v2, one template for every level', () => {
   });
   // N=2000 (≈2 s each): at N=400 the sampling error (±2 points) is close to the B band, so a pass there can be luck.
   // Zero failures and zero waivers, on the shipped L1..30 and on the engine-made L31..40 ("+10 levels" from the rule).
-  test('koi calibrates green at N=2000: L1..32 and generated L31..42, no gate failed, nothing waived', async () => {
-    for (const [from, to] of [[1, 32], [1, 42]]) {
+  test('koi calibrates green at N=2000: L1..33 and generated L31..43, no gate failed, nothing waived', async () => {
+    for (const [from, to] of [[1, 33], [1, 43]]) {
       const r = await calibrate('koi', { n: 2000, from, to, write: false, quiet: true });
       assert.deepEqual(failsByGate(r), {}, `L${from}..${to}`);
       assert.deepEqual(r.waived, [], `L${from}..${to}`);

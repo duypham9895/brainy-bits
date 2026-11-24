@@ -44,7 +44,7 @@ async function start(page, lv) {
 
 // feedAll: tests/koi-helpers.js (one shared helper, aims via the game's own fishAt()).
 
-test('engine wired: LV_MAX = 32 for game, hub and daily; table v2 plays BBD rows, v1 kept as legacyLevels', async ({ page }) => {
+test('engine wired: LV_MAX = 33 for game, hub and daily; table v2 plays BBD rows, v1 kept as legacyLevels', async ({ page }) => {
   const errors = await openKoi(page);
   const r = await page.evaluate(() => {
     const K = window.__koi;
@@ -56,26 +56,28 @@ test('engine wired: LV_MAX = 32 for game, hub and daily; table v2 plays BBD rows
       for (const k of Object.keys(b)) if (Math.abs(a[k] - b[k]) > 1e-9) legacyDiff.push(`L${d} ${k} ${a[k]} vs ${b[k]}`);
     }
     const newDiff = [];
-    for (let L = 1; L <= 32; L++) {
+    for (let L = 1; L <= 33; L++) {
       const a = K.params(L), b = window.BBD.level('koi', L);
       for (const k of ['koi', 'cd', 'decoys', 'spdMul', 'turnMul']) if (a[k] !== b[k]) newDiff.push(`L${L} ${k}`);
     }
     return { engine: K.engine, lvMax: K.LV_MAX, bb: BB.LV_MAX.koi, version: window.BBD.version('koi'), l1: K.params(1).koi, legacyDiff, newDiff };
   });
-  expect(r).toEqual({ engine: true, lvMax: 32, bb: 32, version: 2, l1: 10, legacyDiff: [], newDiff: [] });
+  expect(r).toEqual({ engine: true, lvMax: 33, bb: 33, version: 2, l1: 10, legacyDiff: [], newDiff: [] });
   expect(errors).toEqual([]);
 });
 
-test('level grid shows 32 levels; L11+ say how many fish and how fast', async ({ page }) => {
+test('level grid shows 33 levels; L11+ say how many fish and how fast', async ({ page }) => {
   await openKoi(page, { koi_lv2: '11' });
   const lv = page.locator('#klvgrid .lv');
-  await expect(lv).toHaveCount(32);
+  await expect(lv).toHaveCount(33);
   await expect(lv.nth(10)).toHaveClass(/\bon\b/);                       // next unpassed level is chosen
   await expect(lv.nth(10).locator('small')).toHaveText('13 cá');         // L11 is a step since 2026-11-22 (first peak L15)
   await expect(lv.nth(15).locator('small')).toHaveText('12 cá');         // L16 breather drops to 12 fish
   await expect(lv.nth(29).locator('small')).toHaveText('13 cá');
   await expect(lv.nth(30).locator('small')).toHaveText('12 cá');
   await expect(lv.nth(31).locator('small')).toHaveText('12 cá');
+  await expect(lv.nth(32).locator('small')).toHaveText('12 cá');
+  await expect(lv.nth(32)).toHaveAttribute('aria-label', 'Level 33, 12 cá');
   await lv.nth(29).click();
   await expect(page.locator('#kLevelTxt')).toHaveText('13 cá koi + 5 cá xám · chờ 3,2 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,4, đổi hướng ×1,3');
   await expect(page.locator('#kStartBtn')).toHaveText('Chơi Level 30 · thử thách');
@@ -87,6 +89,10 @@ test('level grid shows 32 levels; L11+ say how many fish and how fast', async ({
   await expect(lv.nth(31)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#kLevelTxt')).toHaveText('12 cá koi + 5 cá xám · chờ 3,2 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,4, đổi hướng ×1,25');
   await expect(page.locator('#kStartBtn')).toHaveText('Chơi Level 32 · 12 cá');
+  await lv.nth(32).click();
+  await expect(lv.nth(32)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#kLevelTxt')).toHaveText('12 cá koi + 5 cá xám · chờ 3,2 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,4, đổi hướng ×1,25');
+  await expect(page.locator('#kStartBtn')).toHaveText('Chơi Level 33 · 12 cá');
   await lv.nth(0).click();                                               // spdMul 1: no speed note
   await expect(page.locator('#kLevelTxt')).toHaveText('10 cá koi · chờ 1,45 giây giữa 2 lần cho ăn');
   await lv.nth(4).click();                                               // L5 is a step: adds the 12th koi, holds the L4 pace
@@ -94,7 +100,9 @@ test('level grid shows 32 levels; L11+ say how many fish and how fast', async ({
   await lv.nth(14).click();                                              // L15, first peak (Duy 2026-11-22 B): first grey fish, shorter pond
   await expect(page.locator('#kLevelTxt')).toHaveText('12 cá koi + 2 cá xám · chờ 3 giây giữa 2 lần cho ăn · cá bơi nhanh ×1,35, đổi hướng ×1,15');
   await expect(lv.nth(0).locator('small')).toHaveText('10 cá');
-  const same = [];                                                       // every level reads differently from the one before
+  // L1–30 (authored) + L31–32 all differ from the level before; generated L33+ steps may share quantized knobs
+  // because p* falls only ~0.003/level (matches scripts/sim/difficulty.koi.test.mjs).
+  const same = [];
   let prev = null;
   for (let L = 1; L <= 32; L++) {
     await lv.nth(L - 1).click();
@@ -105,10 +113,10 @@ test('level grid shows 32 levels; L11+ say how many fish and how fast', async ({
   expect(same).toEqual([]);
 });
 
-test('level 32 (step) starts with its own pond: fish count, decoys, speed and turning', async ({ page }) => {
-  const errors = await openKoi(page, { koi_lv2: '32', bb_stats: JSON.stringify({ koi: { best: 31, stars: {} } }) });
-  await start(page, 32);
-  await expect(page.locator('#kPond')).toHaveText('Level 32 · 12 cá');
+test('level 33 (step) starts with its own pond: fish count, decoys, speed and turning', async ({ page }) => {
+  const errors = await openKoi(page, { koi_lv2: '33', bb_stats: JSON.stringify({ koi: { best: 32, stars: {} } }) });
+  await start(page, 33);
+  await expect(page.locator('#kPond')).toHaveText('Level 33 · 12 cá');
   const r = await page.evaluate(() => {
     const fs = window.__koi.fish;
     const koi = fs.filter(f => !f.decoy), grey = fs.filter(f => f.decoy);
@@ -139,7 +147,7 @@ test('table v2 migration: corrupt bb_stats or marker does not crash the game', a
   const errors = await openKoi(page, { koi_lv2: '3', bb_stats: '{bad', bb_tablev_koi: 'zz' });
   expect(await page.evaluate(() => ({ v: localStorage.getItem('bb_tablev_koi'), best: BB.gameStats('koi').best })))
     .toEqual({ v: '2', best: 2 });                                         // koi_lv2 still seeds best = 2
-  await expect(page.locator('#klvgrid .lv')).toHaveCount(32);
+  await expect(page.locator('#klvgrid .lv')).toHaveCount(33);
   expect(errors).toEqual([]);
 });
 
@@ -153,7 +161,7 @@ test('legacy progress: a player who finished the old 10 levels keeps stars and g
   await expect(lv.nth(9).locator('.kst')).toHaveText('★★★');
   await expect(lv.nth(10)).not.toHaveClass(/\bdone\b/);
   await expect(page.locator('#kBestTxt')).toHaveText('Đã qua tới Level 10');
-  expect(await page.evaluate(() => BB.daily().level)).toBeLessThanOrEqual(32);
+  expect(await page.evaluate(() => BB.daily().level)).toBeLessThanOrEqual(33);
 });
 
 test('legacy progress: a stale over-cap key from the old bug is still clamped to L11', async ({ page }) => {
@@ -169,7 +177,7 @@ test('real progress past L11 is kept (best recorded by BB.record)', async ({ pag
   await expect(page.locator('#klvgrid .lv').nth(17)).toHaveClass(/\bon\b/);
 });
 
-test('next-level flow: pass L10 → L11, pass L30 → L31 → L32, pass L32 → finished screen', async ({ page }) => {
+test('next-level flow: pass L10 → L11, pass L30 → L31 → L32 → L33, pass L33 → finished screen', async ({ page }) => {
   const errors = await openKoi(page, { koi_lv2: '10' });
   await start(page, 10);
   expect(await feedAll(page)).toBe(13);
@@ -198,18 +206,24 @@ test('next-level flow: pass L10 → L11, pass L30 → L31 → L32, pass L32 → 
   expect(await feedAll(page)).toBe(12);
   await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
   await expect(page.locator('#krTitle')).toContainText('Qua Level 32');
+  await expect(page.locator('#krNext')).toHaveText('Level 33 · 12 cá →');
+  await page.click('#krNext');
+  await expect(page.locator('#kPond')).toHaveText('Level 33 · 12 cá');
+  expect(await feedAll(page)).toBe(12);
+  await expect(page.locator('#kresult')).toBeVisible({ timeout: 3000 });
+  await expect(page.locator('#krTitle')).toContainText('Qua Level 33');
   await expect(page.locator('#krNext')).toHaveText('Xem tổng kết →');
   await page.click('#krNext');
-  await expect(page.locator('#kdone h2')).toHaveText('Xong cả 32 level! 🎉');
-  // tổng sao của cả game (32 level × 3), không phải sao riêng L32; ô độ chính xác là số thật
-  await expect(page.locator('#kdStars')).toHaveAttribute('aria-label', /^\d+ trên 96 sao$/);
+  await expect(page.locator('#kdone h2')).toHaveText('Xong cả 33 level! 🎉');
+  // tổng sao của cả game (33 level × 3), không phải sao riêng L33; ô độ chính xác là số thật
+  await expect(page.locator('#kdStars')).toHaveAttribute('aria-label', /^\d+ trên 99 sao$/);
   await expect(page.locator('#kdAcc')).toHaveText(/^\d+$/);
   expect(await page.locator('#kdAcc').evaluate(b => b.parentNode.textContent.slice(b.textContent.length))).toBe(' level đủ 3 sao');
-  expect(await page.locator('#kdLevel').evaluate(b => b.parentNode.textContent)).toBe('32 level đã qua');
-  expect(await page.evaluate(() => ({ lv: localStorage.getItem('koi_lv2'), best: BB.gameStats('koi').best, st32: BB.gameStats('koi').stars[32] })))
-    .toEqual({ lv: '33', best: 32, st32: 3 });
+  expect(await page.locator('#kdLevel').evaluate(b => b.parentNode.textContent)).toBe('33 level đã qua');
+  expect(await page.evaluate(() => ({ lv: localStorage.getItem('koi_lv2'), best: BB.gameStats('koi').best, st33: BB.gameStats('koi').stars[33] })))
+    .toEqual({ lv: '34', best: 33, st33: 3 });
   await page.click('#kdAgain');
-  await expect(page.locator('#kBestTxt')).toHaveText('Đã qua cả 32 level');
+  await expect(page.locator('#kBestTxt')).toHaveText('Đã qua cả 33 level');
   expect(errors).toEqual([]);
 });
 

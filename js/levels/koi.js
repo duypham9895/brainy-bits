@@ -35,14 +35,16 @@
   const levels = ROWS.map(([koi, decoys, spdMul, turnMul, cd]) => ({ koi, decoys, cd, spdMul, turnMul }));
   if (BBD && BBD.register) BBD.register('koi', {
     version: 2,
-    maxLevel: 32,
+    maxLevel: 33,
     legacyLevels,
     levels,
     knobs: [
       // L31+ (engine, not shipped): it anchors to row 30, a peak, so `start` puts the steps back on the L29 step
       // values (12 koi, turning ×1.2); startAt: 30 = written for this 30-row table (append rows and it stops
       // applying). `max` is where a knob stands at L40, past it the knob climbs to hardCap.
-      { name: 'koi', int: true, start: 12, startAt: 30, max: 12.3, hardCap: 15, curve: 'quad', source: 'code: koi.js params()' },
+      // 12.15 (was 12.3, daily 2026-11-24): leaves L1–42 bit-exact unchanged and avoids jumping koi (12→13) on the
+      // same level L43 where spdMul steps to 1.45 (which failed B at L43: median 0.661 vs p* 0.715).
+      { name: 'koi', int: true, start: 12, startAt: 30, max: 12.15, hardCap: 15, curve: 'quad', source: 'code: koi.js params()' },
       { name: 'cd', max: 3.2, hardCap: 3.2, step: 0.05, source: 'code: koi.js:48 cap' },
       { name: 'decoys', int: true, max: 5.4, hardCap: 6, curve: 'linear', changeOn: 'breather', source: 'A, cap is a guess' },
       // Speed trades against target count (R:cognitive, Alvarez & Franconeri 2007).

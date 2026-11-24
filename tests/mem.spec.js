@@ -49,21 +49,21 @@ test('MEM-1: targets never fill the grid, at any level', async ({ page }) => {
   expect(bad).toEqual([]);
 });
 
-test('MEM-1: legacy progress kept, level 32 is the end and shows a finished state', async ({ page }) => {
+test('MEM-1: legacy progress kept, level 33 is the end and shows a finished state', async ({ page }) => {
   await open(page, { lv: 99 });                       // corrupted / over-cap legacy value
-  await expect(page.locator('#mlvgrid .lv')).toHaveCount(32);
-  await expect(page.locator('#mBestTxt')).toHaveText('Đã qua hết 32 level');
-  expect(await page.evaluate(() => [window.memBest(), BB.gameStats('mem').best])).toEqual([32, 32]);
-  await pickLevel(page, 32);
+  await expect(page.locator('#mlvgrid .lv')).toHaveCount(33);
+  await expect(page.locator('#mBestTxt')).toHaveText('Đã qua hết 33 level');
+  expect(await page.evaluate(() => [window.memBest(), BB.gameStats('mem').best])).toEqual([33, 33]);
+  await pickLevel(page, 33);
   await winRound(page); await winRound(page);
   await expect(page.locator('#mresult')).toBeVisible();
-  await expect(page.locator('#mrTitle')).toContainText('Qua Level 32, level cuối');
+  await expect(page.locator('#mrTitle')).toContainText('Qua Level 33, level cuối');
   await expect(page.locator('#mrDetail')).toContainText('Level cuối, đủ 3 sao.');
   await expect(page.locator('#mrDetail')).not.toContainText('gom đủ');
-  await expect(page.locator('#mrNext')).toHaveText('Chơi lại Level 32');
+  await expect(page.locator('#mrNext')).toHaveText('Chơi lại Level 33');
   await page.click('#mrNext');
-  expect(await page.evaluate(() => window.__mem.level)).toBe(32);
-  expect(await page.evaluate(() => [window.memBest(), BB.gameStats('mem').best])).toEqual([32, 32]);
+  expect(await page.evaluate(() => window.__mem.level)).toBe(33);
+  expect(await page.evaluate(() => [window.memBest(), BB.gameStats('mem').best])).toEqual([33, 33]);
 });
 
 test('MEM-3: level ends as soon as the result is decided', async ({ page }) => {
