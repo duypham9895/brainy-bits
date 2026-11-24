@@ -238,5 +238,30 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
     r.levels.filter(l => l.kind !== 'breather').forEach(l =>
       assert.ok(Math.abs(l.profiles.median.p - l.pStar) <= 0.05, `L${l.L} median ${l.profiles.median.p} vs p* ${l.pStar}`));
   });
+
+  test('wave pacing helpers: spawnGap breaks metronome without consecutive bursts; dropFall stays within ±8%', async () => {
+    const { spawnGap, dropFall } = await import('./adapters/rain.mjs');
+    const rng = mulberry32(99);
+    const gaps = [];
+    let lb = false;
+    for (let i = 0; i < 2000; i++) {
+      const g = spawnGap(3.0, lb, rng);
+      assert.ok(!(lb && g.burst), 'never two bursts in a row');
+      lb = g.burst;
+      gaps.push(g.gap);
+    }
+    const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+    const sd = Math.sqrt(gaps.reduce((a, b) => a + (b - mean) ** 2, 0) / gaps.length);
+    const cv = sd / mean;
+    assert.ok(mean >= 3.0 * 0.97 && mean <= 3.0 * 1.06, `mean=${mean}`);
+    assert.ok(cv > 0.18, `CV=${cv} should exceed old 0.115 metronome`);
+    let fSum = 0;
+    for (let i = 0; i < 1000; i++) {
+      const f = dropFall(10, rng);
+      assert.ok(f >= 9.2 - 1e-9 && f <= 10.8 + 1e-9);
+      fSum += f;
+    }
+    assert.ok(Math.abs(fSum / 1000 - 10) < 0.2);
+  });
 });
 }

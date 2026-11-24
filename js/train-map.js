@@ -35,6 +35,31 @@ function spawnGap(base, burstP, lastBurst, rnd){
   return { gap: base * (0.75 + rnd()*0.6), burst: false };                                                    // bình thường
 }
 
+// Controlled 2-bag station draw: allows natural consecutive repeats (~12–16%) so players cannot
+// rule out the just-completed station, while capping streaks at 2 and balancing frequencies over 2 bags.
+function drawStationIdx(bag, count, lastKey, prevKey, rnd){
+  const r = rnd || Math.random;
+  if (!bag.length) {
+    for (let c = 0; c < 2; c++) for (let i = 0; i < count; i++) bag.push(i);
+    for (let i = bag.length - 1; i > 0; i--) { const j = (r() * (i + 1)) | 0; [bag[i], bag[j]] = [bag[j], bag[i]]; }
+  }
+  if (lastKey >= 0 && prevKey !== lastKey && r() < 0.12) {
+    const idx = bag.lastIndexOf(lastKey);
+    if (idx >= 0) { const k = bag[idx]; bag.splice(idx, 1); return k; }
+  }
+  if (lastKey >= 0 && prevKey === lastKey && bag[bag.length - 1] === lastKey) {
+    const idx = bag.findIndex(x => x !== lastKey);
+    if (idx >= 0) { const tmp = bag[bag.length - 1]; bag[bag.length - 1] = bag[idx]; bag[idx] = tmp; }
+  }
+  return bag.pop();
+}
+
+function trainSpeedMul(speedVar, rnd){
+  if (!speedVar || speedVar <= 0) return 1;
+  const r = rnd || Math.random;
+  return 1 + (r() * 2 - 1) * speedVar;
+}
+
 // ================== SINH BẢN ĐỒ LƯỚI ==================
 function gridSize(n){
   const base = n <= 6 ? 6 : n <= 11 ? 7 : 8;   // ít cột hơn → ô to, dễ nhìn
@@ -55,8 +80,8 @@ function tryGen(n, C, R){
 
   // vị trí đường hầm: cạnh trên, trái hoặc phải
   let c0, r0, d0;
-  // hầm luôn ở cạnh trên, gần chính giữa → bản đồ cân hai bên
-  c0 = Math.round((C-1)/2) + (Math.random()*3|0) - 1; r0 = 0; d0 = 1;
+  // hầm ở cạnh trên (lệch ±2 ô quanh tâm, chừa mép 1 ô) → bản đồ đa dạng mà vẫn cân khung
+  c0 = Math.max(1, Math.min(C - 2, Math.round((C-1)/2) + (Math.random()*5|0) - 2)); r0 = 0; d0 = 1;
   const tunnel = { type:'tunnel', g:{c:c0, r:r0}, dir:d0 };
   occ.add(K(c0,r0));
   [turnL(d0), turnR(d0)].forEach(d => { const c=c0+DIRS[d].dc, r=r0+DIRS[d].dr; if (inside(c,r)) occ.add(K(c,r)); });
@@ -225,7 +250,9 @@ const MIN_SW_DIST = 2;
 function generate(n, vw, vh){
   if (vw && vh) { W = vw; H = vh; }
   const {C, R} = gridSize(n);
-  let best = null, bestScore = Infinity, partial = null, found = 0, loose = null, looseScore = Infinity;
+  // Pick randomly from top clean layouts (within TOP_DELTA of bestScore) so replays stay varied.
+  const TOP_K = 8, TOP_DELTA = 12;
+  let top = [], bestScore = Infinity, partial = null, found = 0, loose = null, looseScore = Infinity;
   for (let i=0; i<15000 && found < 300; i++){
     const m = tryGen(n, C, R);
     if (!m) continue;
@@ -234,9 +261,16 @@ function generate(n, vw, vh){
       const sc = messScore(m);
       if (minSwitchDist(m) < MIN_SW_DIST) { if (sc < looseScore) { loose = m; looseScore = sc; } continue; }
       found++;
-      if (sc < bestScore) { best = m; bestScore = sc; }
+      if (sc < bestScore) bestScore = sc;
+      if (top.length < TOP_K || sc < top[top.length - 1].sc) {
+        top.push({ m, sc });
+        top.sort((a, b) => a.sc - b.sc);
+        if (top.length > TOP_K) top.length = TOP_K;
+      }
     } else if (!partial || m.stations.length > partial.stations.length) partial = m;
   }
+  const pool = top.filter(x => x.sc <= bestScore + TOP_DELTA);
+  const best = pool.length ? pool[(Math.random() * pool.length) | 0].m : null;
   return best || loose || (partial && crop(partial));
 }
 
@@ -444,6 +478,6 @@ function drawGlyph(c, idx, x, y, r){
   c.restore();
 }
 
-window.RTD_MAP = { MAX_STATIONS, DIRS, mulberry32, shuffle, shade, rr, stationsFor, spawnGap, generate, minSwitchDist, MIN_SW_DIST,
+window.RTD_MAP = { MAX_STATIONS, DIRS, mulberry32, shuffle, shade, rr, stationsFor, spawnGap, drawStationIdx, trainSpeedMul, generate, minSwitchDist, MIN_SW_DIST,
   simplify, roundPath, setPts, pointAt, strokeEdge, strokeRails, drawDeco, drawTunnel, drawGlyph, GLYPHS };
 })();

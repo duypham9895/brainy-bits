@@ -315,3 +315,26 @@ test('Neon #14: a returning player with only rtd_best3 sees levels up to best ma
   await expect(tiles.nth(8)).toHaveClass(/done/);
   await expect(tiles.nth(6)).not.toHaveClass(/done/);
 });
+
+test('PR 3 randomness: 2-bag station draw repeats naturally without triples and trainSpeedMul varies on L5+', async ({ page }) => {
+  const errors = await openTrain(page);
+  const r = await page.evaluate(() => {
+    const bag = [];
+    let last = -1, prev = -1, same = 0, triples = 0;
+    for (let i = 0; i < 400; i++) {
+      const k = RTD_MAP.drawStationIdx(bag, 7, last, prev, Math.random);
+      if (k === last) same++;
+      if (k === last && k === prev) triples++;
+      prev = last; last = k;
+    }
+    const sv5 = __rtd.specFor(5).speedVar;
+    const speeds = Array.from({ length: 40 }, () => RTD_MAP.trainSpeedMul(sv5, Math.random));
+    return { same, triples, sv5, minSp: Math.min(...speeds), maxSp: Math.max(...speeds), uniq: new Set(speeds).size };
+  });
+  expect(r.triples).toBe(0);
+  expect(r.same).toBeGreaterThan(10);
+  expect(r.sv5).toBeGreaterThan(0);
+  expect(r.maxSp - r.minSp).toBeGreaterThan(0.05);
+  expect(r.uniq).toBeGreaterThan(10);
+  expect(errors).toEqual([]);
+});

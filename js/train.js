@@ -39,7 +39,7 @@ let trains = [], particles = [], popups = [], rings = [];
 let timeLeft = 0, spawnTimer = 0, correct = 0, total = 0, streak = 0, bestStreak = 0, playS = 0;
 let speed = 60, lastT = 0, cdT = 0, shakeLeft = 0;
 let spec = specFor(1);     // tham số của level đang chơi: stations, base, speedF, burstP
-let colorBag = [], lastKey = null, lastBurst = false;
+let colorBag = [], lastKey = -1, prevKey = -1, lastBurst = false;
 const shake = BB.trauma(7);
 const reduced = () => BB.motion.reduced;
 
@@ -81,7 +81,7 @@ function setupLevel(){
   map.land = W > H;
   assignColors(map.stations);
   trains = []; particles = []; popups = []; rings = [];
-  colorBag = []; lastKey = null; lastBurst = false;
+  colorBag = []; lastKey = -1; prevKey = -1; lastBurst = false;
   timeLeft = LEVEL_TIME; correct = 0; total = 0; streak = 0; bestStreak = 0; playS = 0;
   spawnTimer = 1.0;
   shake.reset();
@@ -98,7 +98,7 @@ function layout(){
   ox = (W - (C-1)*cell) / 2;
   oy = (H - (R-1)*cell) / 2;
   TR = cell * 0.48;
-  speed = cell * 2.6 * spec.speedF;   // bảng v2: 0.28 ở mọi level (v1: 0.45)
+  speed = cell * 2.6 * spec.speedF;   // bảng v2: 0.32 ở mọi level (v1: 0.45)
   map.switches.forEach(s => s.px = toPx(s.g));
   map.stations.forEach(s => s.px = toPx(s.g));
   const T = map.tunnel; T.px = toPx(T.g);
@@ -310,14 +310,12 @@ function nextSpawnDelay(){
 function spawn(){
   const e = map.tunnel.edge;
   if (trains.some(t => t.edge === e && t.d < Math.max(56, cell*1.15))) { spawnTimer = 0.12; return; }
-  // "túi màu": mỗi lượt đủ tất cả các màu ga rồi mới lặp lại
-  if (!colorBag.length) {
-    colorBag = shuffle(map.stations.slice());
-    if (lastKey !== null && colorBag.length > 1 && colorBag[colorBag.length-1].key === lastKey) colorBag.unshift(colorBag.pop());
-  }
-  const st = colorBag.pop();
-  lastKey = st.key;
-  trains.push({ edge: e, prev: null, d: 0, key: st.key, ci: st.ci, a: st.a, b: st.b });
+  // túi 2x có kiểm soát: phân bổ đều sau 2 túi nhưng vẫn có ~12–16% lặp màu liên tiếp (tối đa 2)
+  const idx = M.drawStationIdx(colorBag, map.stations.length, lastKey, prevKey, Math.random);
+  const st = map.stations[idx];
+  prevKey = lastKey; lastKey = idx;
+  const sm = M.trainSpeedMul(spec.speedVar || 0, Math.random);
+  trains.push({ edge: e, prev: null, d: 0, key: st.key, ci: st.ci, a: st.a, b: st.b, sm });
   spawnTimer = nextSpawnDelay();
 }
 
@@ -328,17 +326,29 @@ function update(dt){
     spawnTimer -= dt;
     if (spawnTimer <= 0 && timeLeft > 1.5) spawn();
   }
-  for (let i=trains.length-1;i>=0;i--){
+  const gap = Math.max(46, cell * 0.95);
+  for (let i=0;i<trains.length;){
     const t = trains[i];
-    t.d += speed * dt;
+    let nextD = t.d + speed * (t.sm || 1) * dt;
+    for (let j=0;j<i;j++){
+      const a = trains[j];
+      if (a.edge === t.edge && a.d > t.d && nextD > a.d - gap) nextD = Math.max(t.d, a.d - gap);
+    }
+    t.d = nextD;
+    let removed = false;
     while (t.d >= t.edge.len) {
       const node = t.edge.to;
-      if (node.type === 'station') { arrive(t, node); trains.splice(i,1); break; }
+      if (node.type === 'station') { arrive(t, node); trains.splice(i,1); removed = true; break; }
+      const ne = node.childEdges[node.sel];
+      if (trains.some((a, j) => j < i && a.edge === ne && a.d < gap)) {
+        t.d = Math.max(0, t.edge.len - 0.5); break;
+      }
       const over = t.d - t.edge.len;
       t.prev = t.edge;
-      t.edge = node.childEdges[node.sel];
+      t.edge = ne;
       t.d = over;
     }
+    if (!removed) i++;
   }
   updateFx(dt);
   updateHud();
@@ -526,11 +536,15 @@ function trainPose(t, back){
   return null;
 }
 
-function drawCar(p, color, engine, k){
+function drawCar(p, color, engine, k, fast){
   if (!p) return;
   ctx.save();
   ctx.translate(p.x, p.y); ctx.rotate(p.ang); ctx.scale(k, k);
   const L = engine ? 25 : 20, Wd = 14;
+  if (engine && fast) {
+    ctx.fillStyle = 'rgba(255,238,150,.28)';
+    ctx.beginPath(); ctx.moveTo(L/2, -4); ctx.lineTo(L/2 + 16, -9); ctx.lineTo(L/2 + 16, 9); ctx.lineTo(L/2, 4); ctx.closePath(); ctx.fill();
+  }
   ctx.fillStyle = 'rgba(0,0,0,.35)'; rr(ctx, -L/2 + 1.5, -Wd/2 + 3, L, Wd, 4); ctx.fill();
   ctx.fillStyle = color; rr(ctx, -L/2, -Wd/2, L, Wd, 4); ctx.fill();
   ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.stroke();
@@ -545,10 +559,10 @@ function drawCar(p, color, engine, k){
 }
 
 function drawTrain(t){
-  const k = trainScale();
+  const k = trainScale(), fast = (t.sm || 1) >= 1.07;
   const back = trainPose(t, 24*k), head = trainPose(t, 0);
-  drawCar(back, t.b, false, k);   // toa sau = màu mái
-  drawCar(head, t.a, true, k);    // đầu tàu = màu thân nhà
+  drawCar(back, t.b, false, k, false);   // toa sau = màu mái
+  drawCar(head, t.a, true, k, fast);     // đầu tàu = màu thân nhà
   // toa sau mang ký hiệu hình của ga đích, luôn đứng thẳng để dễ đọc (RTD-08)
   if (back) M.drawGlyph(ctx, t.ci, back.x, back.y, 5.4*k);
 }

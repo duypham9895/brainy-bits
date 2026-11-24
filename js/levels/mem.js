@@ -34,21 +34,21 @@
   }
   // Table v2, one template for L1..30 (Duy 2026-11-22, B, all games: L1–14 are steps, first peak L15, then
   // peak at 5k, breather at 5k+1, step otherwise). research: docs/difficulty/research-early.html.
-  //   L1–14 open easy: a new element (4th tile L3, 5×5 grid L6, 6×6 grid L9) comes with the tiles gathered
-  //         (disp 0); the next steps spread them a little (disp +0.1). One knob per level, disp ≤ hardCap 0.5.
+  //   L1–14 open easy: a new element (4th tile L3, 5×5 grid L6, 4 tiles L8, 6×6 grid L11) comes with the tiles gathered
+  //         (disp 0 or 0.15); the next steps spread them a little (disp +0.05..+0.1). One knob per level, disp ≤ hardCap 0.5.
   //   L15+  6×6. A step spreads the tiles a little more (disp +0.05), a peak adds one tile,
   //         a breather drops one tile or eases disp. L15 is a mild peak (4 tiles, gathered).
   // In the sim, tile count and grid size move the pass rate; disp moves it only ~1 point per 0.1 at 3 tiles,
-  // so L11–14 sit at median ~0.90–0.92 (B is one-sided before L15: easier than p* is not a miss).
+  // so L11–14 sit at median ~0.91–0.93 (B is one-sided before L15: easier than p* is not a miss).
   // Viewing time keeps the v1 rule (k = 0.3 s per tile): below ~7 tiles time never binds in the sim, so
   // shrinking it would only change the label, not the difficulty. Rows were fit with
-  // `calibrate.mjs mem --n 1200 --to 41` (2026-11-22, all gates green). L26–30 unchanged since 2026-11-21. Same level numbers as v1:
+  // `calibrate.mjs mem --n 1200 --to 41` (2026-11-22, L6–14 de-flattened 2026-11-24, all gates green). L26–30 unchanged since 2026-11-21. Same level numbers as v1:
   // stars and mem_lv keep their keys, so the table version stays 2.
   // [size, t, disp]
   const V2 = [
     [4, 3, 0], [4, 3, 0.2], [4, 4, 0], [4, 4, 0.1], [4, 4, 0.2],            // L1–5 steps: 4×4, 4th tile at L3
-    [5, 3, 0], [5, 3, 0.2], [5, 3, 0.4], [6, 3, 0], [6, 3, 0.1],            // L6–10 steps: 5×5 at L6, 6×6 at L9
-    [6, 3, 0.2], [6, 3, 0.3], [6, 3, 0.4], [6, 3, 0.5], [6, 4, 0],          // L11–14 steps, L15 first peak (+1 tile)
+    [5, 3, 0], [5, 3, 0.2], [5, 4, 0], [5, 4, 0.05], [5, 4, 0.1],           // L6–10 steps: 5×5 at L6, 4th tile at L8 (breaks 3-tile plateau)
+    [6, 3, 0.15], [6, 3, 0.25], [6, 3, 0.35], [6, 3, 0.45], [6, 4, 0],      // L11–14 steps (6×6 at L11), L15 first peak (+1 tile)
     [6, 3, 0.3], [6, 3, 0.4], [6, 3, 0.5], [6, 4, 0.05], [6, 5, 0],         // L16 breather … L20 peak; L17–18 stay at 3 tiles so the wall is L15, not L17 (review)
     [6, 4, 0.1], [6, 4, 0.2], [6, 4, 0.25], [6, 4, 0.3], [6, 5, 0.15],      // L21 breather … L25 peak
     [6, 5, 0.05], [6, 6, 0], [6, 6, 0.05], [6, 6, 0.1], [6, 7, 0.1],       // L26 … L30

@@ -8,7 +8,7 @@ const AUTO_WAIT = 0.6;         // giây chờ khi đáp án đã gõ còn là đ
 let W = 0, H = 0, dpr = 1, landscape = null, cvLand = null;
 let state = 'menu';            // menu | play | paused | result
 let level = 1, chosen = 1, passed = false;
-let drops = [], fx = [], parts = [], solved = 0, target = 10, misses = 0, spawnT = 0, input = '', pendT = 0;
+let drops = [], fx = [], parts = [], solved = 0, target = 10, misses = 0, spawnT = 0, lastBurst = false, input = '', pendT = 0;
 let combo = 0, playMs = 0, lastT = 0, lives = LIVES;
 const cam = BB.trauma(7);
 
@@ -120,8 +120,14 @@ function spawn(){
     if (dmin > bestD) { bestD = dmin; bestX = x; }
   }
   const s = spec(level);
-  drops.push({ x: bestX, p: 0, fall: s.fall, eq, ans, w });
-  spawnT = s.every * (0.8 + Math.random()*0.4);
+  const fall = window.BBRain && window.BBRain.dropFall ? window.BBRain.dropFall(s.fall, Math.random) : s.fall;
+  drops.push({ x: bestX, p: 0, fall, eq, ans, w });
+  if (window.BBRain && window.BBRain.spawnGap) {
+    const g = window.BBRain.spawnGap(s.every, lastBurst, Math.random);
+    lastBurst = g.burst; spawnT = g.gap;
+  } else {
+    spawnT = s.every * (0.8 + Math.random()*0.4);
+  }
 }
 
 // ---------- particles (bỏ hẳn khi người dùng chọn giảm chuyển động) ----------
@@ -373,7 +379,7 @@ function startLevel(L){
   clearStarTimers();
   if (!ready()) { pendingStart = L; return; }      // bảng level chưa nạp xong (xem ensureLevels)
   level = Math.max(1, Math.min(lvMax(), L|0 || 1));
-  drops = []; fx = []; parts = []; solved = 0; misses = 0; combo = 0; playMs = 0;
+  drops = []; fx = []; parts = []; solved = 0; misses = 0; combo = 0; playMs = 0; lastBurst = false;
   input = ''; pendT = 0; renderInput(); cam.reset();
   target = spec(level).target; lives = livesOf(level); spawnT = 0.6;
   syncPadPref();

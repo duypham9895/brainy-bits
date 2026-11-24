@@ -270,3 +270,22 @@ test('review 2026-11-21: menu copy matches the level table (fish at L1, first gr
   expect(want).toEqual({ koi1: 10, grey: 15 });
   expect(errors).toEqual([]);
 });
+
+test('PR 3 swim pacing: fish modulate organic pace while keeping base spd in spec band', async ({ page }) => {
+  const errors = await openKoi(page);
+  await start(page, 2);
+  await page.waitForTimeout(2100);
+  const r = await page.evaluate(() => {
+    const fs = window.__koi.fish;
+    const mul = window.__koi.params(2).spdMul;
+    return {
+      count: fs.length,
+      spdOk: fs.every(f => f.spd >= 30 * mul - 1e-9 && f.spd <= 42 * mul + 1e-9),
+      paces: fs.map(f => +f.pace.toFixed(3)),
+    };
+  });
+  expect(r.count).toBe(10);
+  expect(r.spdOk).toBe(true);
+  expect(Math.max(...r.paces) - Math.min(...r.paces)).toBeGreaterThan(0.03);
+  expect(errors).toEqual([]);
+});

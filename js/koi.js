@@ -93,8 +93,9 @@ function setupPond(){
   const mk = (decoy) => ({
     x: A.x0 + L + Math.random()*(A.x1 - A.x0 - 2*L),
     y: A.y0 + L + Math.random()*(A.y1 - A.y0 - 2*L),
-    ang: Math.random()*Math.PI*2, turn: 0, turnTarget: 0, turnT: 0,
+    ang: Math.random()*Math.PI*2, turn: 0, turnTarget: 0, turnT: 0.3 + Math.random()*1.4,
     spd: ((decoy ? 24 : 30) + Math.random()*12) * p.spdMul, boost: 0,
+    pace: 1, paceTarget: 1, paceT: 0.5 + Math.random()*1.8,
     phase: Math.random()*10, decoy, fed: false, L: decoy ? L*1.05 : L,
   });
   for (let i=0;i<p.decoys;i++) fish.push(mk(true));
@@ -254,15 +255,27 @@ function updateFish(dt){
   const A = area(), cx = (A.x0+A.x1)/2, cy = (A.y0+A.y1)/2;
   fish.forEach(f => {
     f.turnT -= dt;
-    if (f.turnT <= 0) { f.turnTarget = (Math.random()-0.5)*1.6; f.turnT = (1 + Math.random()*2) / turnMul; }
-    f.turn += (f.turnTarget - f.turn) * Math.min(1, dt*1.5);
+    if (f.turnT <= 0) {
+      const sharp = Math.random() < 0.22;
+      f.turnTarget = (Math.random() - 0.5) * (sharp ? 3.8 : 1.7);
+      f.turnT = ((sharp ? 0.55 : 0.9) + Math.random() * (sharp ? 0.9 : 1.8)) / turnMul;
+    }
+    f.turn += (f.turnTarget - f.turn) * Math.min(1, dt*2.2);
+    f.paceT -= dt;
+    if (f.paceT <= 0) {
+      const r = Math.random();
+      if (r < 0.25) { f.paceTarget = 0.72 + Math.random()*0.14; f.paceT = 1.1 + Math.random()*1.3; }
+      else if (r < 0.47) { f.paceTarget = 1.18 + Math.random()*0.16; f.paceT = 0.7 + Math.random()*0.9; }
+      else { f.paceTarget = 0.95 + Math.random()*0.14; f.paceT = 1.0 + Math.random()*1.5; }
+    }
+    f.pace += (f.paceTarget - f.pace) * Math.min(1, dt*2.2);
     const m = f.L * 0.9;
     if (f.x < A.x0+m || f.x > A.x1-m || f.y < A.y0+m || f.y > A.y1-m) {
       const want = Math.atan2(cy - f.y, cx - f.x);
       f.turn = wrapAng(want - f.ang) * 2.2;
     }
     f.ang = wrapAng(f.ang + f.turn*dt);
-    const sp = f.spd + f.boost;
+    const sp = f.spd * f.pace + f.boost;
     f.boost = Math.max(0, f.boost - dt*60);
     f.x += Math.cos(f.ang)*sp*dt; f.y += Math.sin(f.ang)*sp*dt;
     f.x = Math.max(A.x0, Math.min(A.x1, f.x)); f.y = Math.max(A.y0, Math.min(A.y1, f.y));

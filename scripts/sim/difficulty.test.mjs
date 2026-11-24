@@ -561,9 +561,11 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
     // No peak or breather before L15 (Duy 2026-11-22, B, all games).
     assert.ok(range(1, 14).every(L => B.level('mem', L).kind === 'step'));
     assert.equal(B.level('mem', 15).kind, 'peak'); assert.equal(B.level('mem', 16).kind, 'breather');
-    // L1–5: 4×4 grid, 3 tiles then 4 from L3 (G1 weak ≥ 0.90). 5×5 at L6, 6×6 from L9. L15 peak: 4 tiles gathered.
+    // L1–5: 4×4 grid, 3 tiles then 4 from L3 (G1 weak ≥ 0.90). 5×5 at L6 (4 tiles L8–10), 6×6 from L11. L15 peak: 4 tiles gathered.
     assert.deepEqual(range(1, 5).map(L => B.level('mem', L).t), [3, 3, 4, 4, 4]);
-    assert.deepEqual(range(1, 10).map(L => B.level('mem', L).size), [4, 4, 4, 4, 4, 5, 5, 5, 6, 6]);
+    assert.deepEqual(range(6, 14).map(L => B.level('mem', L).t), [3, 3, 4, 4, 4, 3, 3, 3, 3]);
+    assert.deepEqual(range(1, 10).map(L => B.level('mem', L).size), [4, 4, 4, 4, 4, 5, 5, 5, 5, 5]);
+    assert.deepEqual(range(11, 14).map(L => B.level('mem', L).size), [6, 6, 6, 6]);
     assert.deepEqual([B.level('mem', 15).t, B.level('mem', 15).disp], [4, 0]);
     assert.ok(range(1, 30).every(L => B.level('mem', L).disp <= 0.5), 'disp within hardCap');
   });
@@ -703,7 +705,10 @@ describe('train: table v2, one template for every level', () => {
       assert.ok(r.stations >= 5 && r.stations <= 15, `L${L} stations ${r.stations}`);
       if (L >= 15) assert.equal(r.stations, 15, `L${L}`);
       assert.ok(r.base >= 2.30, `L${L} base ${r.base} inside hardCap`);
-      assert.equal(r.speedF, 0.28); assert.equal(r.burstP, 0);
+      assert.equal(r.speedF, 0.32);
+      assert.equal(r.burstP > 0, L >= 5, `L${L} burstP ${r.burstP}`);
+      const wantSv = r.burstP > 0 ? +(Math.min(0.14, 0.06 + r.burstP * 0.4)).toFixed(2) : 0;
+      assert.equal(r.speedVar, wantSv, `L${L} speedVar`);
       for (const w of [320, 390]) assert.ok(A.geometry(r, w).minTargetPx >= 44, `L${L} at ${w}px`);
       if (L === 1) continue;
       const p = B.level('train', L - 1);
@@ -715,7 +720,44 @@ describe('train: table v2, one template for every level', () => {
       if (r.kind === 'breather') assert.ok(r.base > p.base, `L${L}: a breather sends trains further apart than the peak before it`);
       if (r.kind === 'peak') assert.ok(r.base < p.base || r.stations > p.stations, `L${L}: a peak adds a station or sends trains closer`);
     }
-    assert.equal(B.level('train', 30).base, 3.27);   // played peak (override); the row keeps the 3.50 trend for L31+
+    assert.equal(B.level('train', 30).base, 2.98); assert.equal(B.level('train', 30).burstP, 0.20);
+  });
+
+  test('train randomness: 2-bag allows natural doubles (0 triples), speedVar varies, bursts occur, Top-K maps vary', () => {
+    const M = loadMap(), rng = mulberry32(42);
+    for (const n of [5, 11, 15]) {
+      const bag = [], seq = [];
+      let last = -1, prev = -1, same = 0, triples = 0;
+      for (let i = 0; i < 2000; i++) {
+        const k = M.drawStationIdx(bag, n, last, prev, rng);
+        if (k === last) same++;
+        if (k === last && k === prev) triples++;
+        seq.push(k); prev = last; last = k;
+      }
+      assert.equal(triples, 0, `n=${n} triples`);
+      assert.ok(same / 1999 >= 0.09 && same / 1999 <= 0.25, `n=${n} adjSame=${same / 1999}`);
+    }
+    let sSum = 0;
+    for (let i = 0; i < 1000; i++) {
+      const sm = M.trainSpeedMul(0.12, rng);
+      assert.ok(sm >= 0.88 - 1e-9 && sm <= 1.12 + 1e-9); sSum += sm;
+    }
+    assert.ok(Math.abs(sSum / 1000 - 1) < 0.02);
+    let bursts = 0, lb = false;
+    for (let i = 0; i < 1000; i++) {
+      const g = M.spawnGap(3.68, 0.16, lb, rng);
+      assert.ok(!(lb && g.burst), 'never two bursts in a row');
+      if (g.burst) { bursts++; assert.ok(g.gap <= 2.7); }
+      lb = g.burst;
+    }
+    assert.ok(bursts >= 50, `bursts=${bursts}`);
+    const cols = new Set();
+    for (let i = 0; i < 12; i++) {
+      const m = M.generate(11, 390, 700);
+      assert.ok(M.minSwitchDist(m) >= 2);
+      cols.add(m.tunnel.g.c);
+    }
+    assert.ok(cols.size >= 3, `expected varied tunnel cols, got ${[...cols]}`);
   });
   // Review 2026-11-22: L2 (5 stations, base 3.46) was easier than L1 (5 stations, 3.41) and the result screen
   // said "tàu ra thưa hơn". On the same station count a non-breather never raises base over the level before

@@ -28,7 +28,7 @@ test('the game plays table v2 for L1..30; v1 rows stay in the table as reference
     const out = [];
     for (let L = 1; L <= 30; L++) {
       const s = __rtd.specFor(L), w = BBD.level('train', L);
-      out.push([s.authored === true, s.stations === w.stations, s.base === w.base, s.speedF === 0.28, s.burstP === 0]);
+      out.push([s.authored === true, s.stations === w.stations, s.base === w.base, s.speedF === 0.32, s.burstP === w.burstP && (L <= 4 ? s.burstP === 0 : s.burstP > 0)]);
     }
     const leg = BBD.spec('train').legacy.map((s, i) => s.stations === Math.min(5 + i, 15)
       && s.base === Math.max(1.8, 2.6 - 0.075 * i) * (0.75 / 0.45) && s.speedF === 0.45 && s.burstP === 0.15);

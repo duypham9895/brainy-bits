@@ -37,19 +37,29 @@
   //  · Rule, tested: on the same station count a non-breather never raises base over the level before it, nor
   //    over the step before it (L2 once read "tàu ra thưa hơn" after L1, review 2026-11-22).
   //  · base from L16: peak = step − ~0.30, breather = step + ~0.15 (sparser trains, fewer plans held at once).
+  // Retuned 2026-11-24 (PR 3): wave pacing restored from L5+ (`burstP` 0.08 → 0.20, derived `speedVar` ±8–14%),
+  // slightly livelier base `speedF` 0.32 (compensated by `base` so all v2 calibration gates remain green at N=1200).
   const STATIONS = [
     5, 5, 6, 7, 7,  8, 9, 9, 10, 11,  12, 13, 14, 15, 15,   // L1–15
   ];
   const BASE = [
     4.60, 4.50, 4.50, 4.50, 4.40,     // L1–5
     4.40, 4.40, 4.30, 4.30, 4.30,     // L6–10
-    4.30, 4.30, 4.30, 4.30, 4.10,     // L11–15 (L15 = first peak)
-    4.40, 4.25, 4.20, 4.15, 3.70,     // L16–20 (L17–19 stay easier than the L15 peak, review 2026-11-22)
-    3.90, 3.75, 3.55, 3.54, 3.31,     // L21–25
-    3.63, 3.53, 3.52, 3.51, 3.50,     // L26–30 (L30 row = step trend; the played peak is in `overrides`)
+    4.30, 4.30, 4.30, 4.30, 3.68,     // L11–15 (L15 = first peak)
+    3.98, 3.82, 3.74, 3.66, 3.30,     // L16–20 (L16 breather, L20 peak)
+    3.62, 3.46, 3.40, 3.35, 3.11,     // L21–25 (L21 breather, L25 peak)
+    3.48, 3.34, 3.28, 3.24, 3.22,     // L26–30 (L26 breather, L30 step trend 3.22; played peak in overrides)
+  ];
+  const BURST = [
+    0,    0,    0,    0,    0.08,     // L1–5 (calm L1–4 intro; wave bursts start L5)
+    0.08, 0.08, 0.12, 0.12, 0.12,     // L6–10
+    0.12, 0.14, 0.14, 0.14, 0.16,     // L11–15
+    0.14, 0.16, 0.16, 0.16, 0.18,     // L16–20
+    0.16, 0.18, 0.18, 0.18, 0.18,     // L21–25
+    0.16, 0.18, 0.18, 0.18, 0.18,     // L26–30 (L30 override = 0.20)
   ];
   const stationsAt = L => (L <= STATIONS.length ? STATIONS[L - 1] : 15);
-  const levels = BASE.map((base, i) => ({ stations: stationsAt(i + 1), base, speedF: 0.28, burstP: 0 }));
+  const levels = BASE.map((base, i) => ({ stations: stationsAt(i + 1), base, speedF: 0.32, burstP: BURST[i] }));
 
   if (BBD && BBD.register) BBD.register('train', {
     version: 2,          // v1 = legacy 11 levels + generated 12..30. Level numbers keep their meaning, so the
@@ -59,31 +69,21 @@
     levels,
     knobs: [
       { name: 'stations', int: true, max: 15, hardCap: 15, source: 'code: train-map.js MAX_STATIONS' },
-      // L31+: from the L30 trend (3.50) down 0.14 by L40 (0.014 per level; p* falls only 0.003 per level there),
-      // reaching hardCap 2.30 at L116, so the table is exhausted before L120 and the "+10 levels" rule stops;
-      // cap is a guess. max 3.30 (0.02/level) failed B at L40 (median 0.605 vs p* 0.663) in the 2026-11-21
-      // L31–40 run; 3.36 passes every gate on L31–40 at N = 1200 (L40 median 0.64).
-      { name: 'base', max: 3.36, hardCap: 2.30, step: 0.01, notch: 0.22, curve: 'linear', source: 'A, cap is a guess; v2 rows from calibrate.mjs' },
-      // Held at 0.28. In the simulator a FASTER train is easier (it clears its switches sooner), so speed is
-      // not a "harder" knob here; recheck in playtest before moving it.
-      { name: 'speedF', dir: -1, hardCap: 0.28, source: 'held; calibrate.mjs 2026-11-21' },
-      // From L36 (first generated breather after L31): 0.02 at L36, 0.06 at L41. max 0.10 gave 0.04 at L36 and
-      // weak 0.58 there (G4); 0.05 keeps weak ≥ 0.60 on L36.
-      { name: 'burstP', max: 0.05, hardCap: 0.30, step: 0.01, changeOn: 'breather', curve: 'quad', source: 'A, cap is a guess; reserve for L31+' },
+      { name: 'base', max: 3.12, hardCap: 2.32, step: 0.01, notch: 0.22, curve: 'linear', source: 'A, cap is a guess; v2 rows from calibrate.mjs' },
+      { name: 'speedF', dir: -1, hardCap: 0.32, source: 'held; calibrate.mjs 2026-11-24' },
+      { name: 'burstP', max: 0.20, hardCap: 0.30, step: 0.01, changeOn: 'breather', curve: 'linear', source: 'A, cap is a guess; wave pacing from L5+' },
       // [E5] two-colour stations (st.two already exists in train.js). Stays off while E5_KNOBS_ONLY.
       { name: 'twoTone', off: 0, min: 0, rule: true, unlockAt: 31, max: 0.45, hardCap: 0.45, step: 0.05, source: 'B, [E5]' },
     ],
     priority: ['base', 'burstP'],
     lighterKnobs: ['base'],
-    // Generated breathers only (L1–30 rows are written out). 0.08 was kept thin before BREATHER_EASY_OK (2026-11-22)
-    // and failed G4 on L41 (weak 0.56). 0.20 keeps L31 at L26's 3.63 cap, L36 at 3.62 (+burstP 0.02), L41 at 3.55
-    // (+burstP 0.06), holding weak ≥ 0.61 and median inside ±5% through L41.
-    relief: [{ knob: 'base', by: 0.20 }],
+    relief: [{ knob: 'base', by: 0.35 }],
     peak: [{ knob: 'base', by: 0.20 }],
-    // L30 is a peak: played at 3.27, while its `levels` row keeps the step trend 3.50 so the formula for L31+
+    // L30 is a peak: played at 2.98 / burstP 0.20, while its `levels` row keeps the step trend 3.22 so L31+
     // continues from the trend, not from a peak (a peak anchor would make L32 harder than L30).
-    overrides: { 30: { base: 3.27 } },
-    // Full N (1200), 2026-11-24: every gate green on L1–33 and on generated L34–43; G7 SKIP. No gate waivers.
+    overrides: { 30: { base: 2.98, burstP: 0.20 } },
+    derive: r => ({ speedVar: r.legacy ? 0 : (r.burstP > 0 ? +(Math.min(0.14, 0.06 + r.burstP * 0.4)).toFixed(2) : 0) }),
+    // Full N (1200), 2026-11-24 (PR 3): every gate green on L1–33 and on generated L34–43; G7 SKIP. No gate waivers.
     meta: { table: 'js/levels/train.js', game: 'js/train.js + js/train-map.js',
       touch: 'tap target = nearest switch within max(32, TR+16) px, clipped by the nearest switch ≥ √2 cells away: ≥ 54 px at 320 px; drawn disc ≥ 44 px (A-5, js/train.js DISC_MIN_R)' },
   });
