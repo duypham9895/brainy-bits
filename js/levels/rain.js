@@ -6,12 +6,19 @@
   'use strict';
 
   // ---------- equations: makeEq(tier, rng) -> [text, answer, meta] ----------
-  // Tiers 1..10 keep the exact draw order of the old js/rain.js makeEq, so the game sees the same
-  // distribution as before. meta describes the problem for the simulator's cost model only.
+  // Tiers 1..10 keep the operation mix and draw count of the old js/rain.js makeEq; add(m) and sub(m)
+  // sample uniformly over valid (a, b) pairs instead of drawing `a` first and squeezing `b` into [1..m−a],
+  // which previously gave 9 + 1 12.3x more often than 1 + 9 and 21.9% zero answers on sub(10).
+  // meta describes the problem for the simulator's cost model only.
   function makeEq(tier, rng) {
     const ri = (a, b) => a + (rng() * (b - a + 1) | 0);
-    const add = m => { const a = ri(1, m - 1), b = ri(1, m - a); return [`${a} + ${b}`, a + b, { op: 'add', a, b }]; };
-    const sub = m => { const a = ri(2, m), b = ri(1, a); return [`${a} − ${b}`, a - b, { op: 'sub', a, b }]; };
+    const pair = m => {
+      const k = (rng() * ((m - 1) * m / 2)) | 0;
+      const r = Math.floor((Math.sqrt(8 * k + 1) - 1) / 2);
+      return [r, k - r * (r + 1) / 2 + 1];
+    };
+    const add = m => { const [r, a] = pair(m), b = r + 2 - a; return [`${a} + ${b}`, a + b, { op: 'add', a, b }]; };
+    const sub = m => { const [r, b] = pair(m), a = r + 2; return [`${a} − ${b}`, a - b, { op: 'sub', a, b }]; };
     const mul = (x0, x1, y1) => {
       const a = ri(x0, x1), b = ri(1, y1);
       return rng() < 0.5 ? [`${a} × ${b}`, a * b, { op: 'mul', a, b }] : [`${b} × ${a}`, a * b, { op: 'mul', a, b }];
@@ -117,13 +124,14 @@
   //  · L17–25 only ease `every` 0.05–0.2 s so the median sits on the new p* (B).
   //  · L17–19 climb back from the L16 breather one step at a time (chain 18 → 20 → 22, fall 8.20 → 7.85) instead of
   //    jumping from 10 to 22 drops in one level (review 2026-11-22).
+  //  · Uniform add/sub pair sampling (2026-11-24): minor ease (+0.03..+0.10 s) on L20, L24, L27–29 to keep median on p*.
   const TABLE = {
     7: [7, 3.80, 10.25, 16, 3], 8: [8, 3.80, 10.25, 16, 3], 9: [9, 3.80, 10.25, 16, 3],
     10: [10, 3.80, 10.25, 16, 3],
     11: [11, 3.80, 10.25, 16, 3], 12: [11, 3.40, 10.25, 16, 3], 13: [11, 3.00, 10.25, 16, 3], 14: [11, 3.00, 9.00, 16, 3], 15: [11, 2.30, 9.00, 8, 3],
-    16: [12, 3.20, 9.20, 10, 4], 17: [12, 2.90, 8.20, 18, 3], 18: [12, 2.90, 7.85, 20, 3], 19: [12, 2.85, 7.85, 22, 3], 20: [12, 2.65, 7.55, 24, 3],
-    21: [13, 3.20, 8.60, 10, 4], 22: [13, 2.80, 7.90, 24, 3], 23: [13, 2.80, 7.90, 25, 3], 24: [13, 2.75, 7.85, 25, 3], 25: [13, 2.65, 7.55, 25, 3],
-    26: [14, 3.30, 8.80, 10, 4], 27: [14, 2.65, 7.85, 25, 3], 28: [14, 2.65, 7.80, 25, 3], 29: [14, 2.65, 7.75, 25, 3], 30: [14, 2.55, 7.45, 25, 3],
+    16: [12, 3.20, 9.20, 10, 4], 17: [12, 2.90, 8.20, 18, 3], 18: [12, 2.90, 7.85, 20, 3], 19: [12, 2.85, 7.85, 22, 3], 20: [12, 2.75, 7.65, 24, 3],
+    21: [13, 3.20, 8.60, 10, 4], 22: [13, 2.80, 7.90, 24, 3], 23: [13, 2.80, 7.90, 25, 3], 24: [13, 2.80, 7.85, 25, 3], 25: [13, 2.65, 7.55, 25, 3],
+    26: [14, 3.30, 8.80, 10, 4], 27: [14, 2.70, 7.95, 25, 3], 28: [14, 2.70, 7.85, 25, 3], 29: [14, 2.68, 7.80, 25, 3], 30: [14, 2.55, 7.45, 25, 3],
   };
   const LIVES = 3;                                           // old game: 3 misses lose on every level
   const levels = legacyLevels.slice(0, 6).map(r => ({ ...r, lives: LIVES }));

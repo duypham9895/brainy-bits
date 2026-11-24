@@ -520,3 +520,90 @@ test('QA: a drop close to the water survives a sharp shrink and the resume after
   expect(s.misses).toBe(0);
   expect(s.drops.some(d => d.ans === 77)).toBe(true);
 });
+
+test('physical keyboard: Digit0-9 code fallback handles macOS Vietnamese layout and ignores Shift+Digit', async ({ page }) => {
+  await openRain(page);
+  await startAt(page, 2);
+  await page.evaluate(() => { window.__rainTest.spawnDrop(12, 0.2); window.__rainTest.spawnDrop(10, 0.2); });
+  const key = (k, code, extra = {}) => page.evaluate(([key, code, extra]) => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key, code, bubbles: true, cancelable: true, ...extra }));
+  }, [k, code, extra]);
+  await key('ă', 'Digit1');
+  await key('â', 'Digit2');
+  let s = await dbg(page);
+  expect(s.solved).toBe(1);
+  expect(s.drops.some(d => d.ans === 12)).toBe(false);
+  await key('!', 'Digit1', { shiftKey: true });
+  expect((await dbg(page)).input).toBe('');
+  await key('ă', 'Digit1');
+  await key('đ', 'Digit0');
+  s = await dbg(page);
+  expect(s.solved).toBe(2);
+  expect(s.drops.some(d => d.ans === 10)).toBe(false);
+});
+
+test('physical keyboard: starting via focused #rStart blurs button so Enter immediately submits pending AUTO_WAIT answer', async ({ page }) => {
+  await openRain(page);
+  await page.locator('#rStart').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#rmenu')).toBeHidden();
+  expect(await page.evaluate(() => document.activeElement?.id || '')).not.toBe('rStart');
+  await page.evaluate(() => { window.__rainTest.spawnDrop(1, 0.2); window.__rainTest.spawnDrop(12, 0.1); });
+  await page.keyboard.press('1');
+  expect((await dbg(page)).input).toBe('1');
+  await page.keyboard.press('Enter');
+  const s = await dbg(page);
+  expect(s.solved).toBe(1);
+  expect(s.drops.some(d => d.ans === 1)).toBe(false);
+  expect(s.drops.some(d => d.ans === 12)).toBe(true);
+});
+
+test('physical keyboard: IME-safe Enter guard ignores isComposing and Safari keyCode 229', async ({ page }) => {
+  await openRain(page);
+  await startAt(page, 2);
+  await page.evaluate(() => { window.__rainTest.spawnDrop(1, 0.2); window.__rainTest.spawnDrop(12, 0.1); });
+  await page.keyboard.press('1');
+  await page.evaluate(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 229, bubbles: true, cancelable: true }));
+  });
+  const s = await dbg(page);
+  expect(s.solved).toBe(0);
+  expect(s.input).toBe('1');
+});
+
+test('desktop: #rPadToggle hides virtual pad mid-round without pausing, expands canvas, persists; mobile hides toggle', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, hasTouch: false, isMobile: false });
+  await ctx.addInitScript(muteAudio);
+  const page = await ctx.newPage();
+  await openRain(page);
+  await startAt(page, 1);
+  await expect(page.locator('#rPadToggle')).toBeVisible();
+  await expect(page.locator('#rPadToggle')).toHaveAttribute('aria-pressed', 'false');
+  const hBefore = await page.evaluate(() => document.getElementById('rcv').getBoundingClientRect().height);
+  await page.click('#rPadToggle');
+  await expect(page.locator('#rPad')).toBeHidden();
+  await expect(page.locator('#rPadToggle')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#rPadToggle')).toHaveText('Hiện phím ảo');
+  expect((await dbg(page)).state).toBe('play');
+  const hAfter = await page.evaluate(() => document.getElementById('rcv').getBoundingClientRect().height);
+  expect(hAfter).toBeGreaterThan(hBefore + 150);
+  await page.evaluate(() => window.__rainTest.spawnDrop(42, 0.2));
+  await page.keyboard.press('4');
+  await page.keyboard.press('2');
+  expect((await dbg(page)).solved).toBe(1);
+  await page.reload();
+  await expect(page.locator('#rmenu')).toBeVisible();
+  await page.click('#rStart');
+  await expect(page.locator('#rPad')).toBeHidden();
+  await ctx.close();
+
+  const mCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  await mCtx.addInitScript(muteAudio);
+  const mPage = await mCtx.newPage();
+  await openRain(mPage);
+  await startAt(mPage, 1);
+  await expect(mPage.locator('#rPadToggle')).toBeHidden();
+  await expect(mPage.locator('#rPad')).toBeVisible();
+  await mCtx.close();
+});
