@@ -2,9 +2,9 @@
  "game": "train",
  "n": 1200,
  "from": 1,
- "to": 33,
+ "to": 34,
  "simVersion": 1,
- "generatedOn": "2026-11-24",
+ "generatedOn": "2026-11-25",
  "config": {
   "E1": "A",
   "breatherEasyOk": true,
@@ -76,7 +76,7 @@
    "name": "knobs within hardCap; targets ≥ 44 px & crowding checks (320p, 390p, 667l)",
    "pass": true,
    "fails": [],
-   "note": "cell < disc on 30 levels",
+   "note": "cell < disc on 31 levels",
    "status": "PASS"
   },
   {
@@ -1900,6 +1900,60 @@
      "p3": 0.9658,
      "blowout": 0.3425,
      "clutch": 0.0408
+    }
+   }
+  },
+  {
+   "L": 34,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7387,
+   "D": 1.0667,
+   "bL": -0.936,
+   "knobs": {
+    "stations": 15,
+    "base": 3.18,
+    "speedF": 0.32,
+    "burstP": 0.18,
+    "twoTone": 0,
+    "speedVar": 0.13
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.5333,
+     "ci": [
+      0.505,
+      0.5614
+     ],
+     "acc": 0.6993,
+     "msMedian": 114966,
+     "p3": 0.7725,
+     "blowout": 0.0408,
+     "clutch": 0.12
+    },
+    "median": {
+     "p": 0.7183,
+     "ci": [
+      0.6922,
+      0.7431
+     ],
+     "acc": 0.813,
+     "msMedian": 115276,
+     "p3": 0.9117,
+     "blowout": 0.1433,
+     "clutch": 0.0792
+    },
+    "skilled": {
+     "p": 0.8575,
+     "ci": [
+      0.8366,
+      0.8761
+     ],
+     "acc": 0.8935,
+     "msMedian": 115364,
+     "p3": 0.97,
+     "blowout": 0.33,
+     "clutch": 0.0483
     }
    }
   }

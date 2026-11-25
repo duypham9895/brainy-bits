@@ -2,9 +2,9 @@
  "game": "koi",
  "n": 2000,
  "from": 1,
- "to": 33,
+ "to": 34,
  "simVersion": 1,
- "generatedOn": "2026-11-24",
+ "generatedOn": "2026-11-25",
  "config": {
   "E1": "A",
   "breatherEasyOk": true,
@@ -1900,6 +1900,60 @@
      "p3": 0.996,
      "blowout": 0.465,
      "clutch": 0.349
+    }
+   }
+  },
+  {
+   "L": 34,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7387,
+   "D": 1.0667,
+   "bL": -0.871,
+   "knobs": {
+    "koi": 12,
+    "cd": 3.2,
+    "decoys": 5,
+    "spdMul": 1.4,
+    "turnMul": 1.25,
+    "scatter": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.596,
+     "ci": [
+      0.5743,
+      0.6173
+     ],
+     "acc": 0.8714,
+     "msMedian": 45687,
+     "p3": 0.9535,
+     "blowout": 0.2435,
+     "clutch": 0.3525
+    },
+    "median": {
+     "p": 0.705,
+     "ci": [
+      0.6846,
+      0.7246
+     ],
+     "acc": 0.9045,
+     "msMedian": 43242,
+     "p3": 0.9815,
+     "blowout": 0.3405,
+     "clutch": 0.3645
+    },
+    "skilled": {
+     "p": 0.819,
+     "ci": [
+      0.8015,
+      0.8353
+     ],
+     "acc": 0.9324,
+     "msMedian": 41813,
+     "p3": 0.996,
+     "blowout": 0.448,
+     "clutch": 0.371
     }
    }
   }

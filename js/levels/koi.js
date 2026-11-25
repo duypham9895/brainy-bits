@@ -37,7 +37,7 @@
   const levels = ROWS.map(([koi, decoys, spdMul, turnMul, cd]) => ({ koi, decoys, cd, spdMul, turnMul }));
   if (BBD && BBD.register) BBD.register('koi', {
     version: 2,
-    maxLevel: 33,
+    maxLevel: 34,
     legacyLevels,
     levels,
     knobs: [
