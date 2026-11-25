@@ -188,7 +188,7 @@
     if (!BBD || typeof BBD.register !== 'function' || BBD.games().includes('rain')) return false;
     BBD.register('rain', {
       version: 2,
-      maxLevel: 33,
+      maxLevel: 34,
       // Duy 2026-11-22 (A): rain waives G9 only. Reported WAIVED, never PASS; every other gate still binds.
       gateWaivers: { G9: 'Duy 2026-11-22 (A): under human.mjs the weak bot computes ~1.4x slower than the median bot, '
         + 'so at the L15 peak weak tops out near 0.65 (tier 10) while the median is already 0.97 and fails B; '
