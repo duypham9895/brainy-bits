@@ -156,12 +156,13 @@ test('waiver rejected: a gate that is not waivable (anything but B, or G9 outsid
 test('calibrate: --from > --to (also --from past maxLevel with --to left out) is a usage error, exit 2', async () => {
   const cli = fileURLToPath(new URL('./calibrate.mjs', import.meta.url));
   const run = args => spawnSync(process.execPath, [cli, ...args, '--no-write', '--quiet'], { encoding: 'utf8' });
-  for (const args of [['rain', '--from', '35', '--to', '30'], ['rain', '--from', '35'], ['mem', '--from', '2', '--to', '1']]) {
+  const pastRain = loadBBD().maxLevel('rain') + 1;
+  for (const args of [['rain', '--from', String(pastRain), '--to', '30'], ['rain', '--from', String(pastRain)], ['mem', '--from', '2', '--to', '1']]) {
     const r = run(args);
     assert.equal(r.status, 2, `${args.join(' ')}: ${r.stderr}`);
     assert.match(r.stderr, /empty level range/);
   }
-  await assert.rejects(calibrate('rain', { n: 5, from: 35, write: false, quiet: true }), UsageError);
+  await assert.rejects(calibrate('rain', { n: 5, from: pastRain, write: false, quiet: true }), UsageError);
   assert.equal(run(['rain', '--from', '30', '--to', '30', '--n', '5']).status === 2, false, 'a one-level range is fine');
 });
 
