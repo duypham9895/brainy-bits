@@ -112,12 +112,12 @@ for (const vp of VIEWPORTS) {
       }
     });
 
-    test('mem L15 & L34 (6x6): 36 tiles ≥44px, zero pairwise AABB overlap, no HUD occlusion', async ({ page }) => {
+    test('mem L15 & L35 (6x6): 36 tiles ≥44px, zero pairwise AABB overlap, no HUD occlusion', async ({ page }) => {
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.addInitScript(SEED_INIT);
       await page.goto('/#nho');
       await expect(page.locator('#mmenu')).toBeVisible();
-      for (const L of [15, 34]) {
+      for (const L of [15, 35]) {
         await pickLevel(page, '#mlvgrid', L);
         await page.click('#mStart');
         await expect(page.locator('#mGrid .mtile')).toHaveCount(36);

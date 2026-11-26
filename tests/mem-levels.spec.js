@@ -44,16 +44,16 @@ async function pickLevel(page, L) {
   await page.click('#mStart');
 }
 
-test('engine wired: game plays table v2 from BBD, LV_MAX = 34, in-page fallback = table v1 (legacyLevels)', async ({ page }) => {
+test('engine wired: game plays table v2 from BBD, LV_MAX = 35, in-page fallback = table v1 (legacyLevels)', async ({ page }) => {
   await open(page);
   const r = await page.evaluate(() => {
     const m = window.__mem, now = [], v1 = [];
-    for (let L = 1; L <= 34; L++) { const b = BBD.level('mem', L); now.push([m.spec(L), { t: b.t, size: b.size, show: b.show, disp: b.disp }]); }
+    for (let L = 1; L <= 35; L++) { const b = BBD.level('mem', L); now.push([m.spec(L), { t: b.t, size: b.size, show: b.show, disp: b.disp }]); }
     for (let L = 1; L <= 13; L++) { const o = BBD.spec('mem').legacy[L - 1]; v1.push([m.legacySpec(L), { t: o.t, size: o.size, show: o.show, disp: o.disp }]); }
     return { uses: m.usesBBD, max: m.LV_MAX, bbMax: BB.LV_MAX.mem, bbd: BBD.maxLevel('mem'), ver: BBD.version('mem'), now, v1 };
   });
   expect(r.uses).toBe(true);
-  expect([r.max, r.bbMax, r.bbd, r.ver]).toEqual([34, 34, 34, 2]);
+  expect([r.max, r.bbMax, r.bbd, r.ver]).toEqual([35, 35, 35, 2]);
   for (const [game, bbd] of r.now) expect(game).toEqual(bbd);
   for (const [fallback, v1] of r.v1) expect(fallback).toEqual(v1);
 });
@@ -66,19 +66,20 @@ test('menu copy states a rule that holds for table v2 (no "mỗi level thêm 1 �
   await expect(page.locator('#mLvTxt')).toHaveText('Lưới 4×4 · 3 ô sáng · nhìn 1,9 giây');
 });
 
-test('level grid shows 34 levels; L34 (step) is startable and plays with its BBD parameters', async ({ page }) => {
-  await open(page, { mem_lv: '34' });
-  await expect(page.locator('#mlvgrid .lv')).toHaveCount(34);
-  await pickTile(page, '#mlvgrid', 34);
-  await expect(page.locator('#mlvgrid .lv').nth(33)).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#mlvgrid .lv').nth(33)).toHaveAttribute('aria-label', 'Level 34, 6 ô');
-  await expect(page.locator('#mLvTxt')).toHaveText('Lưới 6×6 · 6 ô sáng · nhìn 2,8 giây');
+test('level grid shows 35 levels; L35 (peak) is startable and plays with its BBD parameters', async ({ page }) => {
+  await open(page, { mem_lv: '35' });
+  await expect(page.locator('#mlvgrid .lv')).toHaveCount(35);
+  await pickTile(page, '#mlvgrid', 35);
+  await expect(page.locator('#mlvgrid .lv').nth(34)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#mlvgrid .lv').nth(34)).toHaveAttribute('aria-label', 'Level 35, 7 ô, màn thử thách');
+  await expect(page.locator('#mLvTxt')).toHaveText('Lưới 6×6 · 7 ô sáng · nhìn 3,1 giây');
+  await expect(page.locator('#mStart')).toHaveText('Chơi Level 35 · thử thách');
   await page.click('#mStart');
   await untilPhase(page, 'input');
-  await expect(page.locator('#mLevel')).toContainText('Level 34');
+  await expect(page.locator('#mLevel')).toContainText('Level 35');
   const s = await page.evaluate(() => ({ level: window.__mem.level, n: document.querySelectorAll('#mGrid .mtile').length,
     lit: window.__mem.targets.length, w: document.querySelector('#mGrid .mtile').getBoundingClientRect().width }));
-  expect(s).toMatchObject({ level: 34, n: 36, lit: 6 });
+  expect(s).toMatchObject({ level: 35, n: 36, lit: 7 });
   expect(s.w).toBeGreaterThanOrEqual(44);
 });
 
@@ -98,7 +99,7 @@ test('v1 progress survives the v2 table: mem_lv = 14 + old stars → 13 levels p
 
 test('corrupt bb_stats and a junk version marker do not break the menu', async ({ page }) => {
   await open(page, { mem_lv: '4', bb_stats: '{bad', bb_tablev_mem: 'zz' });
-  await expect(page.locator('#mlvgrid .lv')).toHaveCount(34);
+  await expect(page.locator('#mlvgrid .lv')).toHaveCount(35);
   await expect(page.locator('#mlvgrid .lv.done')).toHaveCount(3);
   expect(await page.evaluate(() => localStorage.getItem('bb_tablev_mem'))).toBe('2');
 });
@@ -116,7 +117,7 @@ test('next-level flow: pass L13 → L14 → result names what changes next', asy
   expect(await page.evaluate(() => localStorage.getItem('mem_lv'))).toBe('15');
 });
 
-test('finished state after L34: L30 → L31 → L32 → L33 → L34, L34 records stars and shows "Đã qua hết 34 level"', async ({ page }) => {
+test('finished state after L35: L30 → L31 → L32 → L33 → L34 → L35, L35 records stars and shows "Đã qua hết 35 level"', async ({ page }) => {
   await open(page, { mem_lv: '30' });
   await pickLevel(page, 30);
   await winRound(page); await winRound(page);
@@ -140,9 +141,14 @@ test('finished state after L34: L30 → L31 → L32 → L33 → L34, L34 records
   await expect(page.locator('#mrNext')).toHaveText('Level 34 →');
   await page.click('#mrNext');
   await winRound(page); await winRound(page);
-  await expect(page.locator('#mrTitle')).toContainText('Qua Level 34, level cuối');
-  await expect(page.locator('#mrNext')).toHaveText('Chơi lại Level 34');
+  await expect(page.locator('#mrTitle')).toHaveText('Qua Level 34! 🎉');
+  await expect(page.locator('#mrDetail')).toContainText('Level 35 có 7 ô sáng.');
+  await expect(page.locator('#mrNext')).toHaveText('Level 35 · thử thách →');
+  await page.click('#mrNext');
+  await winRound(page); await winRound(page);
+  await expect(page.locator('#mrTitle')).toContainText('Qua Level 35, level cuối');
+  await expect(page.locator('#mrNext')).toHaveText('Chơi lại Level 35');
   await page.click('#mrMenu');
-  await expect(page.locator('#mBestTxt')).toHaveText('Đã qua hết 34 level');
-  expect(await page.evaluate(() => [window.memBest(), BB.gameStats('mem').best, localStorage.getItem('mem_lv'), BB.gameStats('mem').stars[34]])).toEqual([34, 34, '35', 3]);
+  await expect(page.locator('#mBestTxt')).toHaveText('Đã qua hết 35 level');
+  expect(await page.evaluate(() => [window.memBest(), BB.gameStats('mem').best, localStorage.getItem('mem_lv'), BB.gameStats('mem').stars[35]])).toEqual([35, 35, '36', 3]);
 });
