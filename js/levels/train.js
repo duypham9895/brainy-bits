@@ -64,7 +64,7 @@
   if (BBD && BBD.register) BBD.register('train', {
     version: 2,          // v1 = legacy 11 levels + generated 12..30. Level numbers keep their meaning, so the
                          // default migration (keep best and stars as they are) is the right one: no `migrate`.
-    maxLevel: 34,
+    maxLevel: 35,
     legacyLevels,
     levels,
     knobs: [
@@ -78,12 +78,14 @@
     priority: ['base', 'burstP'],
     lighterKnobs: ['base'],
     relief: [{ knob: 'base', by: 0.35 }],
-    peak: [{ knob: 'base', by: 0.20 }],
+    // 0.14 (was 0.20, daily 2026-11-26): L35 is the first generated peak, so L1–34 stay bit-exact unchanged;
+    // keeps L35 right on p* (0.676 vs 0.676) and keeps CI peak L45 inside gate B (0.611 vs p* 0.651).
+    peak: [{ knob: 'base', by: 0.14 }],
     // L30 is a peak: played at 2.98 / burstP 0.20, while its `levels` row keeps the step trend 3.22 so L31+
     // continues from the trend, not from a peak (a peak anchor would make L32 harder than L30).
     overrides: { 30: { base: 2.98, burstP: 0.20 } },
     derive: r => ({ speedVar: r.legacy ? 0 : (r.burstP > 0 ? +(Math.min(0.14, 0.06 + r.burstP * 0.4)).toFixed(2) : 0) }),
-    // Full N (1200), 2026-11-25: every gate green on L1–34 and on generated L35–44; G7 SKIP. No gate waivers.
+    // Full N (1200), 2026-11-26: every gate green on L1–35 and on generated L36–45; G7 SKIP. No gate waivers.
     meta: { table: 'js/levels/train.js', game: 'js/train.js + js/train-map.js',
       touch: 'tap target = nearest switch within max(32, TR+16) px, clipped by the nearest switch ≥ √2 cells away: ≥ 54 px at 320 px; drawn disc ≥ 44 px (A-5, js/train.js DISC_MIN_R)' },
   });
