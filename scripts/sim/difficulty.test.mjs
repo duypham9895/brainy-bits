@@ -376,7 +376,7 @@ test('maxLevel follows E2 and content-only games refuse to invent levels', () =>
   assert.equal(B.maxLevel('word'), 50);
   B.CONFIG.E2_WORD_LEVELS = 30; assert.equal(B.maxLevel('word'), 30);
   B.CONFIG.E2_WORD_LEVELS = 40; assert.equal(B.maxLevel('word'), 40);
-  const MAX = { train: 34, koi: 34, mem: 34, rain: 34 };
+  const MAX = { train: 35, koi: 35, mem: 35, rain: 35 };
   for (const g of KNOB_GAMES) assert.equal(B.maxLevel(g), MAX[g], g);
   assert.throws(() => B.level('word', 51), /content-only/);   // vm realm: match by message
   assert.throws(() => B.level('mem', 0), /integer ≥ 1/);
@@ -464,8 +464,8 @@ test('mem v2: zero failed gates, zero waivers, weak ≥ 0.90 on L1–5 at N=1200
 
 // "+10 levels from the rule alone": generated L31–40 (engine knobs, no authored rows) pass every gate.
 // Run from L26 so G2/G3 also judge the L30 → L31 seam against the authored rows.
-test('mem L31–44 generated from the engine: zero failed gates, zero waivers at N=1200', async () => {
-  const r = await calibrate('mem', { n: 1200, from: 26, to: 44, write: false, quiet: true });
+test('mem L31–45 generated from the engine: zero failed gates, zero waivers at N=1200', async () => {
+  const r = await calibrate('mem', { n: 1200, from: 26, to: 45, write: false, quiet: true });
   assert.deepEqual(failsByGate(r), {});
   assert.deepEqual(r.waived, []);
   assert.equal(r.gates.find(g => g.id === 'G1').status, 'SKIP', 'L1–10 not in this run');
@@ -536,9 +536,9 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
   // tiles or gathers them again. At t ≤ 7 disp is a real step in the sim (s6 t4: median 87% at disp 0 → 82%
   // at 0.35); the 2026-11-21 review that disp is "not a step" measured t = 15, where tiles chunk anyway.
   const harder = (a, b) => a.t > b.t || (a.t === b.t && (a.size > b.size || a.disp > b.disp + 1e-9));
-  test('v2: L1..30 authored, max 34, version 2, show = 1 + 0.3·t, tiles fit, size ≤ 6', () => {
+  test('v2: L1..30 authored, max 35, version 2, show = 1 + 0.3·t, tiles fit, size ≤ 6', () => {
     const B = loadBBD();
-    assert.equal(B.maxLevel('mem'), 34); assert.equal(B.version('mem'), 2); assert.equal(B.authoredCount('mem'), 30);
+    assert.equal(B.maxLevel('mem'), 35); assert.equal(B.version('mem'), 2); assert.equal(B.authoredCount('mem'), 30);
     for (let L = 1; L <= 30; L++) {
       const r = B.level('mem', L);
       assert.equal(r.legacy, false, `L${L}`); assert.equal(r.authored, true, `L${L}`);
@@ -699,7 +699,7 @@ describe('train: table v2, one template for every level', () => {
   test('train v2: L1..30 authored, keyed by level number, on the sawtooth; touch targets ≥ 44 px', async () => {
     const B = loadBBD(), A = await import(new URL('./adapters/train.mjs', import.meta.url).href);
     assert.equal(B.version('train'), 2);
-    assert.equal(B.maxLevel('train'), 34);
+    assert.equal(B.maxLevel('train'), 35);
     assert.equal(B.authoredCount('train'), 30);
     assert.equal(B.level('train', 1).stations, 5);
     for (let L = 1; L <= 30; L++) {
@@ -810,10 +810,10 @@ describe('train: table v2, one template for every level', () => {
     assert.equal(n.ls.get('bb_tablev_train'), '3');
   });
 
-  // Zero failures and zero waivers at full N on the authored L1..30 and the generated L31..44 ("+10 levels" from
+  // Zero failures and zero waivers at full N on the authored L1..30 and the generated L31..45 ("+10 levels" from
   // the rule alone). One run so G2/G3 also see the L30 → L31 seam. G7 stays SKIP (pass: null).
-  test('train: every gate green at N=1200 on L1..44, no waivers', async () => {
-    const r = await calibrate('train', { n: 1200, to: 44, write: false, quiet: true });
+  test('train: every gate green at N=1200 on L1..45, no waivers', async () => {
+    const r = await calibrate('train', { n: 1200, to: 45, write: false, quiet: true });
     assert.deepEqual(failsByGate(r), {});
     assert.deepEqual(r.waived, []);
     assert.equal(r.ok, true);
