@@ -459,7 +459,11 @@ test.describe('Track 2 Core & Meta Engagement Mechanics', () => {
             const s = d.querySelector(':scope > summary.lvchap-sum');
             const sr = s.getBoundingClientRect();
             const hasHeading = !!s.querySelector('h1, h2, h3, h4, h5, h6');
-            return { h: sr.height, hasHeading, open: d.open, count: d.querySelectorAll('.lv').length };
+            return {
+              h: sr.height, hasHeading, open: d.open, count: d.querySelectorAll('.lv').length,
+              title: s.querySelector('.lvchap-title')?.textContent?.trim() || '',
+              aria: s.getAttribute('aria-label') || '',
+            };
           });
           const chapRects = chaps.map(d => {
             const r = d.getBoundingClientRect();
@@ -486,6 +490,10 @@ test.describe('Track 2 Core & Meta Engagement Mechanics', () => {
         for (const s of audit.sums) {
           expect(s.h, `${m.hash} summary >= 44px`).toBeGreaterThanOrEqual(44);
           expect(s.hasHeading, `${m.hash} no heading in summary`).toBe(false);
+          if (s.count === 1) {
+            expect(s.title, `${m.hash} single-level chapter has no duplicate range`).not.toMatch(/L(\d+)–\1$/);
+            expect(s.aria, `${m.hash} single-level chapter aria-label has no duplicate range`).not.toMatch(/Level (\d+) đến \1/);
+          }
         }
         expect(siblingOverlaps(audit.chapRects), `${m.hash} chapter overlap`).toEqual([]);
         expect(siblingOverlaps(audit.openTiles), `${m.hash} open tile overlap`).toEqual([]);

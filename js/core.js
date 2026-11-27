@@ -397,8 +397,10 @@ function renderLevelChapters(grid, { maxLevel, chosen, isDone, buildTile, resetO
     for (let L = start; L <= end; L++) if (isDone(L)) doneN++;
     const sum = document.createElement('summary');
     sum.className = 'lvchap-sum';
-    sum.setAttribute('aria-label', `Chặng ${ci + 1}, Level ${start} đến ${end}, đã qua ${doneN} trên ${len}`);
-    sum.innerHTML = `<span class="lvchap-title">Chặng ${ci + 1}: L${start}–${end}</span>`
+    const rangeAria = start === end ? `Level ${start}` : `Level ${start} đến ${end}`;
+    const rangeShort = start === end ? `L${start}` : `L${start}–${end}`;
+    sum.setAttribute('aria-label', `Chặng ${ci + 1}, ${rangeAria}, đã qua ${doneN} trên ${len}`);
+    sum.innerHTML = `<span class="lvchap-title">Chặng ${ci + 1}: ${rangeShort}</span>`
       + `<span class="lvchap-prog${doneN === len ? ' all' : ''}">${doneN}/${len}</span>`;
     const inner = document.createElement('div');
     inner.className = 'lvchap-grid';
