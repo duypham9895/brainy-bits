@@ -75,11 +75,11 @@ for (const vp of VIEWPORTS) {
       }
     });
 
-    test('koi L15 & L35: fish inside pond, ≥48x44 hit ellipse, bounded average crowding', async ({ page }) => {
+    test('koi L15 & L36: fish inside pond, ≥48x44 hit ellipse, bounded average crowding', async ({ page }) => {
       await page.addInitScript(SEED_INIT);
       await page.goto('/#koi');
       await expect(page.locator('#kmenu')).toBeVisible();
-      for (const L of [15, 35]) {
+      for (const L of [15, 36]) {
         await pickLevel(page, '#klvgrid', L);
         await page.click('#kStartBtn');
         expect(await checkCanvasAndViewport(page, 'kcv', '#khud')).toEqual([]);
