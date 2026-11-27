@@ -21,7 +21,7 @@ test('BBD loads as a classic script without BB and matches the Node tables', asy
   expect(errors).toEqual([]);
   expect(r.hasBB).toBe(false);
   expect(r.games.sort()).toEqual(['koi', 'mem', 'rain', 'train', 'word']);
-  expect(r.max).toEqual({ train: 36, koi: 36, mem: 36, rain: 35, word: 50 });
+  expect(r.max).toEqual({ train: 36, koi: 36, mem: 36, rain: 36, word: 50 });
   expect(r.mem13).toMatchObject({ t: 15, size: 6, show: 5.5 });
   expect(r.mem30).toMatchObject({ t: 7, size: 6, kind: 'peak', legacy: false, authored: true });   // mem table v2
   expect(r.p30).toBeCloseTo(0.69, 6);

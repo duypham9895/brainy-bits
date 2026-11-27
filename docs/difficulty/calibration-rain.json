@@ -2,9 +2,9 @@
  "game": "rain",
  "n": 1200,
  "from": 1,
- "to": 35,
+ "to": 36,
  "simVersion": 1,
- "generatedOn": "2026-11-26",
+ "generatedOn": "2026-11-27",
  "config": {
   "E1": "A",
   "breatherEasyOk": true,
@@ -2015,6 +2015,60 @@
      "p3": 1,
      "blowout": 0.8833,
      "clutch": 0.0275
+    }
+   }
+  },
+  {
+   "L": 36,
+   "kind": "breather",
+   "legacy": false,
+   "pStar": 0.7332,
+   "D": 1.0986,
+   "bL": -3.566,
+   "knobs": {
+    "ops": 14,
+    "fall": 8.23,
+    "every": 3.02,
+    "target": 10,
+    "lives": 4,
+    "storm": 0
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.74,
+     "ci": [
+      0.7144,
+      0.764
+     ],
+     "acc": 0.9174,
+     "msMedian": 33953,
+     "p3": 0.99,
+     "blowout": 0.5133,
+     "clutch": 0.0608
+    },
+    "median": {
+     "p": 0.9725,
+     "ci": [
+      0.9616,
+      0.9804
+     ],
+     "acc": 0.9442,
+     "msMedian": 31294,
+     "p3": 1,
+     "blowout": 0.9208,
+     "clutch": 0.005
+    },
+    "skilled": {
+     "p": 0.9992,
+     "ci": [
+      0.9953,
+      0.9999
+     ],
+     "acc": 0.9672,
+     "msMedian": 30158,
+     "p3": 1,
+     "blowout": 0.9958,
+     "clutch": 0
     }
    }
   }
