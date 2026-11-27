@@ -56,7 +56,7 @@
   const levels = V2.map(([size, t, disp]) => ({ size, t, k: 0.3, disp }));
   if (BBD && BBD.register) BBD.register('mem', {
     version: 2,
-    maxLevel: 35,
+    maxLevel: 36,
     legacyLevels,
     levels,
     // Knobs below drive L31+ only and follow the same template as rows 6–30: steps hold 6 tiles and spread
@@ -66,7 +66,7 @@
     // So generated steps are never easier than L29, and the L31 breather (6−1 tiles, disp 0.1−0.05) equals L26.
     // t and k move on a slow 'quad' curve: p* falls only ~0.3 points a level past L30 and +1 tile costs the
     // median ~4 points, so t holds 6 until ~L51, then climbs to its cap by ~L110 (BBD.exhausted by L120).
-    // Calibrated green at N=1200 for L31–45. Run calibrate before raising maxLevel past 45 (DIFFICULTY-RULES §2).
+    // Calibrated green at N=1200 for L31–46. Run calibrate before raising maxLevel past 46 (DIFFICULTY-RULES §2).
     knobs: [
       { name: 't', int: true, start: 6, startAt: 30, max: 6.12, hardCap: 15, curve: 'quad', source: 'MERGED-SPEC §4.2 mem; R:cognitive (Luck & Vogel 1997, Cowan 2001)' },
       { name: 'size', int: true, max: 6, hardCap: 6, source: 'A=B: size ≤ 6 keeps tiles ≥ 44 px at 320 px (css/mem.css)' },
@@ -74,7 +74,9 @@
       // in the sim. Floor 0.18 is a guess (A), to be fit from playtest.
       { name: 'k', max: 0.298, hardCap: 0.18, step: 0.005, notch: 0.02, curve: 'quad', source: 'A, floor unsourced; values from calibrate.mjs' },
       // disp = chance a lit tile is forced non-adjacent to the others (blocks chunking) (B, R:simulation chunking).
-      { name: 'disp', off: 0, min: 0, start: 0.1, startAt: 30, max: 0.13, hardCap: 0.50, step: 0.05, curve: 'quad', source: 'B, R:simulation chunking' },
+      // 0.125 (was 0.13, daily 2026-11-27): leaves L1–45 bit-exact unchanged; holds breather L46 at disp 0.10
+      // so weak clears G4 (0.606 vs 0.600) while still reaching hardCap 0.50 before L120.
+      { name: 'disp', off: 0, min: 0, start: 0.1, startAt: 30, max: 0.125, hardCap: 0.50, step: 0.05, curve: 'quad', source: 'B, R:simulation chunking' },
     ],
     priority: ['t', 'disp', 'k'],
     lighterKnobs: ['t', 'k'],

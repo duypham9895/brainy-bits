@@ -64,7 +64,7 @@
   if (BBD && BBD.register) BBD.register('train', {
     version: 2,          // v1 = legacy 11 levels + generated 12..30. Level numbers keep their meaning, so the
                          // default migration (keep best and stars as they are) is the right one: no `migrate`.
-    maxLevel: 35,
+    maxLevel: 36,
     legacyLevels,
     levels,
     knobs: [
@@ -85,7 +85,7 @@
     // continues from the trend, not from a peak (a peak anchor would make L32 harder than L30).
     overrides: { 30: { base: 2.98, burstP: 0.20 } },
     derive: r => ({ speedVar: r.legacy ? 0 : (r.burstP > 0 ? +(Math.min(0.14, 0.06 + r.burstP * 0.4)).toFixed(2) : 0) }),
-    // Full N (1200), 2026-11-26: every gate green on L1–35 and on generated L36–45; G7 SKIP. No gate waivers.
+    // Full N (1200), 2026-11-27: every gate green on L1–36 and on generated L37–46; G7 SKIP. No gate waivers.
     meta: { table: 'js/levels/train.js', game: 'js/train.js + js/train-map.js',
       touch: 'tap target = nearest switch within max(32, TR+16) px, clipped by the nearest switch ≥ √2 cells away: ≥ 54 px at 320 px; drawn disc ≥ 44 px (A-5, js/train.js DISC_MIN_R)' },
   });

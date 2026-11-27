@@ -37,7 +37,7 @@
   const levels = ROWS.map(([koi, decoys, spdMul, turnMul, cd]) => ({ koi, decoys, cd, spdMul, turnMul }));
   if (BBD && BBD.register) BBD.register('koi', {
     version: 2,
-    maxLevel: 35,
+    maxLevel: 36,
     legacyLevels,
     levels,
     knobs: [
@@ -48,9 +48,13 @@
       // same level L43 where spdMul steps to 1.45 (which failed B at L43: median 0.661 vs p* 0.715).
       { name: 'koi', int: true, start: 12, startAt: 30, max: 12.15, hardCap: 15, curve: 'quad', source: 'code: koi.js params()' },
       { name: 'cd', max: 3.2, hardCap: 3.2, step: 0.05, source: 'code: koi.js:48 cap' },
-      { name: 'decoys', int: true, max: 5.4, hardCap: 6, curve: 'linear', changeOn: 'breather', source: 'A, cap is a guess' },
+      // 5.3 (was 5.4, daily 2026-11-27): leaves L1–45 bit-exact unchanged; delays the 6th decoy from breather L46
+      // to L51 so L46 does not drop weak below G4 (was 0.549).
+      { name: 'decoys', int: true, max: 5.3, hardCap: 6, curve: 'linear', changeOn: 'breather', source: 'A, cap is a guess' },
       // Speed trades against target count (R:cognitive, Alvarez & Franconeri 2007).
-      { name: 'spdMul', max: 1.42, hardCap: 1.5, step: 0.05, curve: 'linear', source: 'A, cap is a guess' },
+      // 1.415 (was 1.42, daily 2026-11-27): leaves L1–42 (including all shipped L1–35 & L36) bit-exact unchanged;
+      // keeps breather L46 at ×1.30 so weak clears G4 (0.623 vs 0.600) while L47+ climbs to ×1.45.
+      { name: 'spdMul', max: 1.415, hardCap: 1.5, step: 0.05, curve: 'linear', source: 'A, cap is a guess' },
       // +0.05 at every breather from L31 (1.25 on L31–35, 1.3 on L36–40, …, cap 1.6 at L66), so each 5-level block
       // turns the fish a little more than the one before and every peak (+0.1 on top) beats the previous one.
       // Turning barely moves the simulated pass rate (±1 point per 0.1), so it is the cheap knob for "harder".

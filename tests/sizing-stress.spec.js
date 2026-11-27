@@ -47,11 +47,11 @@ for (const vp of VIEWPORTS) {
   test.describe(`sizing stress @ ${vp.name} (${vp.width}x${vp.height})`, () => {
     test.use({ viewport: { width: vp.width, height: vp.height }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 
-    test('train L15 & L35 (15 stations): switch discs inside canvas, ≥44px apart, no HUD overlap', async ({ page }) => {
+    test('train L15 & L36 (15 stations): switch discs inside canvas, ≥44px apart, no HUD overlap', async ({ page }) => {
       await page.addInitScript(SEED_INIT);
       await page.goto('/#tau');
       await expect(page.locator('#menu')).toBeVisible();
-      for (const L of [15, 35]) {
+      for (const L of [15, 36]) {
         await pickLevel(page, '#lvgrid', L);
         await page.click('#startBtn');
         await page.waitForFunction(() => window.__rtd && window.__rtd.map && window.__rtd.map.switches.length >= 2);
@@ -75,11 +75,11 @@ for (const vp of VIEWPORTS) {
       }
     });
 
-    test('koi L15 & L35: fish inside pond, ≥48x44 hit ellipse, bounded average crowding', async ({ page }) => {
+    test('koi L15 & L36: fish inside pond, ≥48x44 hit ellipse, bounded average crowding', async ({ page }) => {
       await page.addInitScript(SEED_INIT);
       await page.goto('/#koi');
       await expect(page.locator('#kmenu')).toBeVisible();
-      for (const L of [15, 35]) {
+      for (const L of [15, 36]) {
         await pickLevel(page, '#klvgrid', L);
         await page.click('#kStartBtn');
         expect(await checkCanvasAndViewport(page, 'kcv', '#khud')).toEqual([]);
@@ -112,12 +112,12 @@ for (const vp of VIEWPORTS) {
       }
     });
 
-    test('mem L15 & L35 (6x6): 36 tiles ≥44px, zero pairwise AABB overlap, no HUD occlusion', async ({ page }) => {
+    test('mem L15 & L36 (6x6): 36 tiles ≥44px, zero pairwise AABB overlap, no HUD occlusion', async ({ page }) => {
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.addInitScript(SEED_INIT);
       await page.goto('/#nho');
       await expect(page.locator('#mmenu')).toBeVisible();
-      for (const L of [15, 35]) {
+      for (const L of [15, 36]) {
         await pickLevel(page, '#mlvgrid', L);
         await page.click('#mStart');
         await expect(page.locator('#mGrid .mtile')).toHaveCount(36);
@@ -145,12 +145,12 @@ for (const vp of VIEWPORTS) {
       }
     });
 
-    test('rain L15 & L35: natural spawns stay inside canvas, pad keys ≥28x44 with zero overlap', async ({ page }) => {
+    test('rain L15 & L36: natural spawns stay inside canvas, pad keys ≥28x44 with zero overlap', async ({ page }) => {
       await page.clock.install();
       await page.addInitScript(SEED_INIT);
       await page.goto('/#mua');
       await expect(page.locator('#rmenu')).toBeVisible();
-      for (const L of [15, 35]) {
+      for (const L of [15, 36]) {
         await pickLevel(page, '#rlvgrid', L);
         await page.click('#rStart');
         await page.clock.runFor(6500);
