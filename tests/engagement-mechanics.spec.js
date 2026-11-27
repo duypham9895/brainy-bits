@@ -491,8 +491,11 @@ test.describe('Track 2 Core & Meta Engagement Mechanics', () => {
           expect(s.h, `${m.hash} summary >= 44px`).toBeGreaterThanOrEqual(44);
           expect(s.hasHeading, `${m.hash} no heading in summary`).toBe(false);
           if (s.count === 1) {
-            expect(s.title, `${m.hash} single-level chapter has no duplicate range`).not.toMatch(/L(\d+)–\1$/);
-            expect(s.aria, `${m.hash} single-level chapter aria-label has no duplicate range`).not.toMatch(/Level (\d+) đến \1/);
+            expect(s.title, `${m.hash} single-level chapter format`).toMatch(/^Chặng \d+: L\d+$/);
+            expect(s.aria, `${m.hash} single-level chapter aria-label format`).toMatch(/^Chặng \d+, Level \d+, đã qua \d+ trên 1$/);
+          } else {
+            expect(s.title, `${m.hash} multi-level chapter format`).toMatch(/^Chặng \d+: L\d+–\d+$/);
+            expect(s.aria, `${m.hash} multi-level chapter aria-label format`).toMatch(/^Chặng \d+, Level \d+ đến \d+, đã qua \d+ trên \d+$/);
           }
         }
         expect(siblingOverlaps(audit.chapRects), `${m.hash} chapter overlap`).toEqual([]);
