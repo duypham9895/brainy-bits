@@ -47,11 +47,11 @@ for (const vp of VIEWPORTS) {
   test.describe(`sizing stress @ ${vp.name} (${vp.width}x${vp.height})`, () => {
     test.use({ viewport: { width: vp.width, height: vp.height }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 
-    test('train L15 & L35 (15 stations): switch discs inside canvas, ≥44px apart, no HUD overlap', async ({ page }) => {
+    test('train L15 & L36 (15 stations): switch discs inside canvas, ≥44px apart, no HUD overlap', async ({ page }) => {
       await page.addInitScript(SEED_INIT);
       await page.goto('/#tau');
       await expect(page.locator('#menu')).toBeVisible();
-      for (const L of [15, 35]) {
+      for (const L of [15, 36]) {
         await pickLevel(page, '#lvgrid', L);
         await page.click('#startBtn');
         await page.waitForFunction(() => window.__rtd && window.__rtd.map && window.__rtd.map.switches.length >= 2);
