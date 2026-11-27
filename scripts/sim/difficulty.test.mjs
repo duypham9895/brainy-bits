@@ -376,7 +376,7 @@ test('maxLevel follows E2 and content-only games refuse to invent levels', () =>
   assert.equal(B.maxLevel('word'), 50);
   B.CONFIG.E2_WORD_LEVELS = 30; assert.equal(B.maxLevel('word'), 30);
   B.CONFIG.E2_WORD_LEVELS = 40; assert.equal(B.maxLevel('word'), 40);
-  const MAX = { train: 36, koi: 36, mem: 35, rain: 35 };
+  const MAX = { train: 36, koi: 36, mem: 36, rain: 35 };
   for (const g of KNOB_GAMES) assert.equal(B.maxLevel(g), MAX[g], g);
   assert.throws(() => B.level('word', 51), /content-only/);   // vm realm: match by message
   assert.throws(() => B.level('mem', 0), /integer ≥ 1/);
@@ -464,8 +464,8 @@ test('mem v2: zero failed gates, zero waivers, weak ≥ 0.90 on L1–5 at N=1200
 
 // "+10 levels from the rule alone": generated L31–40 (engine knobs, no authored rows) pass every gate.
 // Run from L26 so G2/G3 also judge the L30 → L31 seam against the authored rows.
-test('mem L31–45 generated from the engine: zero failed gates, zero waivers at N=1200', async () => {
-  const r = await calibrate('mem', { n: 1200, from: 26, to: 45, write: false, quiet: true });
+test('mem L31–46 generated from the engine: zero failed gates, zero waivers at N=1200', async () => {
+  const r = await calibrate('mem', { n: 1200, from: 26, to: 46, write: false, quiet: true });
   assert.deepEqual(failsByGate(r), {});
   assert.deepEqual(r.waived, []);
   assert.equal(r.gates.find(g => g.id === 'G1').status, 'SKIP', 'L1–10 not in this run');
@@ -536,9 +536,9 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
   // tiles or gathers them again. At t ≤ 7 disp is a real step in the sim (s6 t4: median 87% at disp 0 → 82%
   // at 0.35); the 2026-11-21 review that disp is "not a step" measured t = 15, where tiles chunk anyway.
   const harder = (a, b) => a.t > b.t || (a.t === b.t && (a.size > b.size || a.disp > b.disp + 1e-9));
-  test('v2: L1..30 authored, max 35, version 2, show = 1 + 0.3·t, tiles fit, size ≤ 6', () => {
+  test('v2: L1..30 authored, max 36, version 2, show = 1 + 0.3·t, tiles fit, size ≤ 6', () => {
     const B = loadBBD();
-    assert.equal(B.maxLevel('mem'), 35); assert.equal(B.version('mem'), 2); assert.equal(B.authoredCount('mem'), 30);
+    assert.equal(B.maxLevel('mem'), 36); assert.equal(B.version('mem'), 2); assert.equal(B.authoredCount('mem'), 30);
     for (let L = 1; L <= 30; L++) {
       const r = B.level('mem', L);
       assert.equal(r.legacy, false, `L${L}`); assert.equal(r.authored, true, `L${L}`);
@@ -570,13 +570,13 @@ describe('mem: table v2 (one sawtooth template L1..30), v1 kept as legacyLevels'
     assert.ok(range(1, 30).every(L => B.level('mem', L).disp <= 0.5), 'disp within hardCap');
   });
   // L31+ follows the table template, anchored at the last step row (L29), not at the L30 peak.
-  // Pinned rows = the ones calibrated green at N=1200 (calibrate mem --from 26 --to 45, 2026-11-22: disp start 0.1).
-  test('L31–45: same template as the table (t 6 steps, peak +1 tile, breather −1 tile and gathered)', () => {
+  // Pinned rows = the ones calibrated green at N=1200 (calibrate mem --from 26 --to 46, 2026-11-27: disp start 0.1, max 0.125).
+  test('L31–46: same template as the table (t 6 steps, peak +1 tile, breather −1 tile and gathered)', () => {
     const B = loadBBD();
-    const got = []; for (let L = 31; L <= 45; L++) { const r = B.level('mem', L); got.push([r.t, r.disp]); }
+    const got = []; for (let L = 31; L <= 46; L++) { const r = B.level('mem', L); got.push([r.t, r.disp]); }
     assert.deepEqual(got, [[5, 0.05], [6, 0.1], [6, 0.1], [6, 0.1], [7, 0.1], [5, 0.05], [6, 0.1], [6, 0.1], [6, 0.1], [7, 0.15],
-      [5, 0.1], [6, 0.15], [6, 0.15], [6, 0.15], [7, 0.15]]);
-    for (let L = 31; L <= 45; L++) {
+      [5, 0.1], [6, 0.15], [6, 0.15], [6, 0.15], [7, 0.15], [5, 0.1]]);
+    for (let L = 31; L <= 46; L++) {
       const r = B.level('mem', L), p = B.level('mem', L - 1);
       assert.equal(r.authored, undefined); assert.equal(r.size, 6); assert.ok(r.k >= 0.29, `L${L} k`);
       if (r.kind === 'peak') assert.equal(r.t, p.t + 1, `L${L} peak adds one tile`);
