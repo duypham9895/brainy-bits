@@ -145,12 +145,12 @@ for (const vp of VIEWPORTS) {
       }
     });
 
-    test('rain L15 & L36: natural spawns stay inside canvas, pad keys ≥28x44 with zero overlap', async ({ page }) => {
+    test('rain L15 & L37: natural spawns stay inside canvas, pad keys ≥28x44 with zero overlap', async ({ page }) => {
       await page.clock.install();
       await page.addInitScript(SEED_INIT);
       await page.goto('/#mua');
       await expect(page.locator('#rmenu')).toBeVisible();
-      for (const L of [15, 36]) {
+      for (const L of [15, 37]) {
         await pickLevel(page, '#rlvgrid', L);
         await page.click('#rStart');
         await page.clock.runFor(6500);

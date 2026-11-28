@@ -110,7 +110,7 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
   // a 10-drop chain, 4 lives instead of 3, slower rain than the peak before.
   test('L1..30 (v2): tiers per block, breathers = 10 drops + 4 lives + slower rain, steps never get easier, caps hold', () => {
     const B = loadBBD();
-    assert.equal(B.maxLevel('rain'), 36);
+    assert.equal(B.maxLevel('rain'), 37);
     const ops = Array.from({ length: 30 }, (_, i) => B.level('rain', i + 1).ops);
     assert.deepEqual(ops, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 11, 11, 11, 11, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14]);
     for (let L = 7; L <= 30; L++) {
@@ -212,10 +212,10 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
   // Review MUST 1 (2026-11-21): "thêm 10 màn" must work from the rule. L31+ come from the engine: steps follow p*
   // (every −0.005 s and fall −0.0105 s per level, 0.01 s grid), peaks add every −0.08 s and fall −0.30 s,
   // breathers keep the E4 net. Only the breather gap (Duy's open decision) and seed noise may fail.
-  // Checked to L46: from L50 the p* floor (0.65, E1 = A) flattens peak targets and peaks fall ~5 points below p*.
-  test('L31..46 from the engine: peaks harder than the step before, steps inside B, breathers keep the net', async () => {
+  // Checked to L47: from L50 the p* floor (0.65, E1 = A) flattens peak targets and peaks fall ~5 points below p*.
+  test('L31..47 from the engine: peaks harder than the step before, steps inside B, breathers keep the net', async () => {
     const B = loadBBD();
-    for (let L = 31; L <= 46; L++) {
+    for (let L = 31; L <= 47; L++) {
       const r = B.level('rain', L), p = B.level('rain', L - 1);
       assert.equal(r.authored, undefined, `L${L} generated`);
       if (r.kind === 'peak') assert.ok(r.every < p.every && r.fall < p.fall, `L${L} peak harder than step L${L - 1}`);
@@ -230,7 +230,7 @@ describe('rain: game reads BBD, legacy unchanged, gates', () => {
     }
     // N=4000: at N=1200 G2 L37→L38 flips on seed (the same spec measures 69.6% on the L37 seeds and 75.1% on the
     // L38 seeds). A bigger N narrows the G2 tolerance, so this is stricter. CI runs the same N.
-    const r = await calibrate('rain', { n: 4000, from: 31, to: 46, write: false, quiet: true });
+    const r = await calibrate('rain', { n: 4000, from: 31, to: 47, write: false, quiet: true });
     assert.deepEqual(failsByGate(r), {});
     for (const id of ['G4', 'G6', 'G8']) assert.equal(r.gates.find(g => g.id === id).pass, true, id);
     // L1–10, L15 and L30 are not in this run: G1, G9 and G5 report SKIP (pass: null), never PASS or WAIVED (review 2026-11-22).
