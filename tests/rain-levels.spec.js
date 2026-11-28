@@ -10,7 +10,7 @@ async function openRain(page, setup) {
   if (setup) await page.addInitScript(setup);
   await page.goto('/#mua');
   await expect(page.locator('#rmenu')).toBeVisible();
-  await expect(page.locator('#rlvgrid .lv')).toHaveCount(36);
+  await expect(page.locator('#rlvgrid .lv')).toHaveCount(37);
 }
 const dbg = page => page.evaluate(() => window.__rainDebug());
 
@@ -32,11 +32,11 @@ async function winRound(page) {
   }
 }
 
-test('grid shows 36 levels; hub and daily agree on 36', async ({ page }) => {
+test('grid shows 37 levels; hub and daily agree on 37', async ({ page }) => {
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await openRain(page);
   const r = await page.evaluate(() => ({ core: window.BB.LV_MAX.rain, bbd: window.BBD.maxLevel('rain'), t: window.__rainTest.lvMax() }));
-  expect(r).toEqual({ core: 36, bbd: 36, t: 36 });
+  expect(r).toEqual({ core: 37, bbd: 37, t: 37 });
   await expect(page.locator('#rlvgrid .lv').nth(29)).toContainText('25 phép');
   await expect(page.locator('#rlvgrid .lv').nth(30)).toContainText('10 phép');
   await expect(page.locator('#rlvgrid .lv').nth(31)).toContainText('25 phép');
@@ -46,6 +46,8 @@ test('grid shows 36 levels; hub and daily agree on 36', async ({ page }) => {
   await expect(page.locator('#rlvgrid .lv').nth(34)).toHaveAttribute('aria-label', 'Level 35, 25 phép, màn thử thách');
   await expect(page.locator('#rlvgrid .lv').nth(35)).toContainText('10 phép');
   await expect(page.locator('#rlvgrid .lv').nth(35)).toHaveAttribute('aria-label', 'Level 36, 10 phép');
+  await expect(page.locator('#rlvgrid .lv').nth(36)).toContainText('25 phép');
+  await expect(page.locator('#rlvgrid .lv').nth(36)).toHaveAttribute('aria-label', 'Level 37, 25 phép');
   expect(errors).toEqual([]);
 });
 
@@ -157,18 +159,18 @@ test('level names: tiers 1..10 keep the old text, v2 levels show their tier, new
     'Thêm phép tính hai bước', 'Thêm nhân số có hai chữ số']);
 });
 
-test('level 36 (breather) is selectable, starts with 10 drops and 4 lives, HUD shows Level 36', async ({ page }) => {
+test('level 37 (step) is selectable, starts with 25 drops and 3 lives, HUD shows Level 37', async ({ page }) => {
   await openRain(page);
-  await pickLevel(page, '#rlvgrid', 36);
-  const b = page.locator('#rlvgrid .lv').nth(35);
+  await pickLevel(page, '#rlvgrid', 37);
+  const b = page.locator('#rlvgrid .lv').nth(36);
   await expect(b).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#rStart')).toHaveText('Chơi Level 36');
-  await expect(page.locator('#rLvTxt')).toHaveText('Thêm nhân số có hai chữ số · giải 10 phép · 4 mạng');
+  await expect(page.locator('#rStart')).toHaveText('Chơi Level 37');
+  await expect(page.locator('#rLvTxt')).toHaveText('Thêm nhân số có hai chữ số · giải 25 phép · 3 mạng');
   await page.click('#rStart');
   await expect(page.locator('#rmenu')).toBeHidden();
-  await expect(page.locator('#rLevel')).toHaveText('Level 36');
-  await expect(page.locator('#rLives')).toHaveAttribute('aria-label', 'Còn 4 mạng');
-  expect(await dbg(page)).toMatchObject({ state: 'play', level: 36, target: 10, lives: 4 });
+  await expect(page.locator('#rLevel')).toHaveText('Level 37');
+  await expect(page.locator('#rLives')).toHaveAttribute('aria-label', 'Còn 3 mạng');
+  expect(await dbg(page)).toMatchObject({ state: 'play', level: 37, target: 25, lives: 3 });
 });
 
 test('level 30 starts, spawns valid equations and an answer pops a drop', async ({ page }) => {
@@ -214,7 +216,7 @@ test('old progress: rain_lv = 11 (finished the old 10) opens L11; stars from bb_
   expect(g).toEqual({ best: 10, stars: { 5: 3, 10: 2 } });
 });
 
-test('next-level flow: L10 leads to L11; L30 → L31 → L32 → L33 → L34 → L35 → L36; passing L36 records stars and shows the finished state', async ({ page }) => {
+test('next-level flow: L10 leads to L11; L30 → L31 → L32 → L33 → L34 → L35 → L36 → L37; passing L37 records stars and shows the finished state', async ({ page }) => {
   await openRain(page, () => { if (!sessionStorage.getItem('x')) { sessionStorage.setItem('x', '1'); localStorage.setItem('rain_lv', '10'); } });
   await startAt(page, 10);
   await winRound(page);
@@ -265,19 +267,25 @@ test('next-level flow: L10 leads to L11; L30 → L31 → L32 → L33 → L34 →
   await page.click('#rrNext');
   expect(await dbg(page)).toMatchObject({ state: 'play', level: 36, target: 10, lives: 4 });
   await winRound(page);
-  await expect(page.locator('#rrTitle')).toContainText('Xong cả 36 level');
-  await expect(page.locator('#rrNext')).toHaveText('Chơi lại Level 36');
-  const st = await page.evaluate(() => ({ lv: localStorage.getItem('rain_lv'), g: window.BB.gameStats('rain') }));
-  expect(st.lv).toBe('37');
-  expect(st.g.best).toBe(36);
-  expect(st.g.stars['36']).toBe(3);
+  await expect(page.locator('#rrTitle')).toContainText('Qua Level 36');
+  await expect(page.locator('#rrDetail')).toHaveText('Level 37: mưa nhanh hơn, giải 25 phép, còn 3 mạng.');
+  await expect(page.locator('#rrNext')).toHaveText('Level 37 →');
   await page.click('#rrNext');
-  expect((await dbg(page)).level).toBe(36);
+  expect(await dbg(page)).toMatchObject({ state: 'play', level: 37, target: 25, lives: 3 });
+  await winRound(page);
+  await expect(page.locator('#rrTitle')).toContainText('Xong cả 37 level');
+  await expect(page.locator('#rrNext')).toHaveText('Chơi lại Level 37');
+  const st = await page.evaluate(() => ({ lv: localStorage.getItem('rain_lv'), g: window.BB.gameStats('rain') }));
+  expect(st.lv).toBe('38');
+  expect(st.g.best).toBe(37);
+  expect(st.g.stars['37']).toBe(3);
+  await page.click('#rrNext');
+  expect((await dbg(page)).level).toBe(37);
   await page.click('#rPause'); await page.click('#rQuit');
-  await expect(page.locator('#rBestTxt')).toHaveText('Đã qua cả 36 level');
+  await expect(page.locator('#rBestTxt')).toHaveText('Đã qua cả 37 level');
 });
 
-test('with the integrator\'s script tags: no double load, hub tile says 36 level', async ({ page }) => {
+test('with the integrator\'s script tags: no double load, hub tile says 37 level', async ({ page }) => {
   // Simulates index.html after integration: difficulty.js + levels/rain.js before js/train-map.js, so
   // train.js finds BBD and does not load its own copy (a second difficulty.js resets window.BBD).
   await page.route(/\/(index\.html)?(#.*)?$/, async route => {
@@ -291,21 +299,21 @@ test('with the integrator\'s script tags: no double load, hub tile says 36 level
   const loads = [];
   page.on('request', r => { if (/js\/(difficulty|levels\/rain)\.js$/.test(r.url())) loads.push(r.url()); });
   await page.goto('/');
-  await expect(page.locator('#hubRain')).toHaveText('36 level, chưa chơi');
+  await expect(page.locator('#hubRain')).toHaveText('37 level, chưa chơi');
   await page.evaluate(() => { location.hash = 'mua'; });
-  await expect(page.locator('#rlvgrid .lv')).toHaveCount(36);
+  await expect(page.locator('#rlvgrid .lv')).toHaveCount(37);
   expect(loads.filter(u => u.endsWith('levels/rain.js'))).toHaveLength(1);
   expect(loads.filter(u => u.endsWith('difficulty.js')).length).toBeLessThanOrEqual(1);
 });
 
-test('slow difficulty.js (another game already inserted it): levels/rain.js waits, grid still shows 36', async ({ page }) => {
+test('slow difficulty.js (another game already inserted it): levels/rain.js waits, grid still shows 37', async ({ page }) => {
   await page.route(/\/js\/difficulty\.js$/, async route => {
     const res = await route.fetch(); await new Promise(r => setTimeout(r, 800)); await route.fulfill({ response: res });
   });
   await openRain(page);
   expect(await page.evaluate(() => window.BBD.games().includes('rain'))).toBe(true);
-  await startAt(page, 36);
-  expect(await dbg(page)).toMatchObject({ state: 'play', level: 36 });
+  await startAt(page, 37);
+  expect(await dbg(page)).toMatchObject({ state: 'play', level: 37 });
 });
 
 test('a second difficulty.js wipes the table: rain registers again instead of an empty grid', async ({ page }) => {
@@ -316,7 +324,7 @@ test('a second difficulty.js wipes the table: rain registers again instead of an
   expect(await page.evaluate(() => window.BBD.games().includes('rain'))).toBe(false);
   await page.evaluate(() => { location.hash = ''; });
   await page.evaluate(() => { location.hash = 'mua'; });
-  await expect(page.locator('#rlvgrid .lv')).toHaveCount(36);
+  await expect(page.locator('#rlvgrid .lv')).toHaveCount(37);
   expect(await page.evaluate(() => window.__rainTest.spec(20).target)).toBe(24);
 });
 

@@ -56,7 +56,7 @@
   const levels = V2.map(([size, t, disp]) => ({ size, t, k: 0.3, disp }));
   if (BBD && BBD.register) BBD.register('mem', {
     version: 2,
-    maxLevel: 36,
+    maxLevel: 37,
     legacyLevels,
     levels,
     // Knobs below drive L31+ only and follow the same template as rows 6–30: steps hold 6 tiles and spread
@@ -66,7 +66,7 @@
     // So generated steps are never easier than L29, and the L31 breather (6−1 tiles, disp 0.1−0.05) equals L26.
     // t and k move on a slow 'quad' curve: p* falls only ~0.3 points a level past L30 and +1 tile costs the
     // median ~4 points, so t holds 6 until ~L51, then climbs to its cap by ~L110 (BBD.exhausted by L120).
-    // Calibrated green at N=1200 for L31–46. Run calibrate before raising maxLevel past 46 (DIFFICULTY-RULES §2).
+    // Calibrated green at N=1200 for L31–47. Run calibrate before raising maxLevel past 47 (DIFFICULTY-RULES §2).
     knobs: [
       { name: 't', int: true, start: 6, startAt: 30, max: 6.12, hardCap: 15, curve: 'quad', source: 'MERGED-SPEC §4.2 mem; R:cognitive (Luck & Vogel 1997, Cowan 2001)' },
       { name: 'size', int: true, max: 6, hardCap: 6, source: 'A=B: size ≤ 6 keeps tiles ≥ 44 px at 320 px (css/mem.css)' },
