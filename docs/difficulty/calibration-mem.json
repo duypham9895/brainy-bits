@@ -2,9 +2,9 @@
  "game": "mem",
  "n": 1200,
  "from": 1,
- "to": 36,
+ "to": 37,
  "simVersion": 1,
- "generatedOn": "2026-11-27",
+ "generatedOn": "2026-11-28",
  "config": {
   "E1": "A",
   "breatherEasyOk": true,
@@ -2026,6 +2026,59 @@
      "p3": 0.9675,
      "blowout": 0.7533,
      "clutch": 0.14
+    }
+   }
+  },
+  {
+   "L": 37,
+   "kind": "step",
+   "legacy": false,
+   "pStar": 0.7306,
+   "D": 1.1142,
+   "bL": -0.969,
+   "knobs": {
+    "t": 6,
+    "size": 6,
+    "k": 0.3,
+    "disp": 0.1,
+    "show": 2.8
+   },
+   "profiles": {
+    "weak": {
+     "p": 0.5642,
+     "ci": [
+      0.5359,
+      0.592
+     ],
+     "acc": 0.8683,
+     "msMedian": 19359,
+     "p3": 0.7783,
+     "blowout": 0.3533,
+     "clutch": 0.2108
+    },
+    "median": {
+     "p": 0.725,
+     "ci": [
+      0.699,
+      0.7495
+     ],
+     "acc": 0.9181,
+     "msMedian": 16044,
+     "p3": 0.8867,
+     "blowout": 0.5283,
+     "clutch": 0.1967
+    },
+    "skilled": {
+     "p": 0.8425,
+     "ci": [
+      0.8208,
+      0.862
+     ],
+     "acc": 0.9467,
+     "msMedian": 14618,
+     "p3": 0.9417,
+     "blowout": 0.6558,
+     "clutch": 0.1867
     }
    }
   }
